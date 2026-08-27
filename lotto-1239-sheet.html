@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>제1239회 로또 추천 마크시트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;700;900&family=IBM+Plex+Sans+KR:wght@300;400;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EB;
+  --paper-2:#F7F8F5;
+  --ink:#16302B;
+  --ink-60:rgba(22,48,43,.60);
+  --ink-30:rgba(22,48,43,.30);
+  --ink-12:rgba(22,48,43,.12);
+  --b-yellow:#FBC400;
+  --b-blue:#69C8F2;
+  --b-red:#FF7272;
+  --b-grey:#A0A6A2;
+  --b-green:#B0D840;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"IBM Plex Sans KR",system-ui,sans-serif;
+  font-weight:300;line-height:1.6;
+  padding:20px 14px 56px;display:flex;justify-content:center;
+}
+.sheet{width:100%;max-width:560px;position:relative}
+
+.reg{position:absolute;width:16px;height:16px;border:1.5px solid var(--ink);pointer-events:none}
+.reg.tl{top:-4px;left:-4px;border-right:0;border-bottom:0}
+.reg.tr{top:-4px;right:-4px;border-left:0;border-bottom:0}
+.reg.bl{bottom:-4px;left:-4px;border-right:0;border-top:0}
+.reg.br{bottom:-4px;right:-4px;border-left:0;border-top:0}
+
+.eyebrow{
+  font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-60);
+  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding-bottom:10px;border-bottom:1.5px solid var(--ink);
+}
+h1{
+  font-family:"Big Shoulders Display",sans-serif;font-weight:900;
+  font-size:clamp(58px,17vw,104px);line-height:.82;letter-spacing:-.01em;
+  padding:14px 0 2px;
+}
+h1 .sub{display:block;font-size:.26em;font-weight:700;letter-spacing:.16em;color:var(--ink-60);padding-top:12px}
+.lede{font-size:13.5px;color:var(--ink-60);max-width:40ch;padding:10px 0 26px}
+
+h2{
+  font-family:"Space Mono",monospace;font-size:11px;font-weight:700;
+  letter-spacing:.18em;text-transform:uppercase;
+  padding:0 0 12px;display:flex;align-items:center;gap:10px;
+}
+h2::after{content:"";flex:1;height:1px;background:var(--ink-12)}
+
+.prev{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  border:1px dashed var(--ink-30);padding:12px 14px;margin-bottom:26px;
+}
+.prev .lbl{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-60);width:100%}
+.prev .mini{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-family:"Space Mono",monospace;font-size:10px;font-weight:700;color:#16302B}
+.prev .res{font-family:"Space Mono",monospace;font-size:11px;color:var(--ink-60);margin-left:auto}
+
+.board{background:var(--paper-2);border:1.5px solid var(--ink);padding:18px 16px 16px;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
+.cell{
+  aspect-ratio:1;border-radius:50%;border:1px solid var(--ink-30);
+  display:flex;align-items:center;justify-content:center;
+  font-family:"Space Mono",monospace;font-size:clamp(11px,3.1vw,14px);
+  color:var(--ink-30);position:relative;
+}
+.cell.on{border:1.5px solid var(--ink);color:var(--ink);font-weight:700}
+.cell.on::before{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--c);z-index:0}
+.cell.on span{position:relative;z-index:1}
+.tick{
+  position:absolute;top:-3px;right:-3px;z-index:2;width:15px;height:15px;border-radius:50%;
+  background:var(--ink);color:var(--paper-2);font-family:"Space Mono",monospace;
+  font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;
+}
+.legend{
+  display:flex;gap:14px;flex-wrap:wrap;font-family:"Space Mono",monospace;
+  font-size:10.5px;color:var(--ink-60);padding-top:14px;margin-top:14px;border-top:1px dashed var(--ink-12);
+}
+.legend b{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;
+  border-radius:50%;background:var(--ink);color:var(--paper-2);font-size:9px;margin-right:5px}
+
+.rows{border-top:1.5px solid var(--ink)}
+.row{display:grid;grid-template-columns:26px 1fr auto;gap:12px;align-items:center;
+  padding:13px 2px;border-bottom:1px solid var(--ink-12)}
+.key{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:30px;line-height:1}
+.balls{display:flex;gap:5px;flex-wrap:wrap}
+.ball{width:clamp(26px,7.4vw,32px);height:clamp(26px,7.4vw,32px);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-family:"Space Mono",monospace;
+  font-weight:700;font-size:clamp(11px,3vw,13px);color:#16302B}
+.meta{text-align:right;font-family:"Space Mono",monospace;font-size:10px;color:var(--ink-60);
+  letter-spacing:.06em;line-height:1.5;white-space:nowrap}
+.meta em{display:block;font-style:normal;color:var(--ink);font-size:13px;font-weight:700}
+.concept{grid-column:2 / -1;font-size:11.5px;color:var(--ink-60);padding-top:7px}
+
+.notes{padding-top:30px}
+.note{display:grid;grid-template-columns:64px 1fr;gap:12px;padding:9px 0;
+  border-bottom:1px dashed var(--ink-12);font-size:12.5px;color:var(--ink-60)}
+.note dt{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink);padding-top:3px}
+.note dd b{color:var(--ink);font-weight:600}
+
+.barcode{display:flex;gap:2px;align-items:flex-end;height:34px;padding-top:30px}
+.barcode i{display:block;background:var(--ink);flex:1}
+.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.1em;
+  color:var(--ink-60);padding-top:10px;text-transform:uppercase}
+.disclaimer{font-size:11.5px;color:var(--ink-60);padding-top:22px;line-height:1.7;
+  border-top:1px solid var(--ink-12);margin-top:22px}
+
+@media (prefers-reduced-motion: no-preference){
+  .cell,.ball{animation:pop .45s cubic-bezier(.2,.7,.3,1) both}
+  @keyframes pop{from{opacity:0;transform:scale(.72)}to{opacity:1;transform:none}}
+}
+</style>
+</head>
+<body>
+<main class="sheet">
+  <span class="reg tl"></span><span class="reg tr"></span>
+  <span class="reg bl"></span><span class="reg br"></span>
+
+  <div class="eyebrow">
+    <span>Lotto 6/45 · Draw 1239</span>
+    <span>2026.08.29 SAT</span>
+  </div>
+
+  <h1>1239<span class="sub">추천 조합 마크시트</span></h1>
+  <p class="lede">1~1238회 전체 기록과 최근 52회 흐름에서 뽑은 다섯 조합입니다. 색은 실제 추첨공 색상을 따랐습니다.</p>
+
+  <div class="prev" id="prev">
+    <span class="lbl">직전 1238회 결과</span>
+  </div>
+
+  <h2>통합 번호판</h2>
+  <div class="board">
+    <div class="grid" id="grid"></div>
+    <div class="legend">
+      <span><b>2</b>2개 조합 중복</span>
+      <span>테두리만 = 미선택</span>
+      <span>총 26개 커버</span>
+    </div>
+  </div>
+
+  <h2>조합 5</h2>
+  <div class="rows" id="rows"></div>
+
+  <div class="notes">
+    <h2>산출 근거</h2>
+    <dl>
+      <div class="note"><dt>최근 52</dt><dd>1187~1238회 최다 <b>27(13회)</b>, 15·31(12회) / 최소 43(4회), 5·14·21(5회)</dd></div>
+      <div class="note"><dt>누적</dt><dd>전체 최다 <b>34(186회)</b>, 27(181), 12·13(180), 18(178)</dd></div>
+      <div class="note"><dt>동반쌍</dt><dd>27-38(5회), 37-40·9-19·27-36·15-19(각 4회) — C가 네 축을 흡수</dd></div>
+      <div class="note"><dt>미출현</dt><dd><b>5번이 25회차째</b> 결번, 33번 15회차, 45·27번 각 14회차</dd></div>
+      <div class="note"><dt>제외</dt><dd>공 나온 순서는 기대값 범위의 잡음이라 미반영</dd></div>
+    </dl>
+  </div>
+
+  <div class="barcode" id="barcode"></div>
+  <div class="foot">
+    <span>Prepared by Jaeoh Lee</span>
+    <span>N=1238 rounds</span>
+  </div>
+
+  <p class="disclaimer">각 회차는 독립 시행입니다. 이 조합의 1등 확률은 자동 선택과 같은 1/8,145,060이며, 통계는 번호를 고르는 기준일 뿐 예측이 아닙니다.</p>
+</main>
+
+<script>
+const combos = [
+  {k:"A", n:[2,15,24,27,31,38],  sum:137, c:"최근 52회 최다군"},
+  {k:"B", n:[12,13,18,33,34,37], sum:147, c:"전체 누적 최다군"},
+  {k:"C", n:[9,15,19,27,36,38],  sum:144, c:"동반쌍 상위 4축"},
+  {k:"D", n:[8,11,14,21,43,44],  sum:141, c:"최근 최소 출현군"},
+  {k:"E", n:[5,16,17,26,33,41],  sum:138, c:"장기 미출현"}
+];
+const prev = {win:[2,13,18,32,38,42], bonus:22, best:"최고 2개 일치 (B·D)"};
+const color = n => n<=10?"var(--b-yellow)":n<=20?"var(--b-blue)":n<=30?"var(--b-red)":n<=40?"var(--b-grey)":"var(--b-green)";
+
+const pv = document.getElementById("prev");
+prev.win.forEach(n=>{
+  const s=document.createElement("span");
+  s.className="mini"; s.style.background=color(n); s.textContent=n; pv.appendChild(s);
+});
+const plus=document.createElement("span");
+plus.style.cssText="font-family:'Space Mono',monospace;color:rgba(22,48,43,.4)";
+plus.textContent="+"; pv.appendChild(plus);
+const bn=document.createElement("span");
+bn.className="mini"; bn.style.background=color(prev.bonus); bn.style.opacity=".55";
+bn.textContent=prev.bonus; pv.appendChild(bn);
+const rs=document.createElement("span"); rs.className="res"; rs.textContent=prev.best; pv.appendChild(rs);
+
+const count={};
+combos.forEach(c=>c.n.forEach(n=>count[n]=(count[n]||0)+1));
+
+const grid=document.getElementById("grid");
+for(let n=1;n<=45;n++){
+  const d=document.createElement("div");
+  d.className="cell"+(count[n]?" on":"");
+  d.style.animationDelay=(n*11)+"ms";
+  if(count[n]) d.style.setProperty("--c",color(n));
+  d.innerHTML="<span>"+n+"</span>"+(count[n]>1?'<i class="tick">'+count[n]+'</i>':"");
+  grid.appendChild(d);
+}
+
+const rows=document.getElementById("rows");
+combos.forEach(c=>{
+  const balls=c.n.map(n=>'<span class="ball" style="background:'+color(n)+'">'+n+'</span>').join("");
+  const odd=c.n.filter(n=>n%2).length;
+  const el=document.createElement("div");
+  el.className="row";
+  el.innerHTML='<div class="key">'+c.k+'</div>'+
+    '<div class="balls">'+balls+'</div>'+
+    '<div class="meta">합계<em>'+c.sum+'</em>홀'+odd+':짝'+(6-odd)+'</div>'+
+    '<div class="concept">'+c.c+'</div>';
+  rows.appendChild(el);
+});
+
+const bc=document.getElementById("barcode");
+const seed=combos.flatMap(c=>c.n);
+seed.concat(seed).forEach(n=>{
+  const b=document.createElement("i");
+  b.style.height=(38+(n%7)*8)+"%";
+  b.style.flexGrow=(n%3)+1;
+  bc.appendChild(b);
+});
+</script>
+</body>
+</html>

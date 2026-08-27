@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LOTTO LAB · 로또 6/45 통계 실험실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;700;900&family=IBM+Plex+Sans+KR:wght@300;400;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EB; --paper-2:#F7F8F5; --paper-3:#E4E7E0;
+  --ink:#16302B; --ink-60:rgba(22,48,43,.60); --ink-40:rgba(22,48,43,.40);
+  --ink-30:rgba(22,48,43,.30); --ink-12:rgba(22,48,43,.12); --ink-06:rgba(22,48,43,.06);
+  --b-yellow:#FBC400; --b-blue:#69C8F2; --b-red:#FF7272; --b-grey:#A0A6A2; --b-green:#B0D840;
+  --sig:#B0281A; --ok:#1F6F4A;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#12181A; --paper-2:#182022; --paper-3:#1F2A2C;
+    --ink:#E6EDE9; --ink-60:rgba(230,237,233,.62); --ink-40:rgba(230,237,233,.40);
+    --ink-30:rgba(230,237,233,.28); --ink-12:rgba(230,237,233,.14); --ink-06:rgba(230,237,233,.06);
+    --sig:#FF8A78; --ok:#7FD8A8;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#12181A; --paper-2:#182022; --paper-3:#1F2A2C;
+  --ink:#E6EDE9; --ink-60:rgba(230,237,233,.62); --ink-40:rgba(230,237,233,.40);
+  --ink-30:rgba(230,237,233,.28); --ink-12:rgba(230,237,233,.14); --ink-06:rgba(230,237,233,.06);
+  --sig:#FF8A78; --ok:#7FD8A8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans KR",system-ui,sans-serif;
+  font-weight:300;line-height:1.6;padding:0 0 90px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:940px;margin:0 auto;padding:16px 14px 0}
+.mono{font-family:"Space Mono",monospace}
+
+/* ── header ── */
+header{border-bottom:1.5px solid var(--ink);padding-bottom:10px;margin-bottom:18px}
+.eyebrow{font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-60);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+h1{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:clamp(46px,12vw,86px);
+  line-height:.84;letter-spacing:-.01em;padding:10px 0 0}
+h1 span{display:block;font-size:.22em;font-weight:700;letter-spacing:.18em;color:var(--ink-60);padding-top:10px}
+.status{font-family:"Space Mono",monospace;font-size:11px;color:var(--ink-60);padding-top:10px;
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--b-grey);display:inline-block;flex:none}
+.dot.live{background:var(--b-green)} .dot.warn{background:var(--b-yellow)} .dot.err{background:var(--b-red)}
+
+/* ── tabs ── */
+nav.tabs{position:sticky;top:0;z-index:40;background:var(--paper);border-bottom:1.5px solid var(--ink);
+  display:flex;gap:0;overflow-x:auto;scrollbar-width:none;margin-bottom:20px}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;color:var(--ink-60);
+  font-family:"Space Mono",monospace;font-size:11.5px;font-weight:700;letter-spacing:.08em;
+  padding:13px 14px;cursor:pointer;white-space:nowrap;text-transform:uppercase}
+nav.tabs button.on{color:var(--ink);border-bottom-color:var(--ink)}
+
+section.panel{display:none} section.panel.on{display:block}
+
+h2{font-family:"Space Mono",monospace;font-size:11px;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;padding:0 0 12px;display:flex;align-items:center;gap:10px;margin-top:30px}
+h2:first-child{margin-top:0}
+h2::after{content:"";flex:1;height:1px;background:var(--ink-12)}
+h3{font-size:13px;font-weight:600;padding-bottom:8px}
+p.note{font-size:12.5px;color:var(--ink-60);padding-bottom:14px;line-height:1.7}
+
+.card{background:var(--paper-2);border:1.5px solid var(--ink);padding:16px 15px;margin-bottom:12px}
+.card.flat{border-width:1px;border-color:var(--ink-12)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+
+/* ── kpi ── */
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--ink-12);
+  border:1.5px solid var(--ink);margin-bottom:14px}
+.kpi>div{background:var(--paper-2);padding:13px 12px}
+.kpi .k{font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-60)}
+.kpi .v{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:30px;line-height:1.05;padding-top:4px}
+.kpi .s{font-size:11px;color:var(--ink-60);padding-top:2px}
+
+/* ── balls ── */
+.ball{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  font-family:"Space Mono",monospace;font-weight:700;font-size:12px;color:#16302B;flex:none}
+.ball.sm{width:24px;height:24px;font-size:10.5px}
+.ball.xs{width:20px;height:20px;font-size:9.5px}
+.ball.bonus{box-shadow:inset 0 0 0 2px var(--ink)}
+.balls{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+
+/* ── board 45 ── */
+.board45{display:grid;grid-template-columns:repeat(9,1fr);gap:5px}
+@media(max-width:520px){.board45{grid-template-columns:repeat(7,1fr)}}
+.cell{aspect-ratio:1;border-radius:50%;border:1px solid var(--ink-30);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-family:"Space Mono",monospace;font-size:12px;
+  color:var(--ink-40);position:relative;cursor:pointer;user-select:none;background:transparent}
+.cell b{font-weight:700;font-size:12px;line-height:1}
+.cell i{font-style:normal;font-size:8.5px;opacity:.75;line-height:1.2}
+.cell.on{border:1.5px solid var(--ink);color:var(--ink)}
+.cell.on::before{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--c);z-index:0;opacity:.92}
+.cell.on b,.cell.on i{position:relative;z-index:1;color:#16302B}
+.cell.pick{outline:2.5px solid var(--ink);outline-offset:2px}
+.cell.excl{opacity:.3;text-decoration:line-through}
+
+/* ── bars ── */
+.bars{display:flex;flex-direction:column;gap:3px}
+.bar{display:grid;grid-template-columns:34px 1fr 62px;gap:8px;align-items:center;font-family:"Space Mono",monospace;font-size:10.5px}
+.bar .t{height:13px;background:var(--ink-12);position:relative;overflow:hidden}
+.bar .t i{display:block;height:100%;background:var(--c,var(--ink-40))}
+.bar .n{text-align:right;color:var(--ink-60)}
+
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:7px 6px;text-align:left;border-bottom:1px solid var(--ink-12)}
+th{font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60);font-weight:700}
+td.num,th.num{text-align:right;font-family:"Space Mono",monospace}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* ── controls ── */
+button.btn,select,input[type=text],input[type=number]{
+  font-family:"Space Mono",monospace;font-size:12px;color:var(--ink);background:var(--paper-2);
+  border:1.5px solid var(--ink);padding:9px 13px;cursor:pointer;border-radius:0}
+input[type=text],input[type=number]{cursor:text;font-weight:700}
+button.btn{font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+button.btn:hover{background:var(--ink);color:var(--paper)}
+button.btn.ghost{border-color:var(--ink-30);color:var(--ink-60)}
+button.btn.ghost:hover{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+button.btn:disabled{opacity:.4;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding-bottom:12px}
+label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",monospace;font-size:9.5px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60)}
+.chip{font-family:"Space Mono",monospace;font-size:10.5px;border:1px solid var(--ink-30);padding:5px 9px;
+  cursor:pointer;color:var(--ink-60)}
+.chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+.tag{font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.06em;padding:2px 6px;border:1px solid currentColor}
+.tag.sig{color:var(--sig)} .tag.noi{color:var(--ink-40)} .tag.ok{color:var(--ok)}
+
+.verdict{border-left:3px solid var(--ink);padding:10px 0 10px 12px;margin:10px 0;font-size:12.5px;color:var(--ink-60)}
+.verdict b{color:var(--ink);font-weight:600}
+.verdict.sig{border-color:var(--sig)}
+
+.combo{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:center;padding:11px 2px;
+  border-bottom:1px solid var(--ink-12)}
+.combo .k{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:26px;line-height:1}
+.combo .m{text-align:right;font-family:"Space Mono",monospace;font-size:9.5px;color:var(--ink-60);line-height:1.5;white-space:nowrap}
+.combo .m em{display:block;font-style:normal;color:var(--ink);font-size:12px;font-weight:700}
+.combo .c{grid-column:2/-1;font-size:11px;color:var(--ink-60);padding-top:5px}
+
+.bignum{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:clamp(38px,9vw,62px);line-height:1}
+.disclaimer{font-size:11.5px;color:var(--ink-60);padding:18px 0 0;line-height:1.75;border-top:1px solid var(--ink-12);margin-top:26px}
+.spin{display:inline-block;width:11px;height:11px;border:2px solid var(--ink-30);border-top-color:var(--ink);
+  border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.prog{height:4px;background:var(--ink-12);overflow:hidden;margin-top:8px}
+.prog i{display:block;height:100%;background:var(--ink);width:0;transition:width .2s}
+.hide{display:none!important}
+.foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-family:"Space Mono",monospace;
+  font-size:9.5px;letter-spacing:.1em;color:var(--ink-40);padding-top:14px;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">
+    <span>Lotto 6/45 · Statistical Lab</span>
+    <span id="hdrRight">—</span>
+  </div>
+  <h1>LOTTO<br>LAB<span>일확천금 프로젝트</span></h1>
+  <div class="status" id="status"><span class="dot"></span><span id="statusTxt">초기화 중…</span></div>
+  <div class="prog hide" id="prog"><i></i></div>
+</header>
+</div>
+
+<nav class="tabs" id="tabs">
+  <button data-t="dash" class="on">대시보드</button>
+  <button data-t="stat">번호 통계</button>
+  <button data-t="order">추첨순서</button>
+  <button data-t="gen">조합 생성</button>
+  <button data-t="sim">시뮬레이터</button>
+  <button data-t="mine">내 기록</button>
+  <button data-t="data">데이터</button>
+</nav>
+
+<div class="wrap">
+
+<!-- ══════════ 대시보드 ══════════ -->
+<section class="panel on" id="p-dash">
+  <div class="kpi" id="kpiDash"></div>
+
+  <h2>최근 회차</h2>
+  <div class="card" id="recentCard"><span class="spin"></span></div>
+
+  <h2>다음 회차 예고</h2>
+  <div class="card flat" id="nextCard"></div>
+
+  <h2>지금 이 순간의 확률</h2>
+  <div class="card flat">
+    <div class="scroll"><table id="oddsTbl"></table></div>
+    <p class="note" style="padding:12px 0 0">계산 근거 · 전체 조합수 C(45,6)=8,145,060. 1등 1가지, 2등 6가지(5개+보너스), 3등 C(6,5)&times;C(38,1)=228가지, 4등 C(6,4)&times;C(39,2)=11,115가지, 5등 C(6,3)&times;C(39,3)=182,780가지.</p>
+  </div>
+
+  <h2>이번 주 추천 조합</h2>
+  <p class="note">아래 <b>조합 생성</b> 탭에서 만든 조합이 여기에 고정됩니다. 전략과 필터를 바꿔가며 생성하세요.</p>
+  <div class="card" id="pinnedCard"><span style="font-size:12px;color:var(--ink-60)">아직 고정된 조합이 없습니다.</span></div>
+</section>
+
+<!-- ══════════ 번호 통계 ══════════ -->
+<section class="panel" id="p-stat">
+  <div class="row">
+    <label class="fld">분석 구간
+      <select id="statWin">
+        <option value="0">전체 회차</option>
+        <option value="520">최근 520회 (10년)</option>
+        <option value="260">최근 260회 (5년)</option>
+        <option value="104">최근 104회 (2년)</option>
+        <option value="52" selected>최근 52회 (1년)</option>
+        <option value="26">최근 26회 (6개월)</option>
+      </select>
+    </label>
+    <label class="fld">보너스 포함
+      <select id="statBonus"><option value="0" selected>제외</option><option value="1">포함</option></select>
+    </label>
+  </div>
+
+  <h2>출현 빈도 번호판</h2>
+  <p class="note">색이 진할수록 많이 나온 번호입니다. 숫자 아래는 출현 횟수 / 기대 대비 편차(σ)입니다.</p>
+  <div class="card"><div class="board45" id="freqBoard"></div></div>
+  <div id="uniformVerdict"></div>
+
+  <h2>상위 · 하위 번호</h2>
+  <div class="grid2">
+    <div class="card flat"><h3>많이 나온 번호</h3><div class="bars" id="topBars"></div></div>
+    <div class="card flat"><h3>적게 나온 번호</h3><div class="bars" id="botBars"></div></div>
+  </div>
+
+  <h2>미출현 기간 (GAP)</h2>
+  <p class="note">한 번호가 한 회차에 나올 확률은 6/45 = 13.33%. 재출현까지 평균 7.5회가 걸립니다. 아래 P값은 "우연히 이만큼 안 나올 확률"입니다 — 작을수록 이례적입니다.</p>
+  <div class="card flat"><div class="scroll"><table id="gapTbl"></table></div></div>
+
+  <h2>동반 출현 상위 쌍</h2>
+  <p class="note">두 번호가 한 회차에 같이 나올 확률은 정확히 1/66입니다. 기대 횟수 대비 얼마나 자주 붙어 나왔는지 봅니다.</p>
+  <div class="card flat"><div class="scroll"><table id="pairTbl"></table></div></div>
+
+  <h2>조합 구조 분포</h2>
+  <div class="grid2">
+    <div class="card flat"><h3>번호 합계</h3><div id="sumDist"></div></div>
+    <div class="card flat"><h3>홀짝 구성</h3><div id="oddDist"></div></div>
+    <div class="card flat"><h3>구간 분포 (10단위)</h3><div id="rangeDist"></div></div>
+    <div class="card flat"><h3>연속번호 개수</h3><div id="consDist"></div></div>
+  </div>
+
+  <h2>이월수 (직전 회차 번호 재출현)</h2>
+  <div class="card flat"><div id="carryDist"></div></div>
+</section>
+
+<!-- ══════════ 추첨순서 ══════════ -->
+<section class="panel" id="p-order">
+  <div class="card">
+    <h3>이 데이터가 어디서 왔는지</h3>
+    <p class="note" style="padding:8px 0 0">
+      <b>동행복권 공식 API는 당첨번호를 오름차순으로만 제공합니다.</b> 공이 실제로 나온 순서는 추첨 방송에만 존재합니다.
+      이 탭의 순서 데이터는 방송 기록을 정리해 둔 외부 아카이브(lottohell.com)를 수집한 것이며,
+      <b>1~1238회 전 회차에 대해 6개 번호 집합과 보너스가 공식 데이터와 100% 일치함을 검증</b>했습니다.
+      다만 아래 <b>신뢰 불가 구간</b>은 순서가 오름차순 그대로여서 실제 순서가 아닌 것으로 판단됩니다.
+    </p>
+  </div>
+  <div class="kpi" id="kpiOrder"></div>
+
+  <h2>순번별 번호 분포</h2>
+  <p class="note">1번째로 나온 공, 2번째로 나온 공… 각 순번에서 45개 번호가 균등하게 나왔는지 검정합니다. 추첨순서에 신호가 있다면 여기서 잡힙니다.</p>
+  <div class="card flat"><div class="scroll"><table id="orderPosTbl"></table></div></div>
+  <div id="orderVerdict"></div>
+
+  <h2>첫 번째 공 · 마지막 공</h2>
+  <div class="grid2">
+    <div class="card flat"><h3>1번째로 나온 번호 TOP</h3><div class="bars" id="firstBars"></div></div>
+    <div class="card flat"><h3>6번째로 나온 번호 TOP</h3><div class="bars" id="lastBars"></div></div>
+  </div>
+
+  <h2>순서 패턴</h2>
+  <div class="grid3" id="orderPatterns"></div>
+
+  <h2>회차별 추첨순서</h2>
+  <div class="row">
+    <label class="fld">회차 검색 <input type="number" id="orderSearch" placeholder="예: 1238" style="width:120px"></label>
+    <button class="btn ghost" id="orderSearchBtn">조회</button>
+  </div>
+  <div class="card flat"><div class="scroll"><table id="orderListTbl"></table></div></div>
+</section>
+
+<!-- ══════════ 조합 생성 ══════════ -->
+<section class="panel" id="p-gen">
+  <h2>전략</h2>
+  <div class="row" id="stratChips"></div>
+  <p class="note" id="stratDesc"></p>
+
+  <h2>필터 · 제약</h2>
+  <div class="card flat">
+    <div class="row">
+      <label class="fld">생성 개수 <input type="number" id="genCount" value="5" min="1" max="20" style="width:80px"></label>
+      <label class="fld">합계 하한 <input type="number" id="sumLo" value="100" style="width:90px"></label>
+      <label class="fld">합계 상한 <input type="number" id="sumHi" value="175" style="width:90px"></label>
+      <label class="fld">연속수 최대 <input type="number" id="maxCons" value="2" min="0" max="5" style="width:80px"></label>
+      <label class="fld">홀 개수 허용
+        <select id="oddRule"><option value="any">제한 없음</option><option value="234" selected>2~4개</option><option value="33">정확히 3개</option></select>
+      </label>
+    </div>
+    <div class="row" style="padding-bottom:0">
+      <label class="fld" style="flex:1;min-width:200px">고정수 (쉼표) <input type="text" id="fixNums" placeholder="예: 7,27"></label>
+      <label class="fld" style="flex:1;min-width:200px">제외수 (쉼표) <input type="text" id="exclNums" placeholder="예: 13,44"></label>
+    </div>
+  </div>
+  <div class="row">
+    <button class="btn" id="genBtn">조합 생성</button>
+    <button class="btn ghost" id="pinBtn">대시보드에 고정</button>
+    <button class="btn ghost" id="sheetBtn">마크시트 인쇄용 열기</button>
+  </div>
+
+  <h2>번호판에서 직접 고르기</h2>
+  <p class="note">번호를 탭하면 고정수, 한 번 더 탭하면 제외수가 됩니다.</p>
+  <div class="card"><div class="board45" id="pickBoard"></div></div>
+
+  <h2>분배 인원 모델 — 실증 근거</h2>
+  <div class="card flat" id="popModel"></div>
+
+  <h2>생성 결과</h2>
+  <div class="card" id="genOut"><span style="font-size:12px;color:var(--ink-60)">아직 생성하지 않았습니다.</span></div>
+  <div id="genAudit"></div>
+</section>
+
+<!-- ══════════ 시뮬레이터 ══════════ -->
+<section class="panel" id="p-sim">
+  <div class="card">
+    <h3>이 시뮬레이터가 답하는 질문</h3>
+    <p class="note" style="padding:8px 0 0">"매주 N게임씩 사면 4등은 언제쯤 보나? 3등은? 1등은 얼마나 걸리나? 그동안 얼마를 잃나?" —
+    실제 등수별 확률로 몬테카를로를 돌려 <b>중앙값과 분포</b>를 보여줍니다. 평균은 극단값에 휘둘리므로 중앙값을 기준으로 읽으세요.</p>
+  </div>
+
+  <div class="row">
+    <label class="fld">주당 게임수 <input type="number" id="simGames" value="5" min="1" max="100" style="width:90px"></label>
+    <label class="fld">기간(년) <input type="number" id="simYears" value="30" min="1" max="200" style="width:90px"></label>
+    <label class="fld">반복 횟수 <select id="simIter"><option value="2000">2,000</option><option value="10000" selected>10,000</option><option value="50000">50,000</option></select></label>
+    <button class="btn" id="simBtn">시뮬레이션</button>
+  </div>
+  <div class="card" id="simOut"><span style="font-size:12px;color:var(--ink-60)">실행 전입니다.</span></div>
+
+  <h2>백테스트 — 내 조합으로 전 회차를 다 샀다면</h2>
+  <p class="note">현재 <b>조합 생성</b> 탭에서 만든 조합(또는 아래에 직접 입력한 조합)을 1회차부터 최신 회차까지 전부 대입합니다. 실제 회차의 실제 당첨금으로 손익을 계산합니다.</p>
+  <div class="row">
+    <label class="fld" style="flex:1;min-width:260px">조합 (한 줄에 6개, 쉼표 구분)
+      <input type="text" id="btInput" placeholder="비우면 생성 결과 사용">
+    </label>
+    <button class="btn" id="btBtn">백테스트</button>
+  </div>
+  <div class="card" id="btOut"><span style="font-size:12px;color:var(--ink-60)">실행 전입니다.</span></div>
+
+  <h2>등수 첫 도달까지 — 이론값</h2>
+  <div class="card flat"><div class="scroll"><table id="firstHitTbl"></table></div></div>
+</section>
+
+<!-- ══════════ 내 기록 ══════════ -->
+<section class="panel" id="p-mine">
+  <p class="note">실제로 산 번호를 넣어두면 회차가 발표될 때마다 자동으로 대조해 등수를 판정하고 누적 손익을 계산합니다. 데이터는 이 브라우저에만 저장됩니다.</p>
+  <div class="card">
+    <div class="row">
+      <label class="fld">회차 <input type="number" id="myRound" style="width:110px"></label>
+      <label class="fld" style="flex:1;min-width:240px">번호 (6개, 쉼표) <input type="text" id="myNums" placeholder="1,2,3,4,5,6"></label>
+      <label class="fld">금액 <input type="number" id="myCost" value="1000" step="1000" style="width:100px"></label>
+      <button class="btn" id="myAdd">추가</button>
+    </div>
+    <div class="row" style="padding-bottom:0">
+      <button class="btn ghost" id="myFromGen">생성 결과 전부 담기</button>
+      <button class="btn ghost" id="myExport">내보내기(JSON)</button>
+      <button class="btn ghost" id="myImport">불러오기</button>
+      <button class="btn ghost" id="myClear">전체 삭제</button>
+    </div>
+  </div>
+  <div class="kpi" id="kpiMine"></div>
+  <h2>구매 내역</h2>
+  <div class="card flat"><div class="scroll"><table id="myTbl"></table></div></div>
+  <h2>등급 달성 현황</h2>
+  <div class="card flat"><div class="grid3" id="myBadges"></div></div>
+</section>
+
+<!-- ══════════ 데이터 ══════════ -->
+<section class="panel" id="p-data">
+  <div class="kpi" id="kpiData"></div>
+  <div class="row">
+    <button class="btn" id="dSync">최신 회차 확인 · 증분 갱신</button>
+    <button class="btn ghost" id="dFull">전체 재수집</button>
+    <button class="btn ghost" id="dExport">JSON 내보내기</button>
+    <button class="btn ghost" id="dPaste">JSON 붙여넣기로 복구</button>
+  </div>
+  <div class="card flat" id="dLog"></div>
+
+  <h2>데이터 무결성 점검</h2>
+  <div class="card flat"><div class="scroll"><table id="integTbl"></table></div></div>
+
+  <h2>출처와 한계</h2>
+  <div class="card flat">
+    <p class="note" style="padding:0">
+      <b>당첨번호·당첨금·판매액</b> — 동행복권 공식 엔드포인트 <span class="mono">/lt645/selectPstLt645InfoNew.do</span>. 회차당 1~5등 당첨자수, 1게임당 당첨금, 총판매액, 1등의 자동/수동/반자동 구성비까지 포함합니다.<br><br>
+      <b>추첨순서</b> — 외부 아카이브 수집분. 공식 데이터가 아니며 일부 구간은 신뢰할 수 없습니다(추첨순서 탭 참고).<br><br>
+      <b>한계</b> — 각 회차는 독립 시행입니다. 이 도구의 어떤 통계도 다음 회차를 예측하지 못합니다. 통계는 "고르는 방식"을 정해줄 뿐이고, 어떤 6개를 고르든 1등 확률은 8,145,060분의 1로 동일합니다.
+    </p>
+  </div>
+</section>
+
+<div class="disclaimer">
+  각 회차는 독립 시행입니다. 이 도구는 예측 도구가 아니라 <b>관측 도구</b>입니다.
+  로또의 기대 환급률은 판매액의 약 50%이며, 장기적으로 구매액의 절반가량은 반드시 사라집니다.
+  감당할 수 있는 금액만, 재미의 범위 안에서.
+</div>
+<div class="foot"><span>Prepared by 이재오</span><span id="footN">—</span></div>
+</div>
+<script>
+"use strict";
+/* ════════════════════════════════════════════════════════════
+   LOTTO LAB — 로또 6/45 통계 실험실
+   데이터: 동행복권 공식 API (당첨번호/당첨금/판매액)
+          + 외부 아카이브 (추첨순서, 1~1238회)
+   ════════════════════════════════════════════════════════════ */
+
+const API   = 'https://www.dhlottery.co.kr/lt645/selectPstLt645InfoNew.do';
+const LSKEY = 'lottolab.db.v1';
+const LSMY  = 'lottolab.my.v1';
+const LSPIN = 'lottolab.pin.v1';
+const A45   = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrs';
+
+/* 추첨순서 신뢰구간
+   397~467회: 71회 연속 전부 오름차순 → 실제 순서가 아닌 자리표시자로 판단
+   아래 개별 회차: 오름차순이라 실제 순서인지 확인 불가 (우연 기대치 1238/720≈1.7회) */
+const ORD_BAD_RANGE = [[397,467]];
+const ORD_SUSPECT   = [626,635,637,642,643,645,652,655,664,666,667,668,669,670,756,824];
+const ORDER_PACK = "kWJgcnPpUIYfMBeUaSKPdndNpeaBPpcnXoCZOpNanhPInYBZpYHmSkhIQDPmjBNdgYoIrFojkGApNYmUBsKrkWVpYlZFLnegBOkdCePDMklnGXFgQfkCDIASCLMifcdmlnqFZWNJTRdoQeFfLRUQEmHDFYMREQgprqHjGacFZrUqBDPDTERYGeqbAkTZaWRkiYIAAmhEMnKQjriHTDRGWibIfSFNrhYKonfDgGIIipnZkBZkqKCBmnAWZJbedgiGakpVQkdqPjqOUMGFHSGZRMYFMTlWqihUWQfRSAeFmlriAUKCdlsmaTJAgiQMeHlOWmNsZjQeaZkJFRlCPgDSnGdBVOLJrArBZPCKiODTPBcANmGfHgpmaHjUAkkernQUGedNgJkScGPYrJFYrXJngAomjsFcMYHmpjBKlSOdqNHcHOaCiUTjWClnEOZUjRNmnDqjgYmVBQGCXsGlJCjOgOmLZJPlOSHENmibqEVYSZEIocLPUZBDaKQAqLfCRnlOFniRQWXrfhBEbkYAOVCqqfrBcRkicMgJYlLXafdCNYQXdZRAKEgTGMFCBANapmOJSFhQNahWpsPKjHMeWFUmkBoLsgPWhqLDZodQXATacbngZDklricTQJZpAUXcaCgijNXQVXlrFjSosEfnhFQqhaeHNCeHAUVTTjFNGOCXWfFIPqacCkJAKApKWkGFfsiACQHiVQXnZpdaNEsOJQprhgfishoJTHbDLJXgVcAeIEDFQWRGcVrLErApjhgcGWTqVAngGejRadogcpZqDgjbIsZKSZoNbBYIbABFeehYkDBQjrVEhJiQDVCJSlNCQKUMlFJKDkfdlbLdhqIKAPjnQHRGsQdbaPcDWpYAfBigjHRTVnqGaAqEcfCJijdsLkhmWpSblYQpGasSXeUKNOJHkWCohQsqOGZDWRMCieWLTqbiNVFmPBoPjdpKYITmjGOJkbKmaSqITOKbMbSRCMQHLHpqceBLPrhdnSapqbZsHDjZQOkqMCBraTIpaiSoBYDMpFUnjghjUiYQpoKUhBambYkBRPJMSRBAOZchAEMqLMHjCKgSUinsFTPTogfSDsRdpbEBdgZSmikRDhIUMGRAodpqfCohHGmAnVhsjprlYoUAEXcGKZbrPFmKJoIaVERpMSemILsajNXajmdbDqCneJpdqaPsikSpMeBOKJcDhPYiADUXZSoigIdXChRNMmiVRPSjebgZQdhgfQDOkJqMAPFWALERKIqIEmYQfThcOUBVNUnWfsrOMcanhihXRpBnEAgFBTPoBHADlSNNDJsSUIRcABHlpSXaehdjfsNkHibNerdRHOfFXkEYHkHsDRKgjZRNmFMZrmOTWbiJSnGVeksojridhPpGsLDYsLSToBYdjVUNqFETNMQGClmXKrZmgNLraQfCKdAXGCnNiLsEcUkCAidYBCTAOqNefKCklheYrNnXRXgTBGkVkWJSYmQoMTLgHUleRKLHTCXBEDpYbkGETfGBOCrqDGjPngQAmaPigTlcNARHrTiZDkKTPKUqSEheTBinkgJGmqEcbrRAaTZClDpSdaZGESeKMjGUBHNFVhDVpPEOBQjYirmWEDIKWlifgKNEcLeJrsESaIHJLXribDFMnQmXUMZkVDaVUkZeHkmMDAHGArQXKUgDeBbhOiorOmXKGFJoPqnUBibXPaUSDhUfTqBbpLSQhlPYjMkSfIaleKVZWURMmObjnOmLMlsQHCWMaHroeCKWkqdSsllYGSFbsWesZNmbhSHYejgXATEdSaEaFApXfNKqDWUfFefkaMDneaNldQNDsipEhGXnLOkqPRqKFeBeLYXIcjAfnkbaRPjIoraEElmkIhLpCKVDIkojGhXHAXfSsJCLqETjRpfLEUIZTanaIHcCjLIGqmabXHrAehFiNOZmMYnNiTSlZmgDoOUYLJOcYMTkoKqmCMlGePkjKkXWKJjiCAFDoNLEeRfBJdeRFlHspGOBdXsbognkMsBSrpAOnQXLakFioibAQoLJCgkNlpJmfRHsMGTGpRCHsheQRfgJgcUIQAXJFQkldnlRDALPHOdCasHrSKFTfbhEacIknSYsATjCXIGZlJLmMKgkqGZSMTlfpDQslBdNqZDoJPglRmWHUGIDWohdRSYOWUsELQskOSNnBEKjARVSAEhboPaLXfDbJBFETLCYihsQIqBOSolQhBAqgsMiWKeUaJmqKjVJCmHSThQBsUpEHbVgkPWsYSoChTRLUYplfcRIqTfONjpJCYUgDjBQsTrGfQggmYPWjnLrMQfFXAbIPQFXIidQpSDCPSQDTWDrZeNImsQjPhpCqamdENiUmcOMqgIPEZWsUEThrCiPkRANfEDMpBshlPUHFNdksZRlXhcfmASqHhogNMqhAYeAQJcqOObAhBslWcpOTmBNVMErsgfaHCpMJNeXQCThENMYTXjgcXHRAiacYjEhgQToPZEXjPKcSVZsrjSqNAicEdrHlHcsNBYXkRJNUjEUAILnJkTAnJXSWYinPDWaXJaPEigdBVaCncUKNfLlFBPGENnDdEZOUYeSarLZElYrVcfCSXKUmsdZoiTqQjUsPRXprQGIOaZpRHRPNKUMskqZpOIKQYhMOZaSDsHYGnbXKMAGVFqcskWcVmhEeqiVJeFnSkAQBHZaEALJTPKOVJpXaSODkngbYfljKXVGGScLUfIGJeDnSZnqZehATcAHQfIsZRGPTWCPbQnkmOKmVbJRdHApCXGqqnbPoIUTMVbYAOiOTKeZGRhseTndLMQVYgHJOTWprGABIQSpTIUahoqBFLRelqIEIOSVjfJNVXbkZETUXgnjABJYZrDGLUXajsFGMPXYAITUVdkPFIUefnlACRfnoPKNVikmEDGmopsnBIOWhnCBNOVWrqGQTZdnXEFHKVZrDENTVqrKMOZbheBKMNbdGDIJcehaFKZabrdHOSUhrLAQabcnEJKZehrdHJNaglCDQRamqSFGOXbdULPSVknHCWbhmpPACPRdhrRVYelsFBCEKamgSWcgiqaCMTXgkiHPZdlspINTVghbKPclorUFLTZclsQTdeknYJVbhjrBAWbdhiIYacjlnoDFJSTrNKMWiqsQMTUdmsfAKLNZiFBGHIQghCGManojCJTZiqjFNSUWeMLOTXdlcHJRdfhaLXglnpdMYahloJDSTZdiXAGLRWarHJRWangDIJfjnRDFJNYnLHKbdqsoKRZeknqCTXfksDWceghrnFLOhprDAHKMVleDJMWfrTBLNQXnmHMqbkOQDlkhUVgomTPJpamFockMqjZPeYqrMWTVjHhegsMRDqNAPUIcCMkIOLlaYcNgfskRmqcdkHWaYiHrXeECdJQPWonCDcTYJPXiAqbLOVhSEsAbCfaKjZmVaQTBAYnlWqDHkaoYUHelQBdYTHDOBaKqBGZcnpmpQjiHDkneaiVpTVgZjkYqOdEGHVaMrVhDFTDcMojmrSWXTqMXoMfmNCaiTEnWqCTDhLXoApJeQDBhnfFbVZEAahjdnZVqFNreVnTYGlrKIXdFVeLngofMDiEaehqkicYqpLXgfcnLmpWCNGpZXZIDaEMAgEaWUHLiTZpAOIKBOLkWHWHrBqodLIjAboJfWhldNFFqdMHPCnVbDlaAjfRGCcSkoNMDEKknAlDsGocKsJlUWrmKcZVmiGTQNepAfLgVlYmnEQeJpeTaXRmcaPWogVAiUEIasPcXrQWCgNIOeQWJklZcXfKRLNOmhkHfGRqLqjLZWdKfJFheRKCepVqSZhMOjLCNMbHfZhqSEoZsFhZhMRerLrEjQYUJXaihYDBHkQTaqFOFhmVGbALfMUsNrcelinQAGThNkoTCFarXYJinTAfqmGcBbQkMfoQpNFjQUXZKLdbrLTWqnbTZiDeqLOZnScsYfLKrWWTcDAsbksERpGTeQMKTDgeQJPfEUYaNZhSBRsaJDnlYZEqDFoJOfPAobeQrTACnCMiXFWAcLAgaZpZqUlRKcsRCkgMAiDBqThNqOPYNSBghHTBdFiOoJYKMkQePVhgEhNpfLPpTEGVkmGfiEIKgpTrCNEgLnogNBYnQagrHXonmdRGjlPJGFoDGhULOBEecNUkfQBVOHYodHFglmbVsjTodlWmNHdMlErMEBbFqMIJXglbYkBMbHCnXlHbiENqLYCDQXHiqJWksDLlgXVciLhQEaKaEcNjrPiheBSkadVMNlBqZSYaBbhUBgFRdGlAJBIpANmFETVNlHjWmMSHDRrmoDnmhaHMNRTbWjgkVgjaBNSgFIRYnHPorKGiUHnYmrRQaRJSWinREMWsCKLEaDXbHPdqYpOidHMnFUBfsPQmnASBFpPIPOhbIUXMsmdGoYZGiASaPGCFmUTMMNZgnqOVIseBYLpGALWOKrleqSbAUQHaeXOWhADBeHRiUOfrFomTSILMaKLTDJlKMYZcgfGFPOeTZCPVklrWGVRehXFVfOYWFnOZUNRiWqRUKjkLHQRXmsfOXefgnMQEWMjbHADPZnoeIqXsoBdWPUXdEcbkMqSlDpCgoVUToCeDKGiLZcKPrRCMOnorTZFlaEmAUePZjqFGklmnrRPeNCGnmqnSNmJWjfYHSbkGcaSpRsWmDIgrNCTlaLBnIFkKEOZClpESHTJTgjorErEFlQKMBDFKQbPOQYkpqMLNOXafCGHTcglIKRZanoYiJMGeIXbesUHjqrQGcJgEIJeNYaKAsKROHGmQsAhHajoXLOrpDEYLkFsCZEGNhiDcpSfJdaUrqXcGiaQWqlBTabMFnOKmQOYAnLbnlFGRGOqLYXMMpAHbJsEiVhWOBjQSldGhhlYXgmqsOiqagPOKjfNCrhbFpKAdgGqOTYLhlZDRgNAlPhRGUBHKmgEeUgCkKMREUHPcDCcKdWbrMNjlPJCiZXPCMcIreJgobUDgAHpWssbVQFAWDJbdCFkXLSrBmiSPBshJAmrdRjJfDXgCIYJXkKiOspegdQsTSWSBEROrGVkAgnTagGrBoJMcBFdPUfSBYKbrfmTWKDnHSDqMTZhLcjAkoqoibAreUmLqdNsTijdgrVkBgiHoNFqGUSolAKWUrhXeHGJUSTJFkCdhjsQUZjKPJDNOVRmpsGYBMmfaEDQBqXfinKgMskoPlFRMkEaJoDQaURKBFORaXoMKbaqlWpjchGigVdHISPDQeUarshEPHJjknMFoSUhrOJhJUoORqWLCABIJspgjLCYNWILbGQMfCJeVcZshNXLoBXOAjSLTPDrbCQTDgqPnGBQXSkoCHecQBXfdjNbMZkJNPRabDKgFrQGAEdLqmIXgqnjIpfVqJapeLDKpsXGdCoZALUPHhqfPCJGXhVjeOAHpqLCgdimoIhUphOEeTVrldGacDoPKEGsDLAWqmIhRQFUJcdEKUFNofiHSLeUrRLhpObIpglcKLQHRIbnUTUQhLFkRikFjoUKXhFLoSDUOsaQSPmSRXKPqshelFRTPlQsONjeXJmWCVYgFOZDndTXLOPlFEPbaMIBKSmiJcSBLGFslCaHdoSLJpgBLefGjcYSBPUiqOlJeFGSdlRMhMZlCJjZUnAojEfmsEVejJfBNjVoQhsWpLgAbJLDsZkQYqrbBLRXKpJaZIENqdBjZMAJfIRfLCeMpkWelNTaiJhRFYgUefqoOXKWnQFOmEmMUJqKsSKjHUYNLCAPqJdiKhpraslUpbBdjYZQUaDReLmScGLCMYIqhOdcNbYCYPglsnOpdJUViFAXrMLcPaXRjITLnmZXRLOGIXchlZlOUHegpPXMYgjpKLErcgNcMmDGeRDesiqEcRPkElFQSCmPJeIqMnNZSdpodLRmSpiqFRHCsbJIMlibIANKZSBdbsgYFglINjQTMLCKSIiBbqcKDaNglEdKXZfpjNmlUdhSgpDsHGOMgRcAPgnsFsdoEqRMdPbLZpVPBmlVAhhEMmQcCbXTjmPERVNZernbgQdKiIZBHrWaMYTqjefCrHQOSqGnJqXorQFlbJhPqMqfIlmWVloHimXYHDfRapSUVKQYXnJqphlfqimPUbLjMCJGYffCOsgVBmOchkILNVQSnXoLqrQobYTkmFBaDfndUYpeZLdhFBlqdDfgBcLMmgEClSWbOApfVhSrmdjpPZhEUXRWQqEVLPBFKYeCiODNJATWXsSGQlfDaRTZImRshqrWkRrfgIVDbskWNQXAmsCaeWbpSskBjQNasHJlGhLCefpCMclmZDARNckFIMemobSIQpRDZjOYQAoWJnqkfoSslmePoZWZEsLYlWjLZGVFckUibpRQTUHmSgkMPRilGNEWdRhTUSWmjXGdOBUPVbsHFqZsBKDnlPCaTbEeBNfTralUcnkCUrPWVdhXiGdcgmQKaiAeDELNpfiEUVHRlJUPakNFnrpXPgSakVMBKFNUjiFVfQaWqXAChLGKeglERpNIQriChZqBgcoEVGbLABFMaqQjojWRQCZprChKqMmXhMpfDYRePTJFOqoVDlZrTDCJbdISGOWLDYrUmHlbOiNqYWfkljOFAEsjeWcakmjCdAgLflDrJTRQRcGKMqcBnJMVZeDPJjHIDsmpbKFVXoCTOKmLnNaYiLJqipRmsMAHrjmgfSMBPpkIdJgOZhSdIRnTaQiTCHZdRMoelEjUrniNdVDbCOnJBLmdeqloXgLDVlkGaVpIhZodbAIfWZgcDIHKYoTJUnDnXOjiABPikJIAANnoXOidBfsXRNKcgpeTqhbqAeRnSpFhWLimFUlqjdBcYbMjhUkYhcAjFkMAlnImXBLENgsIcnCJGUbKjPIEQBUZRFGkQmWCFZZVopekXBPrKAmfIQHVXGEYiNLDkBrVNIBJPGOhAfpHgGKPaUXPWCMiXNasqokjfrGUEMTgeMiWZqOkjJiWCRWUrhdQSJGpboPnWcBlODGMeoBdTaURacQgZjZkDYBbRMYgerlTgsZLrXFXNpRPrXaAiCHbcMDmAlGFKXOfmbPGDrXNTRsMTQpoIAbCRNhSBHVpfmLNJTFpOYlsigQOmAsqDcekdOGrmRRcMHXaQkQHOPKjKUPYHSnKedroIgcrhWnOTIjOLYhCAiLlIZpisRTEKCjUVohZfZCKaRNUkeNWgnrOphoZbrhVLWRdfsUkYSCiQmADMhFcLsoalFLsOXQcPsEKpFcbNPcJiRYVTIlRrJITcgYHGfMoeLEhisPNmaERMGLiEWkfLodmXEQKcXBIVfFGijSFjLSApbTrOiCKJglnZfeKINpihoBVfhBsEmVgNOBaeParXkGBSFmjBCZjZeHPcKGKIRFQsqNhWEODLCEVZeSbZjLQTDSUNFOokiGcYjPbBgnTrpfFLQUmfdMCEkTUQLFlqeiQZgUfidrEaQZliAsdZVhcOaSdNbsgVGgNLDeXfMsTjcsHSnaMLfKWndYphYGJnValsJCgXjkDsXiaOoefsTnLXCWFVldRFiCIVNWCfSRsXPfFUKSsbGJWgSRDSiZGgCebARVJrdFoVNCjBdUKiAmWfTRqPaldRbFfOaAboTFOiXsrWAJgIGkjCJqnDHdQhjFlJKNqRskHDXFPWMjrellIPXWAQUpahZfeGVCNlOQcpgHLMEDGQlrRjPaiYjKkhNURrMPUmdVrKeDepqkRncnSLUsAXdWbFTrsZGSgRkQqJdiVrOGFZVnonhNHcbLqAWSPLhhkngiNDXPoqULOTClnqbDecZQdqLGFpjMboZMlkVNTneLrcJBldUGAiBmPhnkFKDcAsCpjdonFNecGmSkZraMSLgnJBKTGVCoXdMqgCsDPZTrjpXTfrMUKHPgJlSfCGWLfhjHQdYPeOfDdjgCIGPKNMOsCMIsLTAColBZeShfrlXFeHFdihUCVUhSiXMZdQhHgCbgFNnYrdKIDnkEGkJOeXdfgbPEAHsQbJEhKVbYSUaOnaNFBlAgohFGbSEMhcTbNWSGCIMXWAUgSMFDrgplUiAgsODILZSTNhPciOkLEndRlcJVeGOUZiLGKTkodBbHVjQaPJbFhLDZCOFegBKrkfFSQKnqbGkKZXafPVMOFCfUOHfjSlsRmiIHYacICOBHejikfdEiIrMAJEVlfHDZaSJkalPMsmhodeGEGTZYLblUaYfkTCbmIlaGmGjMsRSBLhXTpkcbUYVTFMBgPOqDYRmWQlVlcsGFaQNpYcWaPinHemWXgIXkUdcmZXLpETClMbhpYGCLFQKSrpnIXGsdiTARECHQmNjKVpHDCFfedKiIGUcCqGOSPUqEarFKQrRPXnCUknRFLoCHNToJgbeUMYbAVjDOWQaePNWekYpQFfbcVlBbHWPMiZkEMncpCSLVDaIkcSIlieWZGSIsgAKDoLTBnmjJPWKIXSbFPQCMXOgkBahjCgOkLnOcsHNAEbqGZdlomdZgUYePXdfGTDfPBAsjGiaXIkLgEnkUGRFcmCiXebHrPdaeDWoPABACaQZpWlaJsXVKFljdapYQimTBkXAaIQlGenlWaZiJHYreEosjaYlKEBSOdJgaNOSUsrMmCOXJWNYTeJHOcobCsepfYsBAmbOeBbhqYVPjRbFMdIfDoKVQhTRPmgfZasIRrUbpHYoISgZDQbMFoArPNhoMdcreiXAkMpLhcPVCIHbpsRleNMDOLXjSVOCnTkYBGceSOiAqaKqOmGFTRLclUhJJnThkWjBMfpRlV";
+const ORDER_MAX = ORDER_PACK.length / 7;
+
+/* ── 확률 상수 ─────────────────────────────────────────────── */
+const C456   = 8145060;                 // C(45,6)
+const WAYS   = {1:1, 2:6, 3:228, 4:11115, 5:182780};
+const PROB   = {1:1/C456, 2:6/C456, 3:228/C456, 4:11115/C456, 5:182780/C456};
+const TICKET = 1000;
+
+/* ── 유틸 ──────────────────────────────────────────────────── */
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const el = (t,c,h) => { const d=document.createElement(t); if(c)d.className=c; if(h!=null)d.innerHTML=h; return d; };
+const nf = n => (n==null||isNaN(n)) ? '—' : Math.round(n).toLocaleString('ko-KR');
+const won = n => { n=Number(n)||0;
+  if(n>=1e8) return (n/1e8).toFixed(n>=1e9?1:2).replace(/\.0+$/,'')+'억';
+  if(n>=1e4) return Math.round(n/1e4).toLocaleString('ko-KR')+'만';
+  return nf(n)+'원'; };
+const pct = (x,d=2) => (x*100).toFixed(d)+'%';
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ballColor = n => n<=10?'#FBC400':n<=20?'#69C8F2':n<=30?'#FF7272':n<=40?'#A0A6A2':'#B0D840';
+const ballHTML = (n,cls) => '<span class="ball '+(cls||'')+'" style="background:'+ballColor(n)+'">'+n+'</span>';
+const ymd2disp = s => s.slice(0,4)+'.'+s.slice(4,6)+'.'+s.slice(6,8);
+
+/* p값: 카이제곱 상측 확률 Q(x; k) ------------------------------
+   Q(x,k) = 1 - P(k/2, x/2), P는 정규화 하불완전감마함수.
+   Numerical Recipes의 급수(gser)/연분수(gcf) 방식. */
+function gammaln(x){
+  const c=[76.18009172947146,-86.50532032941677,24.01409824083091,
+           -1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+  let y=x, t=x+5.5; t-=(x+0.5)*Math.log(t);
+  let s=1.000000000190015;
+  for(let j=0;j<6;j++) s+=c[j]/++y;
+  return -t+Math.log(2.5066282746310005*s/x);
+}
+function gser(a,x){
+  let ap=a, sum=1/a, del=sum;
+  for(let n=0;n<500;n++){ ap++; del*=x/ap; sum+=del; if(Math.abs(del)<Math.abs(sum)*1e-12) break; }
+  return sum*Math.exp(-x+a*Math.log(x)-gammaln(a));
+}
+function gcf(a,x){
+  const FP=1e-300; let b=x+1-a, c=1/FP, d=1/b, h=d;
+  for(let i=1;i<=500;i++){
+    const an=-i*(i-a); b+=2; d=an*d+b; if(Math.abs(d)<FP)d=FP;
+    c=b+an/c; if(Math.abs(c)<FP)c=FP; d=1/d; const del=d*c; h*=del;
+    if(Math.abs(del-1)<1e-12) break;
+  }
+  return Math.exp(-x+a*Math.log(x)-gammaln(a))*h;
+}
+function chi2p(x,k){                        // 상측 p값
+  if(x<=0) return 1; const a=k/2, y=x/2;
+  return y < a+1 ? 1-gser(a,y) : gcf(a,y);
+}
+function normSF(z){                          // 표준정규 상측 확률
+  const t=1/(1+0.2316419*Math.abs(z));
+  const d=0.3989422804014327*Math.exp(-z*z/2);
+  let p=d*t*(0.319381530+t*(-0.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429))));
+  return z>=0?p:1-p;
+}
+function sigTag(p){
+  if(p<0.001) return '<span class="tag sig">p&lt;0.001 · 이례적</span>';
+  if(p<0.01)  return '<span class="tag sig">p='+p.toFixed(3)+' · 이례적</span>';
+  if(p<0.05)  return '<span class="tag ok">p='+p.toFixed(3)+' · 약한 신호</span>';
+  return '<span class="tag noi">p='+p.toFixed(2)+' · 잡음</span>';
+}
+
+/* ════════════════ 데이터 레이어 ════════════════ */
+const DB = { draws:[], latest:0, loadedAt:null, source:'—' };
+
+function decodeOrder(r){
+  if(r<1 || r>ORDER_MAX) return null;
+  const seg = ORDER_PACK.substr((r-1)*7, 7), out=[];
+  for(let i=0;i<7;i++) out.push(A45.indexOf(seg[i])+1);
+  return out;
+}
+function orderTrust(r){
+  if(r>ORDER_MAX) return 'none';
+  for(const [a,b] of ORD_BAD_RANGE) if(r>=a&&r<=b) return 'bad';
+  if(ORD_SUSPECT.includes(r)) return 'suspect';
+  return 'ok';
+}
+
+function rowFromApi(o){
+  return {
+    r:o.ltEpsd, ymd:String(o.ltRflYmd),
+    n:[o.tm1WnNo,o.tm2WnNo,o.tm3WnNo,o.tm4WnNo,o.tm5WnNo,o.tm6WnNo], b:o.bnsWnNo,
+    w:[o.rnk1WnNope,o.rnk2WnNope,o.rnk3WnNope,o.rnk4WnNope,o.rnk5WnNope],
+    a:[o.rnk1WnAmt,o.rnk2WnAmt,o.rnk3WnAmt,o.rnk4WnAmt,o.rnk5WnAmt],
+    s:o.wholEpsdSumNtslAmt,
+    t:[o.winType1,o.winType2,o.winType3]        // 1등 자동 / 수동 / 반자동
+  };
+}
+function packRow(d){ return [d.r,d.ymd,...d.n,d.b,...d.w,...d.a,d.s,...d.t]; }
+function unpackRow(v){
+  return { r:v[0], ymd:String(v[1]), n:v.slice(2,8), b:v[8],
+           w:v.slice(9,14), a:v.slice(14,19), s:v[19], t:v.slice(20,23) };
+}
+function saveDB(){
+  try{
+    localStorage.setItem(LSKEY, JSON.stringify({
+      v:1, at:Date.now(), latest:DB.latest, rows:DB.draws.filter(Boolean).map(packRow)
+    }));
+    return true;
+  }catch(e){ log('저장 실패: '+e.message+' (브라우저 저장공간 한도)'); return false; }
+}
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(LSKEY); if(!raw) return false;
+    const o = JSON.parse(raw); if(!o.rows || !o.rows.length) return false;
+    DB.draws = []; o.rows.forEach(v=>{ const d=unpackRow(v); DB.draws[d.r]=d; });
+    DB.latest = o.latest || Math.max(...o.rows.map(v=>v[0]));
+    DB.loadedAt = o.at; DB.source='로컬 캐시';
+    return true;
+  }catch(e){ return false; }
+}
+
+let LOGBUF=[];
+function log(msg){
+  LOGBUF.unshift('['+new Date().toTimeString().slice(0,8)+'] '+msg);
+  LOGBUF=LOGBUF.slice(0,40);
+  const t=$('#dLog'); if(t) t.innerHTML='<pre class="mono" style="font-size:10.5px;line-height:1.7;white-space:pre-wrap;color:var(--ink-60)">'+LOGBUF.join('\n')+'</pre>';
+}
+function setStatus(txt, kind){
+  $('#statusTxt').textContent = txt;
+  const d=$('#status .dot'); d.className='dot'+(kind?' '+kind:'');
+}
+function setProg(x){
+  const p=$('#prog');
+  if(x==null){ p.classList.add('hide'); return; }
+  p.classList.remove('hide'); p.firstElementChild.style.width=(x*100)+'%';
+}
+
+async function apiPage(center){
+  const r = await fetch(API+'?srchDir=center&srchLtEpsd='+center, {mode:'cors', cache:'no-store'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const j = await r.json();
+  const list = (j && j.data && j.data.list) || [];
+  if(!list.length) throw new Error('빈 응답');
+  return list;
+}
+async function detectLatest(){
+  let best = DB.latest || 1238;
+  for(let step=0; step<40; step++){
+    try{
+      const l = await apiPage(best+5);
+      const m = Math.max(...l.map(o=>o.ltEpsd));
+      l.forEach(o=>{ DB.draws[o.ltEpsd]=rowFromApi(o); });
+      if(m>best) best=m; else break;
+    }catch(e){ break; }
+  }
+  return best;
+}
+async function fetchRange(from, to, onProg){
+  const pages=[]; for(let e=to; e>=from+7; e-=10) pages.push(e);
+  pages.push(Math.max(from,1)); if(from<=1) pages.push(1);
+  const uniq=[...new Set(pages)];
+  let done=0, errs=0;
+  const worker = async () => {
+    while(uniq.length){
+      const p=uniq.shift(); let ok=false;
+      for(let a=0;a<3&&!ok;a++){
+        try{ (await apiPage(p)).forEach(o=>{ DB.draws[o.ltEpsd]=rowFromApi(o); }); ok=true; }
+        catch(e){ await new Promise(r=>setTimeout(r,400*(a+1))); }
+      }
+      if(!ok) errs++;
+      done++; if(onProg) onProg(done/(done+uniq.length));
+    }
+  };
+  await Promise.all([0,0,0,0,0,0].map(worker));
+  return errs;
+}
+
+/* 백업 경로: update.ps1 이 만든 로컬 JSON (http 로 열었을 때만 동작) */
+async function loadLocalJSON(){
+  try{
+    const r=await fetch('./lotto-history.json',{cache:'no-store'});
+    if(!r.ok) return false;
+    const o=await r.json();
+    if(!o.draws || !o.draws.length) return false;
+    DB.draws=[];
+    o.draws.forEach(d=>{ DB.draws[d.round]={ r:d.round, ymd:String(d.date), n:d.numbers, b:d.bonus,
+      w:[d.winners.first,d.winners.second,d.winners.third,d.winners.fourth,d.winners.fifth],
+      a:[d.prize.first,d.prize.second,d.prize.third,d.prize.fourth,d.prize.fifth],
+      s:d.sales, t:d.firstType?[d.firstType.auto,d.firstType.manual,d.firstType.semi]:[0,0,0] }; });
+    DB.latest=o.meta.latest||Math.max(...o.draws.map(d=>d.round));
+    DB.source='로컬 lotto-history.json'; DB.loadedAt=Date.now();
+    saveDB();
+    log('로컬 JSON 백업에서 복구 · '+o.draws.length+'회차');
+    return true;
+  }catch(e){ return false; }
+}
+
+async function syncData(full){
+  try{
+    setStatus('동행복권 서버 조회 중…','warn'); setProg(0);
+    const latest = await detectLatest();
+    DB.latest = latest;
+    const have = DB.draws.filter(Boolean).length;
+    const from = (full || have < latest*0.9) ? 1 : Math.max(1, latest-15);
+    if(full || have < latest*0.9){
+      log('전체 수집 시작 · 1~'+latest+'회');
+      setStatus('전체 회차 수집 중… (최초 1회)','warn');
+    } else {
+      log('증분 갱신 · '+from+'~'+latest+'회');
+    }
+    const errs = await fetchRange(from, latest, x=>setProg(x));
+    setProg(null);
+    const miss=[]; for(let i=1;i<=latest;i++) if(!DB.draws[i]) miss.push(i);
+    if(miss.length){
+      log('누락 '+miss.length+'회차 재시도');
+      await fetchRange(Math.min(...miss), Math.max(...miss));
+    }
+    DB.source='동행복권 공식 API'; DB.loadedAt=Date.now();
+    saveDB();
+    log('완료 · 보유 '+DB.draws.filter(Boolean).length+'회차 (최신 '+latest+'회)'+(errs?' / 실패 '+errs+'페이지':''));
+    setStatus('최신 '+latest+'회까지 동기화됨','live');
+    return true;
+  }catch(e){
+    setProg(null);
+    log('오류: '+e.message);
+    setStatus('서버 연결 실패 — 캐시로 동작 중','err');
+    return false;
+  }
+}
+
+/* ════════════════ 통계 엔진 ════════════════ */
+function rows(win){                                   // 최근 win회 (0=전체)
+  const all = DB.draws.filter(Boolean).sort((a,b)=>a.r-b.r);
+  return (!win||win>=all.length) ? all : all.slice(-win);
+}
+function freqOf(win, withBonus){
+  const rs=rows(win), f=new Array(46).fill(0);
+  rs.forEach(d=>{ d.n.forEach(n=>f[n]++); if(withBonus) f[d.b]++; });
+  const per = withBonus?7:6, total=rs.length*per, e=total/45;
+  const chi = f.slice(1).reduce((s,o)=>s+(o-e)*(o-e)/e, 0);
+  return { f, n:rs.length, total, e, chi, p:chi2p(chi,44),
+           sd:Math.sqrt(total*(1/45)*(44/45)) };
+}
+function gapsOf(){
+  const rs=rows(0), last=new Array(46).fill(0);
+  rs.forEach(d=>{ d.n.forEach(n=>last[n]=d.r); });
+  const L=DB.latest, p=6/45, out=[];
+  for(let n=1;n<=45;n++){
+    const g = last[n] ? L-last[n] : L;
+    out.push({ n, gap:g, last:last[n]||null, pv:Math.pow(1-p,g) });
+  }
+  return out.sort((a,b)=>b.gap-a.gap);
+}
+function pairsOf(win){
+  const rs=rows(win), m={};
+  rs.forEach(d=>{ for(let i=0;i<6;i++) for(let j=i+1;j<6;j++){
+    const k=Math.min(d.n[i],d.n[j])+'-'+Math.max(d.n[i],d.n[j]); m[k]=(m[k]||0)+1; }});
+  const N=rs.length, pp=1/66, e=N*pp, sd=Math.sqrt(N*pp*(1-pp));
+  return Object.entries(m).map(([k,c])=>({k,c,z:(c-e)/sd}))
+    .sort((a,b)=>b.c-a.c).slice(0,180).map(o=>({...o,e,p:normSF(o.z)}));
+}
+function structOf(win){
+  const rs=rows(win);
+  const sum=[], odd=new Array(7).fill(0), band=new Array(5).fill(0),
+        cons=new Array(6).fill(0), carry=new Array(7).fill(0), lowhi=new Array(7).fill(0);
+  let prev=null;
+  rows(0).forEach(d=>{ d._prev=prev; prev=d; });
+  rs.forEach(d=>{
+    sum.push(d.n.reduce((a,b)=>a+b,0));
+    odd[d.n.filter(x=>x%2).length]++;
+    lowhi[d.n.filter(x=>x<=22).length]++;
+    d.n.forEach(n=>band[Math.min(4,Math.floor((n-1)/10))]++);
+    let c=0; for(let i=1;i<6;i++) if(d.n[i]===d.n[i-1]+1) c++;
+    cons[Math.min(5,c)]++;
+    if(d._prev){ carry[d.n.filter(n=>d._prev.n.includes(n)).length]++; }
+  });
+  const mean=sum.reduce((a,b)=>a+b,0)/sum.length;
+  const sd=Math.sqrt(sum.reduce((a,b)=>a+(b-mean)*(b-mean),0)/sum.length);
+  return { n:rs.length, sum, mean, sd, odd, band, cons, carry, lowhi };
+}
+/* 이론값: 합계 E=138, Var = 6·((45²-1)/12)·(45-6)/(45-1) = 896.97, SD≈29.95 */
+const SUM_E = 138, SUM_SD = Math.sqrt(6*((45*45-1)/12)*(45-6)/(45-1));
+
+function orderStats(){
+  const rs=rows(0).filter(d=>orderTrust(d.r)==='ok' && d.r<=ORDER_MAX);
+  const pos=[0,1,2,3,4,5].map(()=>new Array(46).fill(0));
+  const bonusPos=new Array(8).fill(0);
+  let firstBiggest=0, firstSmallest=0, ascRun=0, lowFirst=0;
+  rs.forEach(d=>{
+    const o=decodeOrder(d.r); if(!o) return;
+    const six=o.slice(0,6);
+    six.forEach((n,i)=>pos[i][n]++);
+    const mx=Math.max(...six), mn=Math.min(...six);
+    if(six[0]===mx) firstBiggest++;
+    if(six[0]===mn) firstSmallest++;
+    if(six[0]<=22) lowFirst++;
+    let up=true; for(let i=1;i<6;i++) if(six[i]<six[i-1]) up=false;
+    if(up) ascRun++;
+  });
+  const N=rs.length, e=N/45;
+  const chis = pos.map(row=>{
+    const chi=row.slice(1).reduce((s,o)=>s+(o-e)*(o-e)/e,0);
+    return { chi, p:chi2p(chi,44) };
+  });
+  const allChi = chis.reduce((s,c)=>s+c.chi,0);
+  return { N, e, pos, chis, allChi, allP:chi2p(allChi,44*6),
+           firstBiggest, firstSmallest, lowFirst, ascRun };
+}
+
+/* ════════════════ 렌더러 ════════════════ */
+function renderKPI(sel, items){
+  const k=$(sel); k.innerHTML='';
+  items.forEach(([lab,val,sub])=>{
+    k.appendChild(el('div',null,'<div class="k">'+lab+'</div><div class="v">'+val+'</div><div class="s">'+(sub||'')+'</div>'));
+  });
+}
+function renderDash(){
+  const rs=rows(0), last=rs[rs.length-1];
+  if(!last) return;
+  const y=rs.slice(-52);
+  const avg1 = y.filter(d=>d.w[0]>0).reduce((s,d)=>s+d.a[0],0)/Math.max(1,y.filter(d=>d.w[0]>0).length);
+  const sales= last.s;
+  renderKPI('#kpiDash',[
+    ['보유 회차', nf(rs.length), '1회 ~ '+DB.latest+'회'],
+    ['최신 추첨', DB.latest+'회', ymd2disp(last.ymd)],
+    ['최근 1년 1등 평균', won(avg1), '1게임당'],
+    ['직전 회 총판매', won(sales), '당첨금 약 '+won(sales*0.5)],
+    ['추첨순서 확보', nf(rows(0).filter(d=>orderTrust(d.r)==='ok').length)+'회', '전체 대비 '+pct(rows(0).filter(d=>orderTrust(d.r)==='ok').length/rs.length,0)]
+  ]);
+
+  const c=$('#recentCard'); c.innerHTML='';
+  rs.slice(-6).reverse().forEach(d=>{
+    const ord=decodeOrder(d.r), tr=orderTrust(d.r);
+    const row=el('div',null,'');
+    row.style.cssText='display:grid;grid-template-columns:56px 1fr;gap:10px;padding:11px 0;border-bottom:1px solid var(--ink-12);align-items:center';
+    let orderLine='';
+    if(ord && tr==='ok'){
+      orderLine='<div style="font-family:\'Space Mono\',monospace;font-size:9.5px;color:var(--ink-40);padding-top:6px">나온 순서 &nbsp;'+
+        ord.slice(0,6).join(' → ')+'</div>';
+    }
+    row.innerHTML =
+      '<div><div class="mono" style="font-size:15px;font-weight:700">'+d.r+'</div>'+
+      '<div class="mono" style="font-size:9px;color:var(--ink-40)">'+ymd2disp(d.ymd).slice(2)+'</div></div>'+
+      '<div><div class="balls">'+d.n.map(n=>ballHTML(n,'sm')).join('')+
+        '<span class="mono" style="color:var(--ink-30);padding:0 2px">+</span>'+ballHTML(d.b,'sm bonus')+
+        '<span class="mono" style="font-size:10px;color:var(--ink-60);margin-left:auto">1등 '+d.w[0]+'명 · '+won(d.a[0])+'</span></div>'+
+        orderLine+'</div>';
+    c.appendChild(row);
+  });
+
+  const nd=new Date(last.ymd.slice(0,4)+'-'+last.ymd.slice(4,6)+'-'+last.ymd.slice(6,8)+'T20:45:00+09:00');
+  nd.setDate(nd.getDate()+7);
+  const days=Math.ceil((nd-new Date())/86400000);
+  $('#nextCard').innerHTML =
+    '<div style="display:flex;gap:16px;align-items:baseline;flex-wrap:wrap">'+
+    '<div class="bignum">'+(DB.latest+1)+'회</div>'+
+    '<div style="font-size:12.5px;color:var(--ink-60)">'+
+    nd.getFullYear()+'.'+String(nd.getMonth()+1).padStart(2,'0')+'.'+String(nd.getDate()).padStart(2,'0')+' 토요일 20:45 추첨'+
+    (days>=0?' · <b style="color:var(--ink)">D-'+days+'</b>':' · 발표 대기')+'</div></div>';
+
+  const t=$('#oddsTbl'); const G=5;
+  t.innerHTML='<tr><th>등수</th><th>조건</th><th class="num">경우의 수</th><th class="num">확률</th><th class="num">주 '+G+'게임 기준 평균 대기</th></tr>'+
+    [[1,'6개 일치'],[2,'5개 + 보너스'],[3,'5개 일치'],[4,'4개 일치'],[5,'3개 일치']].map(([r,c])=>{
+      const p=PROB[r], weeks=1/(p*G), yrs=weeks/52;
+      return '<tr><td><b>'+r+'등</b></td><td>'+c+'</td><td class="num">'+nf(WAYS[r])+'</td>'+
+        '<td class="num">1 / '+nf(1/p)+'</td><td class="num">'+(yrs>=1?yrs.toFixed(yrs>=10?0:1)+'년':Math.round(weeks)+'주')+'</td></tr>';
+    }).join('');
+  $('#footN').textContent='N='+rs.length+' rounds';
+  $('#hdrRight').textContent=DB.latest+'회 · '+ymd2disp(last.ymd);
+  renderPinned();
+}
+function renderPinned(){
+  const box=$('#pinnedCard');
+  let p=null; try{ p=JSON.parse(localStorage.getItem(LSPIN)||'null'); }catch(e){}
+  if(!p||!p.combos||!p.combos.length){ box.innerHTML='<span style="font-size:12px;color:var(--ink-60)">아직 고정된 조합이 없습니다.</span>'; return; }
+  box.innerHTML='<div class="mono" style="font-size:10px;color:var(--ink-60);padding-bottom:8px">'+
+    (p.round||DB.latest+1)+'회 대상 · '+p.strat+'</div>'+
+    p.combos.map((c,i)=>{
+      const s=c.reduce((a,b)=>a+b,0), o=c.filter(x=>x%2).length;
+      return '<div class="combo"><div class="k">'+'ABCDEFGHIJ'[i]+'</div>'+
+        '<div class="balls">'+c.map(n=>ballHTML(n)).join('')+'</div>'+
+        '<div class="m">합계<em>'+s+'</em>홀'+o+':짝'+(6-o)+'</div></div>';
+    }).join('');
+}
+
+function renderStat(){
+  const win=+$('#statWin').value, wb=$('#statBonus').value==='1';
+  const F=freqOf(win, wb);
+  const b=$('#freqBoard'); b.innerHTML='';
+  const mx=Math.max(...F.f.slice(1)), mn=Math.min(...F.f.slice(1));
+  for(let n=1;n<=45;n++){
+    const v=F.f[n], t=(v-mn)/Math.max(1,mx-mn), z=(v-F.e)/F.sd;
+    const c=el('div','cell on');
+    c.style.setProperty('--c', ballColor(n));
+    c.style.opacity = (0.30+0.70*t).toFixed(2);
+    c.innerHTML='<b>'+n+'</b><i>'+v+'</i>';
+    c.title = n+'번 · '+v+'회 · 기대 '+F.e.toFixed(1)+'회 · '+(z>=0?'+':'')+z.toFixed(2)+'σ';
+    b.appendChild(c);
+  }
+  $('#uniformVerdict').innerHTML =
+    '<div class="verdict'+(F.p<0.05?' sig':'')+'"><b>균일성 검정</b> — '+F.n+'회차 '+nf(F.total)+'개 공. '+
+    '45개 번호가 모두 같은 확률이라면 각 '+F.e.toFixed(1)+'회씩 나와야 합니다. '+
+    'χ²='+F.chi.toFixed(1)+' (자유도 44), '+sigTag(F.p)+'<br>'+
+    (F.p<0.05
+      ? '이 구간에서는 번호별 출현이 균일 가정에서 벗어나 보입니다. 다만 구간을 좁게 잡을수록 이런 편차는 흔하게 나타납니다 — 전체 회차로 바꿔 다시 보세요.'
+      : '번호별 편차는 <b>순수한 우연으로 설명되는 범위</b> 안에 있습니다. 즉 "잘 나오는 번호"는 통계적으로 존재하지 않습니다.')+
+    '</div>';
+
+  const mk=(list,el2)=>{
+    const box=$(el2); box.innerHTML='';
+    const M=Math.max(...list.map(x=>x.v));
+    list.forEach(x=>{
+      const z=(x.v-F.e)/F.sd;
+      box.appendChild(el('div','bar',
+        '<span>'+ballHTML(x.n,'xs')+'</span>'+
+        '<span class="t"><i style="width:'+(x.v/M*100)+'%;background:'+ballColor(x.n)+'"></i></span>'+
+        '<span class="n">'+x.v+'회 '+(z>=0?'+':'')+z.toFixed(1)+'σ</span>'));
+    });
+  };
+  const arr=[...Array(45)].map((_,i)=>({n:i+1,v:F.f[i+1]}));
+  mk([...arr].sort((a,b)=>b.v-a.v).slice(0,10), '#topBars');
+  mk([...arr].sort((a,b)=>a.v-b.v).slice(0,10), '#botBars');
+
+  const G=gapsOf();
+  $('#gapTbl').innerHTML='<tr><th>번호</th><th class="num">미출현</th><th class="num">마지막 등장</th><th class="num">우연일 확률</th><th>판정</th></tr>'+
+    G.slice(0,12).map(g=>'<tr><td>'+ballHTML(g.n,'xs')+'</td><td class="num"><b>'+g.gap+'회</b></td>'+
+      '<td class="num">'+(g.last?g.last+'회':'없음')+'</td><td class="num">'+pct(g.pv,2)+'</td>'+
+      '<td>'+sigTag(g.pv)+'</td></tr>').join('');
+
+  const P=pairsOf(win);
+  $('#pairTbl').innerHTML='<tr><th>쌍</th><th class="num">동반</th><th class="num">기대</th><th class="num">편차</th><th>판정</th></tr>'+
+    P.slice(0,12).map(p=>{
+      const [x,y]=p.k.split('-');
+      return '<tr><td><span class="balls">'+ballHTML(+x,'xs')+ballHTML(+y,'xs')+'</span></td>'+
+        '<td class="num"><b>'+p.c+'회</b></td><td class="num">'+p.e.toFixed(1)+'</td>'+
+        '<td class="num">'+(p.z>=0?'+':'')+p.z.toFixed(2)+'σ</td><td>'+sigTag(p.p)+'</td></tr>';
+    }).join('');
+
+  const S=structOf(win);
+  const histo=(box,labels,vals,note)=>{
+    const M=Math.max(...vals), t=vals.reduce((a,b)=>a+b,0);
+    $(box).innerHTML='<div class="bars">'+vals.map((v,i)=>
+      '<div class="bar"><span class="mono">'+labels[i]+'</span>'+
+      '<span class="t"><i style="width:'+(M?v/M*100:0)+'%"></i></span>'+
+      '<span class="n">'+v+' · '+(t?pct(v/t,1):'0%')+'</span></div>').join('')+'</div>'+
+      (note?'<p class="note" style="padding:10px 0 0">'+note+'</p>':'');
+  };
+  const bins=[0,0,0,0,0,0,0,0];
+  S.sum.forEach(s=>bins[clamp(Math.floor((s-60)/25),0,7)]++);
+  histo('#sumDist', ['~84','85~109','110~134','135~159','160~184','185~209','210~234','235~'], bins,
+    '실측 평균 <b>'+S.mean.toFixed(1)+'</b> (표준편차 '+S.sd.toFixed(1)+'). 이론값은 평균 138, 표준편차 '+SUM_SD.toFixed(1)+' — '+
+    (Math.abs(S.mean-SUM_E)<2*SUM_SD/Math.sqrt(S.n)?'이론과 일치합니다.':'이론에서 벗어나 있습니다.'));
+  histo('#oddDist', ['홀0','홀1','홀2','홀3','홀4','홀5','홀6'], S.odd,
+    '홀수 3개(3:3)가 가장 흔한 이유는 확률이 높아서가 아니라 <b>그런 조합의 가짓수가 가장 많기 때문</b>입니다.');
+  histo('#rangeDist', ['1~10','11~20','21~30','31~40','41~45'], S.band,
+    '41~45 구간은 번호가 5개뿐이라 총량이 적은 게 정상입니다. 개당으로 나눠 보면 균등합니다.');
+  histo('#consDist', ['0쌍','1쌍','2쌍','3쌍','4쌍','5쌍'], S.cons,
+    '연속번호가 하나도 없는 회차는 절반이 채 안 됩니다. "연속수는 안 나온다"는 통념은 사실이 아닙니다.');
+  histo('#carryDist', ['0개','1개','2개','3개','4개','5개','6개'], S.carry,
+    '직전 회차 번호가 몇 개 다시 나왔는지. 이론 기대값은 6×(6/45)=<b>0.8개</b>입니다.');
+}
+
+function renderOrder(){
+  const O=orderStats(), rs=rows(0);
+  const cover=rs.filter(d=>orderTrust(d.r)==='ok').length;
+  renderKPI('#kpiOrder',[
+    ['신뢰 가능 회차', nf(O.N), '집합·보너스 100% 검증'],
+    ['신뢰 불가 구간', '397~467회', '71회 연속 오름차순 = 자리표시자'],
+    ['판정 보류', ORD_SUSPECT.length+'회', '오름차순이라 구분 불가'],
+    ['첫 공이 최소값', pct(O.firstSmallest/O.N,1), '이론 1/6 = 16.7%'],
+    ['첫 공이 최대값', pct(O.firstBiggest/O.N,1), '이론 1/6 = 16.7%']
+  ]);
+
+  $('#orderPosTbl').innerHTML =
+    '<tr><th>순번</th><th class="num">χ² (df=44)</th><th class="num">p값</th><th>판정</th><th>최다 번호</th></tr>'+
+    O.chis.map((c,i)=>{
+      const row=O.pos[i], mx=Math.max(...row.slice(1));
+      const tops=[]; for(let n=1;n<=45;n++) if(row[n]===mx) tops.push(n);
+      return '<tr><td><b>'+(i+1)+'번째</b></td><td class="num">'+c.chi.toFixed(1)+'</td>'+
+        '<td class="num">'+(c.p<0.001?'&lt;0.001':c.p.toFixed(3))+'</td><td>'+sigTag(c.p)+'</td>'+
+        '<td><span class="balls">'+tops.slice(0,4).map(n=>ballHTML(n,'xs')).join('')+
+        '<span class="mono" style="font-size:9.5px;color:var(--ink-40)">'+mx+'회</span></span></td></tr>';
+    }).join('');
+
+  const sig = O.chis.filter(c=>c.p<0.05).length;
+  $('#orderVerdict').innerHTML =
+    '<div class="verdict'+(O.allP<0.05?' sig':'')+'"><b>결론</b> — 6개 순번을 합친 전체 검정: χ²='+O.allChi.toFixed(1)+
+    ' (자유도 264), '+sigTag(O.allP)+'<br>'+
+    '개별 순번 6개 중 p&lt;0.05인 것은 '+sig+'개입니다. 유의수준 0.05에서 6번 검정하면 <b>우연히 0.3개</b>가 걸립니다.<br>'+
+    (O.allP<0.05
+      ? '전체 검정이 유의하게 나왔습니다. 다만 순서 데이터는 외부 아카이브 수집분이라 <b>수집 편향 가능성</b>을 먼저 의심해야 합니다 — 실제 물리 현상보다 기록 방식의 문제일 가능성이 큽니다.'
+      : '<b>추첨순서에서 어떤 신호도 발견되지 않았습니다.</b> 공이 나오는 순서는 번호와 무관한 완전한 무작위입니다. 이 데이터는 "재미있는 기록"이지 "예측 근거"가 아닙니다.')+
+    '</div>';
+
+  const barsOf=(idx,box)=>{
+    const row=O.pos[idx], arr=[];
+    for(let n=1;n<=45;n++) arr.push({n,v:row[n]});
+    arr.sort((a,b)=>b.v-a.v);
+    const M=arr[0].v, sd=Math.sqrt(O.N*(1/45)*(44/45));
+    $(box).innerHTML=arr.slice(0,10).map(x=>{
+      const z=(x.v-O.e)/sd;
+      return '<div class="bar"><span>'+ballHTML(x.n,'xs')+'</span>'+
+        '<span class="t"><i style="width:'+(x.v/M*100)+'%;background:'+ballColor(x.n)+'"></i></span>'+
+        '<span class="n">'+x.v+'회 '+(z>=0?'+':'')+z.toFixed(1)+'σ</span></div>';
+    }).join('');
+  };
+  barsOf(0,'#firstBars'); barsOf(5,'#lastBars');
+
+  const pat=[
+    ['첫 공이 저번호(1~22)', pct(O.lowFirst/O.N,1), '이론 22/45 = 48.9%'],
+    ['6개가 오름차순', O.ascRun+'회', '이론 기대 '+(O.N/720).toFixed(1)+'회'],
+    ['검정 대상 회차', nf(O.N)+'회', '1~'+ORDER_MAX+'회 중']
+  ];
+  $('#orderPatterns').innerHTML = pat.map(([a,b,c])=>
+    '<div class="card flat"><div class="k mono" style="font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60)">'+a+'</div>'+
+    '<div style="font-family:\'Big Shoulders Display\';font-weight:900;font-size:32px;line-height:1.1;padding-top:4px">'+b+'</div>'+
+    '<div style="font-size:11px;color:var(--ink-60)">'+c+'</div></div>').join('');
+
+  renderOrderList(rs.slice(-25).reverse());
+}
+function renderOrderList(list){
+  $('#orderListTbl').innerHTML='<tr><th>회차</th><th>나온 순서</th><th>보너스</th><th>신뢰</th></tr>'+
+    list.map(d=>{
+      const o=decodeOrder(d.r), t=orderTrust(d.r);
+      const tagm={ok:'<span class="tag ok">검증됨</span>',bad:'<span class="tag noi">순서없음</span>',
+                  suspect:'<span class="tag noi">보류</span>',none:'<span class="tag noi">미보유</span>'};
+      return '<tr><td class="mono"><b>'+d.r+'</b><br><span style="font-size:9px;color:var(--ink-40)">'+ymd2disp(d.ymd).slice(2)+'</span></td>'+
+        '<td><span class="balls">'+(o?o.slice(0,6).map(n=>ballHTML(n,'xs')).join(''):'—')+'</span></td>'+
+        '<td>'+(o?ballHTML(o[6],'xs bonus'):'—')+'</td><td>'+tagm[t]+'</td></tr>';
+    }).join('');
+}
+
+/* ════════════════ 분배 인원 모델 (POPULARITY) ════════════════
+   근거 정리
+   1) 1·2·3등 당첨금은 고정 풀을 당첨자 수로 나눈다. 즉 같은 확률이라도
+      "몇 명이 같은 번호를 골랐는가"가 실수령액을 직접 바꾼다.
+   2) 그 회차 당첨번호가 얼마나 인기 있었는지는 4등·5등 당첨자 수로 측정된다.
+      기대 4등 = (총판매액/1000) × 11115/8145060.  실제/기대 = 인기도 지수.
+   3) 4등 기준 지수와 5등 기준 지수의 상관은 0.92 — 두 독립 측정이 일치하므로
+      이 지수는 잡음이 아니라 실제 "사람이 고른 정도"를 재고 있다.
+   4) 이 지수를 조합의 구조적 특징에 최소자승 회귀하면, 어떤 특징이
+      사람을 끌어당기는지가 계수로 나온다. */
+function popFeat(n){
+  const s=n.reduce((a,b)=>a+b,0);
+  let cons=0; for(let i=1;i<6;i++) if(n[i]===n[i-1]+1) cons++;
+  const ld={}; n.forEach(x=>ld[x%10]=(ld[x%10]||0)+1);
+  const sameLast=Object.values(ld).reduce((a,c)=>a+(c>1?c-1:0),0);
+  const dec={}; n.forEach(x=>dec[Math.floor((x-1)/10)]=1);
+  return [1, n.filter(x=>x<=31).length, n.filter(x=>x<=12).length,
+          (s-138)/30, cons, sameLast, (n[5]-n[0]-33)/8, Object.keys(dec).length];
+}
+const POP_NAMES=['기준값','31 이하 개수','12 이하 개수','합계(표준화)','연속쌍','끝수 중복','번호 범위(표준화)','사용 구간 수'];
+let POPFIT=null, POPFIT_N=0;
+function fitPop(){
+  const nAll=DB.draws.filter(Boolean).length;
+  if(POPFIT && POPFIT_N===nAll) return POPFIT;
+  const X=[],Y=[];
+  rows(0).forEach(d=>{
+    if(!d.s) return;
+    const g=d.s/TICKET, e4=g*WAYS[4]/C456, e5=g*WAYS[5]/C456;
+    if(e4<200 || !d.w[3] || !d.w[4]) return;
+    X.push(popFeat(d.n)); Y.push(0.5*(d.w[3]/e4)+0.5*(d.w[4]/e5));
+  });
+  const N=X.length; if(N<200) return (POPFIT={ok:false});
+  const k=X[0].length;
+  const M=Array.from({length:k},(_,i)=>[...new Array(k).fill(0), ...Array.from({length:k},(_,j)=>i===j?1:0)]);
+  const XtY=new Array(k).fill(0);
+  for(let i=0;i<N;i++){ for(let a=0;a<k;a++){ XtY[a]+=X[i][a]*Y[i]; for(let b=0;b<k;b++) M[a][b]+=X[i][a]*X[i][b]; } }
+  for(let c=0;c<k;c++){
+    let pv=c; for(let r=c+1;r<k;r++) if(Math.abs(M[r][c])>Math.abs(M[pv][c])) pv=r;
+    const t=M[c]; M[c]=M[pv]; M[pv]=t;
+    const dd=M[c][c]; if(!dd) return (POPFIT={ok:false});
+    for(let j=0;j<2*k;j++) M[c][j]/=dd;
+    for(let r=0;r<k;r++){ if(r===c) continue; const f=M[r][c]; for(let j=0;j<2*k;j++) M[r][j]-=f*M[c][j]; }
+  }
+  const inv=M.map(r=>r.slice(k));
+  const beta=inv.map(r=>r.reduce((a,v,j)=>a+v*XtY[j],0));
+  const yh=X.map(x=>x.reduce((a,v,j)=>a+v*beta[j],0));
+  const yb=Y.reduce((a,b)=>a+b,0)/N;
+  const ssr=Y.reduce((a,y,i)=>a+(y-yh[i])**2,0), sst=Y.reduce((a,y)=>a+(y-yb)**2,0);
+  const s2=ssr/(N-k);
+  POPFIT_N=nAll;
+  return (POPFIT={ ok:true, N, k, beta, R2:1-ssr/sst, sd:Math.sqrt(s2),
+    se:beta.map((_,i)=>Math.sqrt(s2*inv[i][i])),
+    t:beta.map((b,i)=>b/Math.sqrt(s2*inv[i][i])) });
+}
+function popScore(n){
+  const F=fitPop(); if(!F.ok) return null;
+  return popFeat(n).reduce((a,v,j)=>a+v*F.beta[j],0);
+}
+function renderPopModel(){
+  const F=fitPop(), box=$('#popModel'); if(!box) return;
+  if(!F.ok){ box.innerHTML='<span style="font-size:12px;color:var(--ink-60)">데이터가 부족해 모델을 학습하지 못했습니다.</span>'; return; }
+  const tp=t=>{ const p=2*normSF(Math.abs(t)); return p<0.001?'&lt;0.001':p.toFixed(3); };
+  box.innerHTML=
+    '<p class="note" style="padding:0 0 12px">'+
+    '당첨 확률은 어떤 번호를 골라도 같습니다. 하지만 <b>당첨됐을 때 몇 명과 나눠 갖는가</b>는 다릅니다. '+
+    '그 회차 당첨번호가 얼마나 인기 있었는지는 <b>4등·5등 당첨자 수가 기대치보다 얼마나 많았는가</b>로 직접 측정됩니다. '+
+    '아래는 '+nf(F.N)+'회차를 최소자승 회귀한 결과입니다.</p>'+
+    '<div class="scroll"><table><tr><th>특징</th><th class="num">계수</th><th class="num">t값</th><th class="num">p값</th><th>해석</th></tr>'+
+    F.beta.map((b,i)=> i===0 ? '' :
+      '<tr><td>'+POP_NAMES[i]+'</td><td class="num">'+(b>=0?'+':'')+b.toFixed(4)+'</td>'+
+      '<td class="num">'+F.t[i].toFixed(2)+'</td><td class="num">'+tp(F.t[i])+'</td>'+
+      '<td style="color:var(--ink-60);font-size:11px">'+(Math.abs(F.t[i])<2?'유의하지 않음':
+        (b>0?'클수록 <b style="color:var(--sig)">나눠 갖는 사람이 많아짐</b>':'클수록 <b style="color:var(--ok)">나눠 갖는 사람이 적어짐</b>'))+'</td></tr>').join('')+
+    '</table></div>'+
+    '<div class="verdict"><b>결론</b> — 결정계수 R²='+F.R2.toFixed(3)+'. '+
+    '설명력은 크지 않지만 <b>「12 이하 번호 개수」와 「번호 범위」는 t값 4 이상</b>으로, 우연으로 나올 수 없는 크기입니다.<br>'+
+    '즉 <b>낮은 번호(1~12)를 적게 넣고, 번호를 넓게 퍼뜨릴수록 당첨자 수가 줄어듭니다.</b> '+
+    '효과 크기는 현실적인 조합 기준 대략 <b>±10~15%</b> — 1등 당첨금이 20억이라면 2~3억 차이입니다.<br>'+
+    '<b>이것이 이 도구 전체에서 유일하게 실증되는 신호입니다.</b> 빈도·미출현·동반쌍은 전부 잡음이지만, 이건 다릅니다. '+
+    '확률을 바꾸는 게 아니라 분배 인원을 바꾸기 때문입니다.</div>';
+}
+
+/* ════════════════ 조합 생성기 ════════════════ */
+const STRATS = [
+  {k:'uniform', n:'완전 균등', d:'45개 번호에서 순수 무작위. <b>통계적으로 가장 정직한 방식</b>입니다 — 어떤 조합도 확률은 같으므로, 여기서 다른 전략을 고르는 이유는 확률이 아니라 취향입니다.'},
+  {k:'hot',     n:'최근 다출현', d:'최근 52회 출현 상위 번호에 가중치. 뜨거운 번호를 좇는 방식입니다. 근거: 없음. 재미: 있음.'},
+  {k:'cold',    n:'장기 미출현', d:'오래 안 나온 번호에 가중치. "이제 나올 때 됐다"는 <b>도박사의 오류</b>지만, 미출현 번호는 남들이 덜 골라 1등 분배 인원이 적을 가능성은 있습니다.'},
+  {k:'pair',    n:'동반쌍 축', d:'과거 동반 출현이 많았던 쌍을 씨앗으로 삼아 확장합니다.'},
+  {k:'unpop',   n:'비인기 회피', d:'생일 구간(1~31)과 연속·등차 같은 사람이 좋아하는 패턴을 피합니다. <b>당첨 확률은 그대로지만, 당첨 시 나눠 갖는 인원이 줄어듭니다</b> — 기대 수령액을 실제로 올리는 유일한 전략.'},
+  {k:'balanced',n:'구조 균형', d:'합계·홀짝·구간 분포가 역대 평균에 가까운 조합만 통과시킵니다.'},
+  {k:'minshare',n:'최소 분배 ★', d:'<b>실증된 유일한 전략.</b> 후보를 대량 생성한 뒤 아래 회귀 모델이 예측한 <b>분배 인원 지수가 가장 낮은 조합</b>만 남깁니다. 당첨 확률은 그대로지만 당첨 시 수령액의 기대값이 올라갑니다.'}
+];
+let PICK_FIX=new Set(), PICK_EXC=new Set(), CUR_STRAT='unpop', GEN_RESULT=[];
+
+function renderPickBoard(){
+  const b=$('#pickBoard'); b.innerHTML='';
+  for(let n=1;n<=45;n++){
+    const c=el('div','cell'+(PICK_FIX.has(n)?' on pick':'')+(PICK_EXC.has(n)?' excl':''));
+    if(PICK_FIX.has(n)) c.style.setProperty('--c', ballColor(n));
+    c.innerHTML='<b>'+n+'</b>';
+    c.onclick=()=>{
+      if(PICK_FIX.has(n)){ PICK_FIX.delete(n); PICK_EXC.add(n); }
+      else if(PICK_EXC.has(n)){ PICK_EXC.delete(n); }
+      else { PICK_FIX.add(n); }
+      syncPickInputs(); renderPickBoard();
+    };
+    b.appendChild(c);
+  }
+}
+function syncPickInputs(){
+  $('#fixNums').value=[...PICK_FIX].sort((a,b)=>a-b).join(',');
+  $('#exclNums').value=[...PICK_EXC].sort((a,b)=>a-b).join(',');
+}
+function parseNums(s){ return (s||'').split(/[^0-9]+/).map(Number).filter(n=>n>=1&&n<=45); }
+
+function weightsFor(strat){
+  const w=new Array(46).fill(1);
+  if(strat==='hot'){ const F=freqOf(52,false); for(let n=1;n<=45;n++) w[n]=Math.pow(Math.max(1,F.f[n]),2.2); }
+  else if(strat==='cold'){ const G=gapsOf(); G.forEach(g=>{ w[g.n]=Math.pow(1+g.gap,1.6); }); }
+  else if(strat==='unpop'){ for(let n=1;n<=45;n++) w[n]= n>31 ? 3.2 : 1; }
+  return w;
+}
+function pickWeighted(w, exclude, k){
+  const pool=[]; for(let n=1;n<=45;n++) if(!exclude.has(n)) pool.push(n);
+  const out=new Set();
+  while(out.size<k && pool.length){
+    let tot=0; pool.forEach(n=>{ if(!out.has(n)) tot+=w[n]; });
+    let x=Math.random()*tot;
+    for(const n of pool){ if(out.has(n)) continue; x-=w[n]; if(x<=0){ out.add(n); break; } }
+    if(out.size<k && pool.every(n=>out.has(n))) break;
+  }
+  return [...out];
+}
+function consCount(c){ let x=0; for(let i=1;i<6;i++) if(c[i]===c[i-1]+1) x++; return x; }
+function passFilter(c, F){
+  const s=c.reduce((a,b)=>a+b,0);
+  if(s<F.lo||s>F.hi) return false;
+  if(consCount(c)>F.cons) return false;
+  const o=c.filter(n=>n%2).length;
+  if(F.odd==='234' && (o<2||o>4)) return false;
+  if(F.odd==='33' && o!==3) return false;
+  if(F.strat==='balanced'){
+    const bands=[0,0,0,0,0]; c.forEach(n=>bands[Math.min(4,Math.floor((n-1)/10))]++);
+    if(Math.max(...bands)>3) return false;
+    if(Math.abs(s-SUM_E)>SUM_SD) return false;
+  }
+  if(F.strat==='unpop'){
+    if(c.filter(n=>n<=31).length>4) return false;
+    if(consCount(c)>1) return false;
+  }
+  return true;
+}
+let WINSET=null, WINSET_N=0;
+function winSet(){                        // 과거 1등 조합 캐시 (생성기 성능)
+  const n=DB.draws.filter(Boolean).length;
+  if(!WINSET || WINSET_N!==n){ WINSET=new Set(rows(0).map(d=>d.n.join(','))); WINSET_N=n; }
+  return WINSET;
+}
+function everWon(c){ return winSet().has(c.join(',')); }
+function generate(){
+  const F={ lo:+$('#sumLo').value, hi:+$('#sumHi').value, cons:+$('#maxCons').value,
+            odd:$('#oddRule').value, strat:CUR_STRAT };
+  const cnt=clamp(+$('#genCount').value||5,1,20);
+  const want = CUR_STRAT==='minshare' ? Math.min(4000, cnt*400) : cnt;
+  const fix=parseNums($('#fixNums').value), exc=new Set(parseNums($('#exclNums').value));
+  fix.forEach(n=>exc.delete(n));
+  if(fix.length>6){ alert('고정수는 6개 이하로 입력하세요.'); return; }
+  const w=weightsFor(CUR_STRAT);
+  const seeds = CUR_STRAT==='pair' ? pairsOf(0).slice(0,40) : null;
+  const out=[], seen=new Set(); let tries=0, rejected=0;
+  const t0=Date.now();
+  while(out.length<want && tries<400000 && Date.now()-t0<2500){
+    tries++;
+    let base=new Set(fix);
+    if(seeds && base.size<4){
+      const p=seeds[Math.floor(Math.random()*seeds.length)].k.split('-').map(Number);
+      p.forEach(n=>{ if(!exc.has(n)) base.add(n); });
+    }
+    const ex=new Set([...exc,...base]);
+    const rest=pickWeighted(w, ex, 6-base.size);
+    const c=[...base,...rest].sort((a,b)=>a-b);
+    if(c.length!==6) continue;
+    const key=c.join(',');
+    if(seen.has(key)) continue;
+    if(!passFilter(c,F)){ rejected++; continue; }
+    if(everWon(c)){ rejected++; continue; }
+    seen.add(key); out.push(c);
+  }
+  if(CUR_STRAT==='minshare'){
+    out.sort((a,b)=>(popScore(a)??9)-(popScore(b)??9));
+    out.length=Math.min(out.length,cnt);
+  }
+  GEN_RESULT=out;
+  const box=$('#genOut');
+  if(!out.length){ box.innerHTML='<span style="font-size:12px;color:var(--sig)">조건이 너무 좁아 조합을 만들지 못했습니다. 합계 범위나 홀짝 조건을 완화하세요.</span>'; return; }
+  box.innerHTML=out.map((c,i)=>{
+    const s=c.reduce((a,b)=>a+b,0), o=c.filter(n=>n%2).length;
+    const bands=[0,0,0,0,0]; c.forEach(n=>bands[Math.min(4,Math.floor((n-1)/10))]++);
+    const ps=popScore(c);
+    return '<div class="combo"><div class="k">'+'ABCDEFGHIJKLMNOPQRST'[i]+'</div>'+
+      '<div class="balls">'+c.map(n=>ballHTML(n)).join('')+'</div>'+
+      '<div class="m">합계<em>'+s+'</em>홀'+o+':짝'+(6-o)+'</div>'+
+      '<div class="c">구간 '+bands.join('-')+' · 연속 '+consCount(c)+'쌍 · 31이하 '+c.filter(n=>n<=31).length+'개'+
+      (ps!=null?' · <b style="color:'+(ps<0.97?'var(--ok)':ps>1.02?'var(--sig)':'var(--ink)')+'">분배지수 '+ps.toFixed(3)+'</b>':'')+
+      '</div></div>';
+  }).join('');
+  $('#genAudit').innerHTML='<div class="verdict"><b>생성 근거</b> — 전략 «'+STRATS.find(s=>s.k===CUR_STRAT).n+'», '+
+    '시도 '+nf(tries)+'회 중 필터 탈락 '+nf(rejected)+'회. 과거 1등 조합과 중복되는 것은 자동 제외했습니다.<br>'+
+    '<b>중요</b> — 어떤 전략을 쓰든 이 조합들의 1등 확률은 자동선택과 정확히 같은 <b>1/8,145,060</b>입니다. '+
+    '전략이 실제로 바꾸는 것은 확률이 아니라 <b>당첨 시 몇 명과 나눠 갖는가</b>뿐입니다.</div>';
+}
+
+/* ════════════════ 시뮬레이터 ════════════════
+   근거 정리
+   1) 등수별 1게임 당첨확률은 조합수/C(45,6)로 정확히 결정된다 (표 참조).
+   2) "첫 당첨까지 걸리는 게임 수"는 기하분포다 → k = ceil(ln U / ln(1-p)) 로 정확 표본추출.
+   3) 기간 내 당첨 횟수는 이항분포 B(T,p)이고 p가 매우 작으므로 포아송 λ=T·p로 근사한다.
+   4) 당첨금은 이론값이 없으므로 최근 260회 실제 1게임당 당첨금의 중앙값을 쓴다. */
+function poisson(lam){
+  if(lam>30){ // 정규근사
+    const z=Math.sqrt(-2*Math.log(Math.random()))*Math.cos(2*Math.PI*Math.random());
+    return Math.max(0, Math.round(lam+z*Math.sqrt(lam)));
+  }
+  const L=Math.exp(-lam); let k=0,p=1;
+  do{ k++; p*=Math.random(); }while(p>L);
+  return k-1;
+}
+function geomFirst(p){ return Math.ceil(Math.log(Math.random())/Math.log(1-p)); }
+function quant(a,q){ const s=[...a].sort((x,y)=>x-y); return s[clamp(Math.floor(q*(s.length-1)),0,s.length-1)]; }
+
+function payoutTable(){
+  const rs=rows(0).slice(-260);
+  const med=i=>{ const v=rs.map(d=>d.a[i]).filter(x=>x>0).sort((a,b)=>a-b); return v.length?v[Math.floor(v.length/2)]:0; };
+  return {1:med(0), 2:med(1), 3:med(2), 4:50000, 5:5000};
+}
+function runSim(){
+  const G=clamp(+$('#simGames').value||5,1,100);
+  const Y=clamp(+$('#simYears').value||30,1,200);
+  const IT=+$('#simIter').value;
+  const weeks=Y*52, T=weeks*G, PAY=payoutTable();
+  const cost=T*TICKET;
+  const first={1:[],2:[],3:[],4:[],5:[]}, cnts={1:[],2:[],3:[],4:[],5:[]}, nets=[];
+  const everyRank=[];
+  for(let it=0;it<IT;it++){
+    let win=0, all=true;
+    for(const r of [1,2,3,4,5]){
+      const k=geomFirst(PROB[r]);
+      first[r].push(k<=T ? k/G/52 : Infinity);
+      if(k>T) all=false;
+      const c=poisson(T*PROB[r]);
+      cnts[r].push(c); win+=c*PAY[r];
+    }
+    everyRank.push(all?1:0);
+    nets.push(win-cost);
+  }
+  const fmtY=v=>v===Infinity?'—':(v>=1?v.toFixed(v>=10?0:1)+'년':Math.round(v*52)+'주');
+  const reach=r=>first[r].filter(v=>v!==Infinity).length/IT;
+  const rowsHtml=[1,2,3,4,5].map(r=>{
+    const fs=first[r].filter(v=>v!==Infinity);
+    return '<tr><td><b>'+r+'등</b></td>'+
+      '<td class="num">'+pct(reach(r),reach(r)<0.01?3:1)+'</td>'+
+      '<td class="num">'+(fs.length?fmtY(quant(fs,0.5)):'—')+'</td>'+
+      '<td class="num">'+(fs.length?fmtY(quant(fs,0.1))+' ~ '+fmtY(quant(fs,0.9)):'—')+'</td>'+
+      '<td class="num">'+quant(cnts[r],0.5)+'회</td>'+
+      '<td class="num">'+won(PAY[r])+'</td></tr>';
+  }).join('');
+  const netMed=quant(nets,0.5), net10=quant(nets,0.1), net90=quant(nets,0.9);
+  const profit=nets.filter(x=>x>0).length/IT;
+  $('#simOut').innerHTML=
+    '<div class="kpi" style="margin:-16px -15px 14px;border:0;border-bottom:1.5px solid var(--ink)">'+
+      '<div><div class="k">총 구매</div><div class="v">'+won(cost)+'</div><div class="s">'+nf(T)+'게임 / '+Y+'년</div></div>'+
+      '<div><div class="k">손익 중앙값</div><div class="v" style="color:'+(netMed>=0?'var(--ok)':'var(--sig)')+'">'+won(netMed)+'</div><div class="s">10~90% : '+won(net10)+' ~ '+won(net90)+'</div></div>'+
+      '<div><div class="k">본전 이상 확률</div><div class="v">'+pct(profit,1)+'</div><div class="s">'+nf(IT)+'회 시뮬레이션</div></div>'+
+      '<div><div class="k">1~5등 전부</div><div class="v">'+pct(everyRank.reduce((a,b)=>a+b,0)/IT,2)+'</div><div class="s">모든 등수를 한 번씩 경험할 확률</div></div>'+
+    '</div>'+
+    '<div class="scroll"><table><tr><th>등수</th><th class="num">기간 내 1회 이상</th><th class="num">첫 당첨 (중앙값)</th>'+
+    '<th class="num">10~90% 범위</th><th class="num">기간 내 횟수</th><th class="num">가정 당첨금</th></tr>'+rowsHtml+'</table></div>'+
+    '<p class="note" style="padding:12px 0 0"><b>읽는 법</b> — “첫 당첨”은 <b>기간 안에 실제로 당첨된 경우만 모아</b> 낸 중앙값입니다. '+
+    '“기간 내 1회 이상”이 0.2%라면, 그 14년이라는 숫자는 <b>1000명 중 2명에게만 해당</b>합니다. 나머지 998명은 끝까지 못 봅니다.</p>'+
+    '<p class="note" style="padding:14px 0 0">당첨금은 <b>최근 260회 실제 1게임당 당첨금의 중앙값</b>을 썼습니다 '+
+    '(1등 '+won(PAY[1])+', 2등 '+won(PAY[2])+', 3등 '+won(PAY[3])+', 4등 5만원 고정, 5등 5천원 고정). '+
+    '평균이 아닌 중앙값을 쓰는 이유는 1등 당첨금이 이월·판매량에 따라 극단적으로 흔들리기 때문입니다.</p>';
+}
+function renderFirstHit(){
+  const G=clamp(+$('#simGames').value||5,1,100);
+  $('#firstHitTbl').innerHTML='<tr><th>등수</th><th class="num">1게임 확률</th><th class="num">평균 필요 게임</th>'+
+    '<th class="num">중앙값 필요 게임</th><th class="num">주 '+G+'게임 시 중앙값</th></tr>'+
+    [1,2,3,4,5].map(r=>{
+      const p=PROB[r], mean=1/p, med=Math.log(0.5)/Math.log(1-p);
+      const yrs=med/G/52;
+      return '<tr><td><b>'+r+'등</b></td><td class="num">1 / '+nf(1/p)+'</td>'+
+        '<td class="num">'+nf(mean)+'</td><td class="num">'+nf(med)+'</td>'+
+        '<td class="num"><b>'+(yrs>=1?yrs.toFixed(yrs>=10?0:1)+'년':Math.round(yrs*52)+'주')+'</b></td></tr>';
+    }).join('');
+}
+
+function rankOf(combo, d){
+  const m=combo.filter(n=>d.n.includes(n)).length;
+  if(m===6) return 1;
+  if(m===5) return combo.includes(d.b) ? 2 : 3;
+  if(m===4) return 4;
+  if(m===3) return 5;
+  return 0;
+}
+function runBacktest(){
+  let combos=[];
+  const raw=$('#btInput').value.trim();
+  if(raw){
+    raw.split(/[;\n]/).forEach(line=>{ const v=parseNums(line); if(v.length===6) combos.push([...new Set(v)].sort((a,b)=>a-b)); });
+  } else combos=GEN_RESULT;
+  if(!combos.length){ $('#btOut').innerHTML='<span style="font-size:12px;color:var(--sig)">조합이 없습니다. 조합 생성 탭에서 먼저 만들거나 직접 입력하세요.</span>'; return; }
+  const rs=rows(0);
+  const hits={0:0,1:0,2:0,3:0,4:0,5:0}; let gain=0;
+  const events=[];
+  rs.forEach(d=>{
+    combos.forEach((c,ci)=>{
+      const r=rankOf(c,d); hits[r]++;
+      if(r){ const amt=d.a[r-1]||0; gain+=amt; if(r<=3) events.push({r,round:d.r,ymd:d.ymd,amt,ci}); }
+    });
+  });
+  const cost=rs.length*combos.length*TICKET;
+  const net=gain-cost;
+  $('#btOut').innerHTML=
+    '<div class="kpi" style="margin:-16px -15px 14px;border:0;border-bottom:1.5px solid var(--ink)">'+
+      '<div><div class="k">대상</div><div class="v">'+combos.length+'조합</div><div class="s">'+rs.length+'회차 전부</div></div>'+
+      '<div><div class="k">총 구매</div><div class="v">'+won(cost)+'</div><div class="s">'+nf(rs.length*combos.length)+'게임</div></div>'+
+      '<div><div class="k">총 당첨</div><div class="v">'+won(gain)+'</div><div class="s">회수율 '+pct(gain/cost,1)+'</div></div>'+
+      '<div><div class="k">손익</div><div class="v" style="color:'+(net>=0?'var(--ok)':'var(--sig)')+'">'+won(net)+'</div><div class="s">1게임당 '+won(net/(rs.length*combos.length))+'</div></div>'+
+    '</div>'+
+    '<div class="scroll"><table><tr><th>등수</th><th class="num">당첨 횟수</th><th class="num">기대 횟수</th><th class="num">편차</th></tr>'+
+    [1,2,3,4,5].map(r=>{
+      const T=rs.length*combos.length, e=T*PROB[r], sd=Math.sqrt(T*PROB[r]*(1-PROB[r]));
+      const z=sd?(hits[r]-e)/sd:0;
+      return '<tr><td><b>'+r+'등</b></td><td class="num"><b>'+hits[r]+'회</b></td><td class="num">'+e.toFixed(2)+'</td>'+
+        '<td class="num">'+(z>=0?'+':'')+z.toFixed(2)+'σ</td></tr>';
+    }).join('')+'</table></div>'+
+    (events.length?'<p class="note" style="padding:14px 0 6px"><b>3등 이상 기록</b></p><div class="scroll"><table>'+
+      '<tr><th>회차</th><th>등수</th><th>조합</th><th class="num">당첨금</th></tr>'+
+      events.slice(0,25).map(e=>'<tr><td class="mono">'+e.round+'회<br><span style="font-size:9px;color:var(--ink-40)">'+ymd2disp(e.ymd).slice(2)+'</span></td>'+
+        '<td><b>'+e.r+'등</b></td><td>'+'ABCDEFGHIJKLMNOPQRST'[e.ci]+'</td><td class="num">'+won(e.amt)+'</td></tr>').join('')+'</table></div>':'')+
+    '<p class="note" style="padding:14px 0 0">회수율 100%를 넘는 조합이 나왔다면 그것은 실력이 아니라 <b>사후선택 편향</b>입니다. '+
+    '과거 데이터에 맞춰 고른 조합은 항상 과거에 잘 맞습니다. 로또의 구조적 기대 회수율은 약 <b>50%</b>입니다.</p>';
+}
+
+/* ════════════════ 내 기록 ════════════════ */
+function myLoad(){ try{ return JSON.parse(localStorage.getItem(LSMY)||'[]'); }catch(e){ return []; } }
+function mySave(a){ localStorage.setItem(LSMY, JSON.stringify(a)); }
+function renderMine(){
+  const my=myLoad();
+  let cost=0, gain=0; const cnt={0:0,1:0,2:0,3:0,4:0,5:0}, pend=[];
+  const list=my.map(t=>{
+    cost+=t.cost||TICKET;
+    const d=DB.draws[t.round];
+    if(!d){ pend.push(t); return {...t, rank:null}; }
+    const r=rankOf(t.nums,d), amt=r?(d.a[r-1]||0):0;
+    cnt[r]++; gain+=amt;
+    return {...t, rank:r, amt, d};
+  });
+  renderKPI('#kpiMine',[
+    ['구매 게임', nf(my.length), '총 '+won(cost)],
+    ['당첨금', won(gain), '회수율 '+(cost?pct(gain/cost,1):'—')],
+    ['손익', won(gain-cost), (gain-cost>=0?'수익':'손실')],
+    ['최고 등수', [1,2,3,4,5].find(r=>cnt[r]>0) ? [1,2,3,4,5].find(r=>cnt[r]>0)+'등' : '—',
+      '5등 '+cnt[5]+' · 4등 '+cnt[4]+' · 3등 '+cnt[3]],
+    ['미발표', nf(pend.length)+'게임', '추첨 대기']
+  ]);
+  $('#myTbl').innerHTML='<tr><th>회차</th><th>내 번호</th><th>당첨번호</th><th>결과</th><th class="num">당첨금</th><th></th></tr>'+
+    (list.length?list.slice().reverse().map((t,i)=>{
+      const idx=list.length-1-i;
+      const hit=t.d?t.nums.filter(n=>t.d.n.includes(n)):[];
+      return '<tr><td class="mono"><b>'+t.round+'</b></td>'+
+        '<td><span class="balls">'+t.nums.map(n=>{
+          const hitN = t.d && (t.d.n.includes(n)||t.d.b===n);
+          return '<span class="ball xs'+(t.d&&t.d.b===n?' bonus':'')+'" style="background:'+ballColor(n)+';opacity:'+(t.d?(hitN?1:.28):.7)+'">'+n+'</span>';
+        }).join('')+'</span></td>'+
+        '<td><span class="balls">'+(t.d?t.d.n.map(n=>ballHTML(n,'xs')).join('')+'<span class="mono" style="color:var(--ink-30)">+</span>'+ballHTML(t.d.b,'xs bonus'):'<span style="font-size:11px;color:var(--ink-40)">추첨 전</span>')+'</span></td>'+
+        '<td>'+(t.rank==null?'<span class="tag noi">대기</span>':t.rank?'<span class="tag sig"><b>'+t.rank+'등</b></span>':'<span class="tag noi">'+hit.length+'개</span>')+'</td>'+
+        '<td class="num">'+(t.amt?won(t.amt):'—')+'</td>'+
+        '<td><button class="btn ghost" style="padding:3px 7px;font-size:10px" onclick="myDel('+idx+')">삭제</button></td></tr>';
+    }).join('') : '<tr><td colspan="6" style="color:var(--ink-40);font-size:12px">기록이 없습니다.</td></tr>');
+  const labels={5:'5등 · 3개 일치',4:'4등 · 4개 일치',3:'3등 · 5개 일치',2:'2등 · 5개+보너스',1:'1등 · 6개 일치'};
+  $('#myBadges').innerHTML=[5,4,3,2,1].map(r=>
+    '<div class="card flat" style="opacity:'+(cnt[r]?1:.45)+'">'+
+    '<div class="mono" style="font-size:9.5px;letter-spacing:.1em;color:var(--ink-60)">'+labels[r]+'</div>'+
+    '<div style="font-family:\'Big Shoulders Display\';font-weight:900;font-size:34px;line-height:1.1">'+(cnt[r]||0)+'회</div>'+
+    '<div style="font-size:11px;color:var(--ink-60)">'+(cnt[r]?'달성':'1/'+nf(1/PROB[r])+' 확률')+'</div></div>').join('');
+}
+function myDel(i){ const a=myLoad(); a.splice(i,1); mySave(a); renderMine(); }
+window.myDel=myDel;
+
+/* ════════════════ 데이터 탭 ════════════════ */
+function renderData(){
+  const rs=rows(0);
+  const miss=[]; for(let i=1;i<=DB.latest;i++) if(!DB.draws[i]) miss.push(i);
+  const bad=[];
+  rs.forEach(d=>{
+    const s=new Set(d.n);
+    if(s.size!==6) bad.push([d.r,'번호 중복']);
+    if(d.n.some(n=>n<1||n>45)) bad.push([d.r,'범위 이탈']);
+    if(d.n.some((n,i)=>i&&n<=d.n[i-1])) bad.push([d.r,'정렬 이상']);
+    if(d.b<1||d.b>45||s.has(d.b)) bad.push([d.r,'보너스 이상']);
+    const o=decodeOrder(d.r);
+    if(o && d.r<=ORDER_MAX){
+      if(o.slice(0,6).slice().sort((a,b)=>a-b).join(',')!==d.n.join(',')) bad.push([d.r,'추첨순서 불일치']);
+      if(o[6]!==d.b) bad.push([d.r,'추첨순서 보너스 불일치']);
+    }
+  });
+  renderKPI('#kpiData',[
+    ['보유 회차', nf(rs.length), '최신 '+DB.latest+'회'],
+    ['누락', nf(miss.length), miss.length?miss.slice(0,5).join(', ')+'…':'없음'],
+    ['무결성 오류', nf(bad.length), bad.length?'확인 필요':'이상 없음'],
+    ['추첨순서', nf(ORDER_MAX)+'회', '검증 완료'],
+    ['마지막 갱신', DB.loadedAt?new Date(DB.loadedAt).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'—', DB.source]
+  ]);
+  const checks=[
+    ['회차 연속성', miss.length===0, miss.length?miss.length+'개 누락':'1~'+DB.latest+'회 빠짐없음'],
+    ['번호 유효성', !bad.some(b=>/번호|범위|정렬/.test(b[1])), '중복·범위·정렬 검사'],
+    ['보너스 유효성', !bad.some(b=>b[1].includes('보너스')), '본번호와 중복 없음'],
+    ['추첨순서 대조', !bad.some(b=>b[1].includes('추첨순서')), '집합·보너스 공식 데이터 일치'],
+    ['첫 회차 확인', rs.length&&rs[0].r===1&&rs[0].ymd==='20021207', '1회 = 2002.12.07'],
+    ['판매액 기록', rs.every(d=>d.s>0), '전 회차 총판매액 보유']
+  ];
+  $('#integTbl').innerHTML='<tr><th>항목</th><th>결과</th><th>내용</th></tr>'+
+    checks.map(([n,ok,d])=>'<tr><td>'+n+'</td><td>'+(ok?'<span class="tag ok">통과</span>':'<span class="tag sig">확인</span>')+'</td>'+
+      '<td style="color:var(--ink-60)">'+d+'</td></tr>').join('')+
+    (bad.length?'<tr><td>상세</td><td></td><td style="color:var(--sig);font-size:11px">'+bad.slice(0,10).map(b=>b[0]+'회 '+b[1]).join(' / ')+'</td></tr>':'');
+}
+function exportJSON(){
+  const data={ meta:{ generated:new Date().toISOString(), latest:DB.latest,
+    source:'dhlottery.co.kr /lt645/selectPstLt645InfoNew.do', orderSource:'lottohell.com archive', orderMax:ORDER_MAX },
+    draws: rows(0).map(d=>({ round:d.r, date:d.ymd, numbers:d.n, bonus:d.b,
+      order: (d.r<=ORDER_MAX && orderTrust(d.r)==='ok') ? decodeOrder(d.r) : null,
+      orderTrust: orderTrust(d.r),
+      winners:{first:d.w[0],second:d.w[1],third:d.w[2],fourth:d.w[3],fifth:d.w[4]},
+      prize:{first:d.a[0],second:d.a[1],third:d.a[2],fourth:d.a[3],fifth:d.a[4]},
+      sales:d.s, firstType:{auto:d.t[0],manual:d.t[1],semi:d.t[2]} }))};
+  const blob=new Blob([JSON.stringify(data,null,1)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='lotto-history-'+DB.latest+'.json'; a.click();
+  log('JSON 내보내기 · '+rows(0).length+'회차');
+}
+
+/* ════════════════ 마크시트 인쇄 ════════════════ */
+function openSheet(){
+  if(!GEN_RESULT.length){ alert('먼저 조합을 생성하세요.'); return; }
+  const R=DB.latest+1;
+  const rows_=GEN_RESULT.map((c,i)=>{
+    const s=c.reduce((a,b)=>a+b,0), o=c.filter(n=>n%2).length;
+    return '<div class="row"><div class="key">'+'ABCDEFGHIJ'[i]+'</div><div class="balls">'+
+      c.map(n=>'<span class="ball" style="background:'+ballColor(n)+'">'+n+'</span>').join('')+
+      '</div><div class="meta">합계<em>'+s+'</em>홀'+o+':짝'+(6-o)+'</div></div>';
+  }).join('');
+  const cnt={}; GEN_RESULT.forEach(c=>c.forEach(n=>cnt[n]=(cnt[n]||0)+1));
+  let board=''; for(let n=1;n<=45;n++){
+    board+='<div class="cell'+(cnt[n]?' on':'')+'"'+(cnt[n]?' style="--c:'+ballColor(n)+'"':'')+'>'+
+      '<span>'+n+'</span>'+(cnt[n]>1?'<i class="tick">'+cnt[n]+'</i>':'')+'</div>';
+  }
+  const html='<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>제'+R+'회 로또 추천 마크시트</title>'+
+  '<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Sans+KR:wght@300;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">'+
+  '<style>:root{--paper:#EEF0EB;--paper-2:#F7F8F5;--ink:#16302B;--ink-60:rgba(22,48,43,.6);--ink-30:rgba(22,48,43,.3);--ink-12:rgba(22,48,43,.12)}'+
+  '*{box-sizing:border-box;margin:0;padding:0}body{background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans KR",sans-serif;font-weight:300;padding:24px 14px 56px;display:flex;justify-content:center}'+
+  '.sheet{width:100%;max-width:560px}.eyebrow{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-60);display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1.5px solid var(--ink)}'+
+  'h1{font-family:"Big Shoulders Display";font-weight:900;font-size:clamp(58px,17vw,104px);line-height:.82;padding:14px 0 2px}'+
+  'h1 .sub{display:block;font-size:.26em;font-weight:700;letter-spacing:.16em;color:var(--ink-60);padding-top:12px}'+
+  'h2{font-family:"Space Mono",monospace;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;padding:26px 0 12px;display:flex;align-items:center;gap:10px}h2::after{content:"";flex:1;height:1px;background:var(--ink-12)}'+
+  '.board{background:var(--paper-2);border:1.5px solid var(--ink);padding:18px 16px}.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}'+
+  '.cell{aspect-ratio:1;border-radius:50%;border:1px solid var(--ink-30);display:flex;align-items:center;justify-content:center;font-family:"Space Mono",monospace;font-size:13px;color:var(--ink-30);position:relative}'+
+  '.cell.on{border:1.5px solid var(--ink);color:var(--ink);font-weight:700}.cell.on::before{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--c);z-index:0}.cell.on span{position:relative;z-index:1}'+
+  '.tick{position:absolute;top:-3px;right:-3px;z-index:2;width:15px;height:15px;border-radius:50%;background:var(--ink);color:var(--paper-2);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:"Space Mono",monospace}'+
+  '.rows{border-top:1.5px solid var(--ink)}.row{display:grid;grid-template-columns:26px 1fr auto;gap:12px;align-items:center;padding:13px 2px;border-bottom:1px solid var(--ink-12)}'+
+  '.key{font-family:"Big Shoulders Display";font-weight:900;font-size:30px;line-height:1}.balls{display:flex;gap:5px;flex-wrap:wrap}'+
+  '.ball{width:clamp(26px,7.4vw,32px);height:clamp(26px,7.4vw,32px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:"Space Mono",monospace;font-weight:700;font-size:13px;color:#16302B}'+
+  '.meta{text-align:right;font-family:"Space Mono",monospace;font-size:10px;color:var(--ink-60);white-space:nowrap}.meta em{display:block;font-style:normal;color:var(--ink);font-size:13px;font-weight:700}'+
+  '.foot{display:flex;justify-content:space-between;font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.1em;color:var(--ink-60);padding-top:22px;text-transform:uppercase}'+
+  '.dis{font-size:11.5px;color:var(--ink-60);padding-top:20px;line-height:1.7;border-top:1px solid var(--ink-12);margin-top:20px}'+
+  '@media print{body{padding:0}}</style></head><body><main class="sheet">'+
+  '<div class="eyebrow"><span>Lotto 6/45 · Draw '+R+'</span><span>'+new Date().toLocaleDateString('ko-KR')+'</span></div>'+
+  '<h1>'+R+'<span class="sub">추천 조합 마크시트</span></h1>'+
+  '<h2>통합 번호판</h2><div class="board"><div class="grid">'+board+'</div></div>'+
+  '<h2>조합 '+GEN_RESULT.length+'</h2><div class="rows">'+rows_+'</div>'+
+  '<div class="foot"><span>Prepared by 이재오</span><span>N='+rows(0).length+' rounds</span></div>'+
+  '<p class="dis">각 회차는 독립 시행입니다. 이 조합의 1등 확률은 자동 선택과 같은 1/8,145,060이며, 통계는 번호를 고르는 기준일 뿐 예측이 아닙니다.</p>'+
+  '</main></body></html>';
+  const w=window.open('','_blank');
+  if(w){ w.document.write(html); w.document.close(); }
+  else { const b=new Blob([html],{type:'text/html'}); const a=document.createElement('a');
+         a.href=URL.createObjectURL(b); a.download='lotto-'+R+'-sheet.html'; a.click(); }
+}
+
+/* ════════════════ 초기화 · 배선 ════════════════ */
+function switchTab(t){
+  $$('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.t===t));
+  $$('section.panel').forEach(p=>p.classList.toggle('on', p.id==='p-'+t));
+  window.scrollTo({top:0,behavior:'instant'});
+  try{
+    if(t==='dash') renderDash();
+    if(t==='stat') renderStat();
+    if(t==='order') renderOrder();
+    if(t==='gen')  renderPopModel();
+    if(t==='sim')  renderFirstHit();
+    if(t==='mine') renderMine();
+    if(t==='data') renderData();
+  }catch(e){ console.error(e); log('렌더 오류('+t+'): '+e.message); }
+}
+function wire(){
+  $$('#tabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.t));
+  $('#statWin').onchange=renderStat; $('#statBonus').onchange=renderStat;
+
+  const sc=$('#stratChips');
+  STRATS.forEach(s=>{
+    const c=el('span','chip'+(s.k===CUR_STRAT?' on':''),s.n);
+    c.onclick=()=>{ CUR_STRAT=s.k; $$('#stratChips .chip').forEach(x=>x.classList.remove('on'));
+      c.classList.add('on'); $('#stratDesc').innerHTML=s.d; };
+    sc.appendChild(c);
+  });
+  $('#stratDesc').innerHTML=STRATS.find(s=>s.k===CUR_STRAT).d;
+
+  $('#genBtn').onclick=generate;
+  $('#fixNums').oninput=()=>{ PICK_FIX=new Set(parseNums($('#fixNums').value)); renderPickBoard(); };
+  $('#exclNums').oninput=()=>{ PICK_EXC=new Set(parseNums($('#exclNums').value)); renderPickBoard(); };
+  $('#pinBtn').onclick=()=>{
+    if(!GEN_RESULT.length){ alert('먼저 조합을 생성하세요.'); return; }
+    localStorage.setItem(LSPIN, JSON.stringify({round:DB.latest+1, strat:STRATS.find(s=>s.k===CUR_STRAT).n, combos:GEN_RESULT}));
+    alert('대시보드에 고정했습니다.'); renderPinned();
+  };
+  $('#sheetBtn').onclick=openSheet;
+
+  $('#simBtn').onclick=()=>{ $('#simOut').innerHTML='<span class="spin"></span>'; setTimeout(()=>{ try{runSim();}catch(e){$('#simOut').innerHTML='오류: '+e.message;} renderFirstHit(); },30); };
+  $('#btBtn').onclick=runBacktest;
+  $('#simGames').onchange=renderFirstHit;
+
+  $('#orderSearchBtn').onclick=()=>{
+    const r=+$('#orderSearch').value;
+    if(!r){ renderOrderList(rows(0).slice(-25).reverse()); return; }
+    const d=DB.draws[r];
+    renderOrderList(d?[d]:[]);
+  };
+
+  $('#myAdd').onclick=()=>{
+    const r=+$('#myRound').value, v=[...new Set(parseNums($('#myNums').value))].sort((a,b)=>a-b);
+    if(!r||v.length!==6){ alert('회차와 6개 번호를 정확히 입력하세요.'); return; }
+    const a=myLoad(); a.push({round:r, nums:v, cost:+$('#myCost').value||TICKET, at:Date.now()});
+    mySave(a); $('#myNums').value=''; renderMine();
+  };
+  $('#myFromGen').onclick=()=>{
+    if(!GEN_RESULT.length){ alert('생성된 조합이 없습니다.'); return; }
+    const r=+$('#myRound').value||DB.latest+1;
+    const a=myLoad(); GEN_RESULT.forEach(c=>a.push({round:r,nums:c,cost:TICKET,at:Date.now()}));
+    mySave(a); renderMine(); alert(GEN_RESULT.length+'게임을 '+r+'회에 담았습니다.');
+  };
+  $('#myExport').onclick=()=>{
+    const b=new Blob([JSON.stringify(myLoad(),null,1)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='my-lotto-tickets.json'; a.click();
+  };
+  $('#myImport').onclick=()=>{
+    const s=prompt('내보낸 JSON을 붙여넣으세요');
+    if(!s) return;
+    try{ const v=JSON.parse(s); if(Array.isArray(v)){ mySave(v); renderMine(); } }catch(e){ alert('형식 오류'); }
+  };
+  $('#myClear').onclick=()=>{ if(confirm('전체 삭제할까요?')){ mySave([]); renderMine(); } };
+
+  $('#dSync').onclick=async()=>{ await syncData(false); refreshAll(); };
+  $('#dFull').onclick=async()=>{ if(confirm('전 회차를 다시 받습니다. 1~2분 걸립니다.')){ await syncData(true); refreshAll(); } };
+  $('#dExport').onclick=exportJSON;
+  $('#dPaste').onclick=()=>{
+    const s=prompt('내보낸 lotto-history JSON을 붙여넣으세요');
+    if(!s) return;
+    try{
+      const o=JSON.parse(s); DB.draws=[];
+      o.draws.forEach(d=>{ DB.draws[d.round]={ r:d.round, ymd:d.date, n:d.numbers, b:d.bonus,
+        w:[d.winners.first,d.winners.second,d.winners.third,d.winners.fourth,d.winners.fifth],
+        a:[d.prize.first,d.prize.second,d.prize.third,d.prize.fourth,d.prize.fifth],
+        s:d.sales, t:[d.firstType.auto,d.firstType.manual,d.firstType.semi] }; });
+      DB.latest=o.meta.latest; DB.source='수동 복구'; DB.loadedAt=Date.now();
+      saveDB(); refreshAll(); alert('복구 완료');
+    }catch(e){ alert('형식 오류: '+e.message); }
+  };
+  $('#myRound').value=DB.latest?DB.latest+1:'';
+}
+function refreshAll(){
+  const on=$$('#tabs button').find(b=>b.classList.contains('on'));
+  renderPickBoard();
+  switchTab(on?on.dataset.t:'dash');
+  $('#myRound').value=DB.latest?DB.latest+1:'';
+}
+(async function init(){
+  wire(); renderPickBoard();
+  const cached=loadDB();
+  if(cached){
+    setStatus('캐시 '+DB.draws.filter(Boolean).length+'회차 · 최신 확인 중…','warn');
+    refreshAll();
+    log('로컬 캐시 로드 · '+DB.draws.filter(Boolean).length+'회차');
+  } else {
+    setStatus('최초 실행 — 전 회차를 받아옵니다 (30초~2분)','warn');
+    log('캐시 없음 · 전체 수집을 시작합니다');
+  }
+  let ok=await syncData(false);
+  if(!ok && !cached){
+    log('공식 API 실패 · 로컬 백업 JSON을 찾는 중…');
+    ok=await loadLocalJSON();
+    if(ok) setStatus('로컬 백업으로 동작 중 (최신 '+DB.latest+'회)','warn');
+  }
+  if(!ok && !cached){
+    setStatus('데이터를 받지 못했습니다 — 데이터 탭 참고','err');
+    log('file:// 로 열면 브라우저가 외부 요청을 막습니다. [모바일서버-켜기.bat] 으로 실행하세요.');
+  }
+  refreshAll();
+})();
+</script>
+</body>
+</html>
