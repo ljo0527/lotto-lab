@@ -6,7 +6,7 @@
 <title>LOTTO LAB · 로또 6/45 통계 실험실</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;700;900&family=IBM+Plex+Sans+KR:wght@300;400;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --paper:#EEF0EB; --paper-2:#F7F8F5; --paper-3:#E4E7E0;
@@ -31,21 +31,21 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
-body{background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans KR",system-ui,sans-serif;
-  font-weight:300;line-height:1.6;padding:0 0 90px;-webkit-font-smoothing:antialiased}
+body{background:var(--paper);color:var(--ink);font-family:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo","Noto Sans KR",system-ui,-apple-system,sans-serif;
+  font-weight:400;line-height:1.68;font-size:15px;letter-spacing:-0.01em;padding:0 0 90px;-webkit-font-smoothing:antialiased}
 .wrap{max-width:940px;margin:0 auto;padding:16px 14px 0}
 .mono{font-family:"Space Mono",monospace}
 
 /* ── header ── */
 header{border-bottom:1.5px solid var(--ink);padding-bottom:10px;margin-bottom:18px}
-.eyebrow{font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+.eyebrow{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
   color:var(--ink-60);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
-h1{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:clamp(46px,12vw,86px);
+h1{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:clamp(52px,13vw,97px);
   line-height:.84;letter-spacing:-.01em;padding:10px 0 0}
 h1 span{display:block;font-size:.22em;font-weight:700;letter-spacing:.18em;color:var(--ink-60);padding-top:10px}
-.status{font-family:"Space Mono",monospace;font-size:11px;color:var(--ink-60);padding-top:10px;
+.status{font-family:"Space Mono",monospace;font-size:12.5px;color:var(--ink-60);padding-top:10px;
   display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--b-grey);display:inline-block;flex:none}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--b-grey);display:inline-block;flex:none}
 .dot.live{background:var(--b-green)} .dot.warn{background:var(--b-yellow)} .dot.err{background:var(--b-red)}
 
 /* ── tabs ── */
@@ -53,18 +53,18 @@ nav.tabs{position:sticky;top:0;z-index:40;background:var(--paper);border-bottom:
   display:flex;gap:0;overflow-x:auto;scrollbar-width:none;margin-bottom:20px}
 nav.tabs::-webkit-scrollbar{display:none}
 nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;color:var(--ink-60);
-  font-family:"Space Mono",monospace;font-size:11.5px;font-weight:700;letter-spacing:.08em;
+  font-family:"Space Mono",monospace;font-size:13px;font-weight:700;letter-spacing:.08em;
   padding:13px 14px;cursor:pointer;white-space:nowrap;text-transform:uppercase}
 nav.tabs button.on{color:var(--ink);border-bottom-color:var(--ink)}
 
 section.panel{display:none} section.panel.on{display:block}
 
-h2{font-family:"Space Mono",monospace;font-size:11px;font-weight:700;letter-spacing:.18em;
+h2{font-family:"Space Mono",monospace;font-size:12.5px;font-weight:700;letter-spacing:.18em;
   text-transform:uppercase;padding:0 0 12px;display:flex;align-items:center;gap:10px;margin-top:30px}
 h2:first-child{margin-top:0}
 h2::after{content:"";flex:1;height:1px;background:var(--ink-12)}
-h3{font-size:13px;font-weight:600;padding-bottom:8px}
-p.note{font-size:12.5px;color:var(--ink-60);padding-bottom:14px;line-height:1.7}
+h3{font-size:14.5px;font-weight:600;padding-bottom:8px}
+p.note{font-size:14px;color:var(--ink-60);padding-bottom:14px;line-height:1.7}
 
 .card{background:var(--paper-2);border:1.5px solid var(--ink);padding:16px 15px;margin-bottom:12px}
 .card.flat{border-width:1px;border-color:var(--ink-12)}
@@ -75,15 +75,15 @@ p.note{font-size:12.5px;color:var(--ink-60);padding-bottom:14px;line-height:1.7}
 .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--ink-12);
   border:1.5px solid var(--ink);margin-bottom:14px}
 .kpi>div{background:var(--paper-2);padding:13px 12px}
-.kpi .k{font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-60)}
-.kpi .v{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:30px;line-height:1.05;padding-top:4px}
-.kpi .s{font-size:11px;color:var(--ink-60);padding-top:2px}
+.kpi .k{font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-60)}
+.kpi .v{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:34px;line-height:1.05;padding-top:4px}
+.kpi .s{font-size:12.5px;color:var(--ink-60);padding-top:2px}
 
 /* ── balls ── */
-.ball{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
-  font-family:"Space Mono",monospace;font-weight:700;font-size:12px;color:#16302B;flex:none}
-.ball.sm{width:24px;height:24px;font-size:10.5px}
-.ball.xs{width:20px;height:20px;font-size:9.5px}
+.ball{width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  font-family:"Space Mono",monospace;font-weight:700;font-size:13.5px;color:#16302B;flex:none}
+.ball.sm{width:27px;height:27px;font-size:12px}
+.ball.xs{width:22.5px;height:22.5px;font-size:10.5px}
 .ball.bonus{box-shadow:inset 0 0 0 2px var(--ink)}
 .balls{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
 
@@ -91,10 +91,10 @@ p.note{font-size:12.5px;color:var(--ink-60);padding-bottom:14px;line-height:1.7}
 .board45{display:grid;grid-template-columns:repeat(9,1fr);gap:5px}
 @media(max-width:520px){.board45{grid-template-columns:repeat(7,1fr)}}
 .cell{aspect-ratio:1;border-radius:50%;border:1px solid var(--ink-30);display:flex;flex-direction:column;
-  align-items:center;justify-content:center;font-family:"Space Mono",monospace;font-size:12px;
+  align-items:center;justify-content:center;font-family:"Space Mono",monospace;font-size:13.5px;
   color:var(--ink-40);position:relative;cursor:pointer;user-select:none;background:transparent}
-.cell b{font-weight:700;font-size:12px;line-height:1}
-.cell i{font-style:normal;font-size:8.5px;opacity:.75;line-height:1.2}
+.cell b{font-weight:700;font-size:13.5px;line-height:1}
+.cell i{font-style:normal;font-size:9.5px;opacity:.75;line-height:1.2}
 .cell.on{border:1.5px solid var(--ink);color:var(--ink)}
 .cell.on::before{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--c);z-index:0;opacity:.92}
 .cell.on b,.cell.on i{position:relative;z-index:1;color:#16302B}
@@ -103,20 +103,20 @@ p.note{font-size:12.5px;color:var(--ink-60);padding-bottom:14px;line-height:1.7}
 
 /* ── bars ── */
 .bars{display:flex;flex-direction:column;gap:3px}
-.bar{display:grid;grid-template-columns:34px 1fr 62px;gap:8px;align-items:center;font-family:"Space Mono",monospace;font-size:10.5px}
+.bar{display:grid;grid-template-columns:34px 1fr 62px;gap:8px;align-items:center;font-family:"Space Mono",monospace;font-size:12px}
 .bar .t{height:13px;background:var(--ink-12);position:relative;overflow:hidden}
 .bar .t i{display:block;height:100%;background:var(--c,var(--ink-40))}
 .bar .n{text-align:right;color:var(--ink-60)}
 
-table{width:100%;border-collapse:collapse;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
 th,td{padding:7px 6px;text-align:left;border-bottom:1px solid var(--ink-12)}
-th{font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60);font-weight:700}
+th{font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60);font-weight:700}
 td.num,th.num{text-align:right;font-family:"Space Mono",monospace}
 .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 
 /* ── controls ── */
 button.btn,select,input[type=text],input[type=number]{
-  font-family:"Space Mono",monospace;font-size:12px;color:var(--ink);background:var(--paper-2);
+  font-family:"Space Mono",monospace;font-size:13.5px;color:var(--ink);background:var(--paper-2);
   border:1.5px solid var(--ink);padding:9px 13px;cursor:pointer;border-radius:0}
 input[type=text],input[type=number]{cursor:text;font-weight:700}
 button.btn{font-weight:700;letter-spacing:.06em;text-transform:uppercase}
@@ -125,28 +125,28 @@ button.btn.ghost{border-color:var(--ink-30);color:var(--ink-60)}
 button.btn.ghost:hover{border-color:var(--ink);background:var(--ink);color:var(--paper)}
 button.btn:disabled{opacity:.4;cursor:not-allowed}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding-bottom:12px}
-label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",monospace;font-size:9.5px;
+label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",monospace;font-size:10.5px;
   letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60)}
-.chip{font-family:"Space Mono",monospace;font-size:10.5px;border:1px solid var(--ink-30);padding:5px 9px;
+.chip{font-family:"Space Mono",monospace;font-size:12px;border:1px solid var(--ink-30);padding:5px 9px;
   cursor:pointer;color:var(--ink-60)}
 .chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 
-.tag{font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.06em;padding:2px 6px;border:1px solid currentColor}
+.tag{font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.06em;padding:2px 6px;border:1px solid currentColor}
 .tag.sig{color:var(--sig)} .tag.noi{color:var(--ink-40)} .tag.ok{color:var(--ok)}
 
-.verdict{border-left:3px solid var(--ink);padding:10px 0 10px 12px;margin:10px 0;font-size:12.5px;color:var(--ink-60)}
+.verdict{border-left:3px solid var(--ink);padding:10px 0 10px 12px;margin:10px 0;font-size:14px;color:var(--ink-60)}
 .verdict b{color:var(--ink);font-weight:600}
 .verdict.sig{border-color:var(--sig)}
 
 .combo{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:center;padding:11px 2px;
   border-bottom:1px solid var(--ink-12)}
-.combo .k{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:26px;line-height:1}
-.combo .m{text-align:right;font-family:"Space Mono",monospace;font-size:9.5px;color:var(--ink-60);line-height:1.5;white-space:nowrap}
-.combo .m em{display:block;font-style:normal;color:var(--ink);font-size:12px;font-weight:700}
-.combo .c{grid-column:2/-1;font-size:11px;color:var(--ink-60);padding-top:5px}
+.combo .k{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:29.5px;line-height:1}
+.combo .m{text-align:right;font-family:"Space Mono",monospace;font-size:10.5px;color:var(--ink-60);line-height:1.5;white-space:nowrap}
+.combo .m em{display:block;font-style:normal;color:var(--ink);font-size:13.5px;font-weight:700}
+.combo .c{grid-column:2/-1;font-size:12.5px;color:var(--ink-60);padding-top:5px}
 
-.bignum{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:clamp(38px,9vw,62px);line-height:1}
-.disclaimer{font-size:11.5px;color:var(--ink-60);padding:18px 0 0;line-height:1.75;border-top:1px solid var(--ink-12);margin-top:26px}
+.bignum{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:clamp(43px,9.5vw,70px);line-height:1}
+.disclaimer{font-size:13px;color:var(--ink-60);padding:18px 0 0;line-height:1.75;border-top:1px solid var(--ink-12);margin-top:26px}
 .spin{display:inline-block;width:11px;height:11px;border:2px solid var(--ink-30);border-top-color:var(--ink);
   border-radius:50%;animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -154,7 +154,7 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 .prog i{display:block;height:100%;background:var(--ink);width:0;transition:width .2s}
 .hide{display:none!important}
 .foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-family:"Space Mono",monospace;
-  font-size:9.5px;letter-spacing:.1em;color:var(--ink-40);padding-top:14px;text-transform:uppercase}
+  font-size:10.5px;letter-spacing:.1em;color:var(--ink-40);padding-top:14px;text-transform:uppercase}
 </style>
 </head>
 <body>
@@ -199,8 +199,16 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
   </div>
 
   <h2>이번 주 추천 조합</h2>
-  <p class="note">아래 <b>조합 생성</b> 탭에서 만든 조합이 여기에 고정됩니다. 전략과 필터를 바꿔가며 생성하세요.</p>
-  <div class="card" id="pinnedCard"><span style="font-size:12px;color:var(--ink-60)">아직 고정된 조합이 없습니다.</span></div>
+  <p class="note">매 회차 자동으로 다시 계산됩니다. <b>직전 회차까지의 전체 데이터</b>를 반영하며, 같은 회차 안에서는 항상 같은 조합입니다.</p>
+  <div class="card" id="weeklyCard"><span class="spin"></span></div>
+  <div class="row" style="padding-top:10px">
+    <button class="btn ghost" id="weeklySheet">마크시트 인쇄용 열기</button>
+    <button class="btn ghost" id="weeklyToMine">내 기록에 담기</button>
+  </div>
+
+  <h2>직접 고정한 조합</h2>
+  <p class="note"><b>조합 생성</b> 탭에서 만든 뒤 «대시보드에 고정»을 누르면 여기 남습니다.</p>
+  <div class="card flat" id="pinnedCard"><span style="font-size:13px;color:var(--ink-60)">아직 고정된 조합이 없습니다.</span></div>
 </section>
 
 <!-- ══════════ 번호 통계 ══════════ -->
@@ -793,10 +801,92 @@ function renderDash(){
       return '<tr><td><b>'+r+'등</b></td><td>'+c+'</td><td class="num">'+nf(WAYS[r])+'</td>'+
         '<td class="num">1 / '+nf(1/p)+'</td><td class="num">'+(yrs>=1?yrs.toFixed(yrs>=10?0:1)+'년':Math.round(weeks)+'주')+'</td></tr>';
     }).join('');
+  renderWeekly();
   $('#footN').textContent='N='+rs.length+' rounds';
   $('#hdrRight').textContent=DB.latest+'회 · '+ymd2disp(last.ymd);
   renderPinned();
 }
+/* ═══ 이번주 추천 조합 ═══
+   회차 번호를 시드로 고정 생성한다. 규칙:
+     · 전략 = 최소 분배 (실증된 유일한 신호)
+     · 필터 = 합계 100~175, 홀 2~4, 연속 2쌍 이하, 한 구간 3개 이하
+     · 과거 1등 조합과 중복 제외
+     · 후보 3,000개를 만든 뒤 분배지수 하위에서 선택
+   같은 회차면 몇 번을 새로고침해도 같은 조합이 나온다. */
+let WEEKLY=null, WEEKLY_R=0;
+function weeklyPicks(){
+  const target=DB.latest+1;
+  if(WEEKLY && WEEKLY_R===target) return WEEKLY;
+  const F={ lo:100, hi:175, cons:2, odd:'234', strat:'minshare' };
+  const prevRNG=RNG;
+  RNG=mulberry32(target*2654435761);
+  try{
+    const w=weightsFor('minshare'), pool=[], seen=new Set();
+    const t0=Date.now(); let tries=0;
+    while(pool.length<3000 && tries<200000 && Date.now()-t0<1800){
+      tries++;
+      const c=pickWeighted(w,new Set(),6).sort((a,b)=>a-b);
+      if(c.length!==6) continue;
+      const key=c.join(',');
+      if(seen.has(key)) continue;
+      if(!passFilter(c,F)) continue;
+      const bands=[0,0,0,0,0]; c.forEach(n=>bands[Math.min(4,Math.floor((n-1)/10))]++);
+      if(Math.max(...bands)>3) continue;
+      if(everWon(c)) continue;
+      seen.add(key); pool.push(c);
+    }
+    pool.sort((a,b)=>(popScore(a)??9)-(popScore(b)??9));
+    /* 최상위만 뽑으면 다섯 조합이 서로 너무 닮는다.
+       두 가지 다양성 규칙을 건다.
+         · 두 조합이 겹치는 번호는 2개 이하
+         · 한 번호가 다섯 조합 중 2번을 초과해 등장하지 않음
+       (규칙이 없으면 모델이 좋아하는 극단 번호가 다섯 줄 전부에 박힌다) */
+    const out=[], useCnt={};
+    const fits=c=>out.every(o=>o.filter(n=>c.includes(n)).length<=2)
+                && c.every(n=>(useCnt[n]||0)<2);
+    for(const c of pool.slice(0,600)){
+      if(!fits(c)) continue;
+      out.push(c); c.forEach(n=>useCnt[n]=(useCnt[n]||0)+1);
+      if(out.length===5) break;
+    }
+    for(let i=0;out.length<5 && i<pool.length;i++){
+      const c=pool[i];
+      if(out.some(o=>o.join()===c.join())) continue;
+      out.push(c);
+    }
+    WEEKLY_R=target;
+    return (WEEKLY={ round:target, combos:out, tries });
+  } finally { RNG=prevRNG; }
+}
+function renderWeekly(){
+  const box=$('#weeklyCard'); if(!box) return;
+  const rs=rows(0), last=rs[rs.length-1];
+  if(!last){ box.innerHTML=''; return; }
+  let W;
+  try{ W=weeklyPicks(); }catch(e){ box.innerHTML='<span style="font-size:13px;color:var(--sig)">생성 실패: '+e.message+'</span>'; return; }
+  const F=fitPop();
+  const nd=new Date(last.ymd.slice(0,4)+'-'+last.ymd.slice(4,6)+'-'+last.ymd.slice(6,8)+'T20:45:00+09:00');
+  nd.setDate(nd.getDate()+7);
+  box.innerHTML=
+    '<div class="mono" style="font-size:11px;color:var(--ink-60);padding-bottom:10px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">'+
+      '<span>제 '+W.round+'회 대상 · '+nd.getFullYear()+'.'+String(nd.getMonth()+1).padStart(2,'0')+'.'+String(nd.getDate()).padStart(2,'0')+' 추첨</span>'+
+      '<span>1~'+DB.latest+'회 전체 반영</span></div>'+
+    W.combos.map((c,i)=>{
+      const s=c.reduce((a,b)=>a+b,0), o=c.filter(n=>n%2).length;
+      return '<div class="combo"><div class="k">'+'ABCDE'[i]+'</div>'+
+        '<div class="balls">'+c.map(n=>ballHTML(n)).join('')+'</div>'+
+        '<div class="m">합계<em>'+s+'</em>홀'+o+':짝'+(6-o)+'</div>'+
+        '<div class="c">'+shareTag(c).replace(/^ · /,'')+'</div></div>';
+    }).join('')+
+    '<div class="verdict" style="margin-bottom:0"><b>이 조합이 나온 근거</b><br>'+
+    '· 후보 '+nf(W.tries)+'개를 만들어 합계 100~175 / 홀짝 2~4 / 연속 2쌍 이하 / 한 구간 3개 이하 필터를 통과한 것만 남겼습니다<br>'+
+    '· 과거 '+DB.latest+'회 1등 조합과 겹치는 것은 제외했습니다<br>'+
+    '· 그중 <b>분배 인원 모델 점수가 가장 낮은</b> 것들을, 서로 2개 이하로만 겹치도록 골랐습니다'+
+    (F.agree!=null?'<br>· 모델 교차검증 상관 '+F.agree.toFixed(3)+' (판매 기준 × 구매방식 기준)':'')+
+    '<br>· 회차 번호를 시드로 고정했습니다 — <b>새로고침해도 같은 조합</b>이고, 회차가 넘어가면 자동으로 새로 뽑힙니다<br>'+
+    '<span style="color:var(--ink-40)">1등 확률은 여전히 1/8,145,060 입니다. 바뀌는 건 당첨 시 나눠 갖는 인원뿐입니다.</span></div>';
+}
+
 function renderPinned(){
   const box=$('#pinnedCard');
   let p=null; try{ p=JSON.parse(localStorage.getItem(LSPIN)||'null'); }catch(e){}
@@ -960,14 +1050,19 @@ function renderOrderList(list){
 
 /* ════════════════ 분배 인원 모델 (POPULARITY) ════════════════
    근거 정리
-   1) 1·2·3등 당첨금은 고정 풀을 당첨자 수로 나눈다. 즉 같은 확률이라도
-      "몇 명이 같은 번호를 골랐는가"가 실수령액을 직접 바꾼다.
-   2) 그 회차 당첨번호가 얼마나 인기 있었는지는 4등·5등 당첨자 수로 측정된다.
-      기대 4등 = (총판매액/1000) × 11115/8145060.  실제/기대 = 인기도 지수.
-   3) 4등 기준 지수와 5등 기준 지수의 상관은 0.92 — 두 독립 측정이 일치하므로
-      이 지수는 잡음이 아니라 실제 "사람이 고른 정도"를 재고 있다.
-   4) 이 지수를 조합의 구조적 특징에 최소자승 회귀하면, 어떤 특징이
-      사람을 끌어당기는지가 계수로 나온다. */
+   1) 1·2·3등 당첨금은 고정 풀을 당첨자 수로 나눈다. 확률(분자)은 못 바꿔도
+      분모 = 같은 번호를 고른 사람 수는 바꿀 수 있다.
+   2) 그 회차 번호가 얼마나 인기였는지를 재는 방법이 둘 있다.
+      A. 판매 기준 — 4·5등 당첨자 수가 기대치보다 얼마나 많았나.
+         기대 4등 = (총판매액/1000) × 11115/8145060.
+      B. 구매방식 기준 — 1등 당첨자 중 수동 선택 비율이 그 시대 기준선보다 높았나.
+         자동은 8,145,060개 조합에 균등하게 뿌려지지만 수동은 사람이 좋아하는
+         번호에 몰린다. 따라서 수동 비율이 높다 = 사람이 고르기 좋은 번호였다.
+   3) A와 B는 완전히 다른 데이터에서 나온다. 두 예측의 상관이 0.9에 가까우면
+      이건 잡음이 아니라 실재하는 현상이다. (실측 ≈ 0.90)
+   4) 시대에 따라 자동 구매 비율이 변하므로 B는 ±60회 가중이동평균을
+      기준선으로 삼아 편차만 본다. 1등 당첨자 수로 가중한다(표본 신뢰도). */
+
 function popFeat(n){
   const s=n.reduce((a,b)=>a+b,0);
   let cons=0; for(let i=1;i<6;i++) if(n[i]===n[i-1]+1) cons++;
@@ -978,66 +1073,198 @@ function popFeat(n){
           (s-138)/30, cons, sameLast, (n[5]-n[0]-33)/8, Object.keys(dec).length];
 }
 const POP_NAMES=['기준값','31 이하 개수','12 이하 개수','합계(표준화)','연속쌍','끝수 중복','번호 범위(표준화)','사용 구간 수'];
+
+/* 가중최소자승. w 생략 시 전부 1. */
+function wls(X, y, w){
+  const n=X.length, k=X[0].length;
+  if(!w) w=new Array(n).fill(1);
+  const M=Array.from({length:k},(_,i)=>[...new Array(k).fill(0),
+        ...Array.from({length:k},(_,j)=>i===j?1:0)]);
+  const XtY=new Array(k).fill(0);
+  for(let i=0;i<n;i++){ const wi=w[i];
+    for(let a=0;a<k;a++){ XtY[a]+=wi*X[i][a]*y[i];
+      for(let b=0;b<k;b++) M[a][b]+=wi*X[i][a]*X[i][b]; } }
+  for(let c=0;c<k;c++){
+    let pv=c; for(let r=c+1;r<k;r++) if(Math.abs(M[r][c])>Math.abs(M[pv][c])) pv=r;
+    const t=M[c]; M[c]=M[pv]; M[pv]=t;
+    const d=M[c][c]; if(!d||!isFinite(d)) return null;
+    for(let j=0;j<2*k;j++) M[c][j]/=d;
+    for(let r=0;r<k;r++){ if(r===c) continue; const f=M[r][c];
+      for(let j=0;j<2*k;j++) M[r][j]-=f*M[c][j]; } }
+  const inv=M.map(r=>r.slice(k));
+  const beta=inv.map(r=>r.reduce((a,v,j)=>a+v*XtY[j],0));
+  const yh=X.map(x=>x.reduce((a,v,j)=>a+v*beta[j],0));
+  let ssr=0, sw=0, sy=0;
+  for(let i=0;i<n;i++){ ssr+=w[i]*(y[i]-yh[i])**2; sw+=w[i]; sy+=w[i]*y[i]; }
+  const yb=sy/sw; let sst=0;
+  for(let i=0;i<n;i++) sst+=w[i]*(y[i]-yb)**2;
+  const s2=ssr/(n-k)*(n/sw);
+  const mu=yh.reduce((a,b)=>a+b,0)/n;
+  const sd=Math.sqrt(yh.reduce((a,b)=>a+(b-mu)**2,0)/n);
+  return { ok:true, n, k, beta, inv, R2:1-ssr/sst,
+           se:beta.map((_,i)=>Math.sqrt(s2*inv[i][i])),
+           t:beta.map((b,i)=>b/Math.sqrt(s2*inv[i][i])),
+           yh, predMean:mu, predSD:sd||1 };
+}
+
 let POPFIT=null, POPFIT_N=0;
 function fitPop(){
   const nAll=DB.draws.filter(Boolean).length;
   if(POPFIT && POPFIT_N===nAll) return POPFIT;
-  const X=[],Y=[];
-  rows(0).forEach(d=>{
-    if(!d.s) return;
+  const all=rows(0);
+
+  /* ── 모델 A · 4·5등 당첨자수 초과배수 ── */
+  const XA=[], YA=[];
+  all.forEach(d=>{
+    if(!d.s || !d.w[3] || !d.w[4]) return;
     const g=d.s/TICKET, e4=g*WAYS[4]/C456, e5=g*WAYS[5]/C456;
-    if(e4<200 || !d.w[3] || !d.w[4]) return;
-    X.push(popFeat(d.n)); Y.push(0.5*(d.w[3]/e4)+0.5*(d.w[4]/e5));
+    if(e4<200) return;
+    XA.push(popFeat(d.n)); YA.push(0.5*(d.w[3]/e4)+0.5*(d.w[4]/e5));
   });
-  const N=X.length; if(N<200) return (POPFIT={ok:false});
-  const k=X[0].length;
-  const M=Array.from({length:k},(_,i)=>[...new Array(k).fill(0), ...Array.from({length:k},(_,j)=>i===j?1:0)]);
-  const XtY=new Array(k).fill(0);
-  for(let i=0;i<N;i++){ for(let a=0;a<k;a++){ XtY[a]+=X[i][a]*Y[i]; for(let b=0;b<k;b++) M[a][b]+=X[i][a]*X[i][b]; } }
-  for(let c=0;c<k;c++){
-    let pv=c; for(let r=c+1;r<k;r++) if(Math.abs(M[r][c])>Math.abs(M[pv][c])) pv=r;
-    const t=M[c]; M[c]=M[pv]; M[pv]=t;
-    const dd=M[c][c]; if(!dd) return (POPFIT={ok:false});
-    for(let j=0;j<2*k;j++) M[c][j]/=dd;
-    for(let r=0;r<k;r++){ if(r===c) continue; const f=M[r][c]; for(let j=0;j<2*k;j++) M[r][j]-=f*M[c][j]; }
+  const A = XA.length>=200 ? wls(XA,YA) : null;
+
+  /* ── 모델 B · 1등 수동 선택 비율의 시대 편차 ── */
+  const D=[];
+  all.forEach(d=>{
+    const tot=(d.t[0]||0)+(d.t[1]||0)+(d.t[2]||0);
+    if(tot<3) return;
+    D.push({ n:d.n, tot, man:((d.t[1]||0)+0.5*(d.t[2]||0))/tot });
+  });
+  let B=null, manualBase=null;
+  if(D.length>=200){
+    D.forEach((d,i)=>{
+      let sw=0, sv=0;
+      for(let j=Math.max(0,i-60); j<Math.min(D.length,i+61); j++){
+        if(j===i) continue; sw+=D[j].tot; sv+=D[j].man*D[j].tot; }
+      d.base = sw ? sv/sw : d.man;
+      d.dev  = d.man - d.base;
+    });
+    B = wls(D.map(d=>popFeat(d.n)), D.map(d=>d.dev), D.map(d=>d.tot));
+    manualBase = D.reduce((a,d)=>a+d.man*d.tot,0)/D.reduce((a,d)=>a+d.tot,0);
+    if(B) B.total1st = D.reduce((a,d)=>a+d.tot,0);
   }
-  const inv=M.map(r=>r.slice(k));
-  const beta=inv.map(r=>r.reduce((a,v,j)=>a+v*XtY[j],0));
-  const yh=X.map(x=>x.reduce((a,v,j)=>a+v*beta[j],0));
-  const yb=Y.reduce((a,b)=>a+b,0)/N;
-  const ssr=Y.reduce((a,y,i)=>a+(y-yh[i])**2,0), sst=Y.reduce((a,y)=>a+(y-yb)**2,0);
-  const s2=ssr/(N-k);
+
+  /* ── 두 모델 예측의 상관 (교차 검증 지표) ── */
+  let agree=null;
+  if(A && B){
+    const sample=all.filter(d=>d.s && d.w[3] && (d.t[0]+d.t[1]+d.t[2])>=3);
+    if(sample.length>50){
+      const pa=sample.map(d=>popFeat(d.n).reduce((x,v,j)=>x+v*A.beta[j],0));
+      const pb=sample.map(d=>popFeat(d.n).reduce((x,v,j)=>x+v*B.beta[j],0));
+      const m=a=>a.reduce((x,y)=>x+y,0)/a.length, ma=m(pa), mb=m(pb);
+      let nu=0,da=0,db=0;
+      for(let i=0;i<pa.length;i++){ nu+=(pa[i]-ma)*(pb[i]-mb); da+=(pa[i]-ma)**2; db+=(pb[i]-mb)**2; }
+      agree = nu/Math.sqrt(da*db);
+    }
+  }
+  /* 특징별 학습 구간(2~98 백분위)을 기록해 둔다.
+     회귀는 관측된 범위 안에서만 적합됐으므로, 그 밖으로 나가면 예측이 아니라 외삽이다.
+     예: 범위 계수가 음수라고 해서 무조건 1과 45를 넣으면 모델이 본 적 없는
+     영역으로 밀고 나가는 것이라 신뢰할 수 없다. 그래서 점수 계산 시 특징을 잘라낸다. */
+  const bounds=[];
+  if(XA.length){
+    const k=XA[0].length;
+    for(let j=0;j<k;j++){
+      const col=XA.map(x=>x[j]).sort((a,b)=>a-b);
+      bounds.push([col[Math.floor(col.length*0.02)], col[Math.floor(col.length*0.98)]]);
+    }
+  }
   POPFIT_N=nAll;
-  return (POPFIT={ ok:true, N, k, beta, R2:1-ssr/sst, sd:Math.sqrt(s2),
-    se:beta.map((_,i)=>Math.sqrt(s2*inv[i][i])),
-    t:beta.map((b,i)=>b/Math.sqrt(s2*inv[i][i])) });
+  return (POPFIT={ ok:!!A, A, B, agree, manualBase, bounds });
 }
+/* 학습 구간으로 잘라낸 특징 (외삽 방지) */
+function popFeatClamped(n){
+  const F=POPFIT, f=popFeat(n);
+  if(!F || !F.bounds || !F.bounds.length) return f;
+  return f.map((v,j)=> j===0 ? v : Math.max(F.bounds[j][0], Math.min(F.bounds[j][1], v)));
+}
+/* 분배지수 A: 예상 당첨자수 배수 (1.0 = 평균) */
+function popScoreA(n){ const F=fitPop(); if(!F.A) return null;
+  return popFeatClamped(n).reduce((a,v,j)=>a+v*F.A.beta[j],0); }
+/* 수동편향 B: 수동 비율이 시대 기준선보다 몇 %p 높을지 */
+function popScoreB(n){ const F=fitPop(); if(!F.B) return null;
+  return popFeatClamped(n).reduce((a,v,j)=>a+v*F.B.beta[j],0); }
+/* 통합 점수: 두 모델 표준화 합. 낮을수록 나눠 갖는 사람이 적다. */
 function popScore(n){
-  const F=fitPop(); if(!F.ok) return null;
-  return popFeat(n).reduce((a,v,j)=>a+v*F.beta[j],0);
+  const F=fitPop(); if(!F.A) return null;
+  const a=popScoreA(n), za=(a-F.A.predMean)/F.A.predSD;
+  if(!F.B) return a;
+  const b=popScoreB(n), zb=(b-F.B.predMean)/F.B.predSD;
+  return F.A.predMean + F.A.predSD*(za+zb)/2;   // A 스케일로 되돌린 통합 지수
 }
+
+/* 조합 하나의 분배 지표를 한 줄 태그로 */
+function shareTag(c){
+  const F=fitPop(); if(!F.ok) return '';
+  const z=popScore(c), a=popScoreA(c), b=popScoreB(c);
+  const col = z<F.A.predMean-0.4*F.A.predSD ? 'var(--ok)'
+            : z>F.A.predMean+0.4*F.A.predSD ? 'var(--sig)' : 'var(--ink)';
+  let t=' · <b style="color:'+col+'">분배지수 '+z.toFixed(3)+'</b>';
+  t+=' <span style="color:var(--ink-40)">(판매 '+a.toFixed(3);
+  if(b!=null) t+=' · 수동편차 '+(b>=0?'+':'')+(b*100).toFixed(1)+'%p';
+  t+=')</span>';
+  return t;
+}
+
 function renderPopModel(){
   const F=fitPop(), box=$('#popModel'); if(!box) return;
-  if(!F.ok){ box.innerHTML='<span style="font-size:12px;color:var(--ink-60)">데이터가 부족해 모델을 학습하지 못했습니다.</span>'; return; }
+  if(!F.ok){ box.innerHTML='<span style="font-size:13px;color:var(--ink-60)">데이터가 부족해 모델을 학습하지 못했습니다.</span>'; return; }
   const tp=t=>{ const p=2*normSF(Math.abs(t)); return p<0.001?'&lt;0.001':p.toFixed(3); };
-  box.innerHTML=
-    '<p class="note" style="padding:0 0 12px">'+
+  const dir=(b,t)=>Math.abs(t)<2 ? '<span style="color:var(--ink-40)">유의하지 않음</span>'
+      : (b>0?'<b style="color:var(--sig)">사람이 더 고름</b>':'<b style="color:var(--ok)">사람이 덜 고름</b>');
+
+  let html =
+    '<p class="note" style="padding:0 0 14px">'+
     '당첨 확률은 어떤 번호를 골라도 같습니다. 하지만 <b>당첨됐을 때 몇 명과 나눠 갖는가</b>는 다릅니다. '+
-    '그 회차 당첨번호가 얼마나 인기 있었는지는 <b>4등·5등 당첨자 수가 기대치보다 얼마나 많았는가</b>로 직접 측정됩니다. '+
-    '아래는 '+nf(F.N)+'회차를 최소자승 회귀한 결과입니다.</p>'+
-    '<div class="scroll"><table><tr><th>특징</th><th class="num">계수</th><th class="num">t값</th><th class="num">p값</th><th>해석</th></tr>'+
-    F.beta.map((b,i)=> i===0 ? '' :
+    '그 회차 번호가 얼마나 인기였는지를 <b>서로 완전히 다른 두 데이터</b>로 각각 재고, 결과가 일치하는지 확인합니다.</p>';
+
+  if(F.agree!=null){
+    html += '<div class="verdict'+(Math.abs(F.agree)>0.6?' sig':'')+'" style="margin-top:0">'+
+      '<b>교차 검증</b> — 판매 기준 모델(A)과 구매방식 기준 모델(B)의 예측 상관 = '+
+      '<b style="font-size:1.25em">'+F.agree.toFixed(3)+'</b><br>'+
+      '두 모델은 <b>공유하는 데이터가 하나도 없습니다.</b> A는 4·5등 당첨자 수, B는 1등의 수동 선택 비율에서 나옵니다. '+
+      (Math.abs(F.agree)>0.6
+        ? '그런데도 예측이 이만큼 일치한다는 것은 <b>실재하는 현상을 두 각도에서 본 것</b>이라는 뜻입니다.'
+        : '일치도가 낮습니다 — 어느 한쪽이 잡음일 수 있으니 해석에 주의하세요.')+
+      '</div>';
+  }
+
+  html += '<h3 style="padding:18px 0 6px">모델 A · 판매 기준 (4·5등 당첨자수 초과배수)</h3>'+
+    '<p class="note" style="padding:0 0 10px">'+nf(F.A.n)+'회차 · R²='+F.A.R2.toFixed(3)+'</p>'+
+    '<div class="scroll"><table><tr><th>특징</th><th class="num">계수</th><th class="num">t</th><th class="num">p</th><th>방향</th></tr>'+
+    F.A.beta.map((b,i)=> i===0?'' :
       '<tr><td>'+POP_NAMES[i]+'</td><td class="num">'+(b>=0?'+':'')+b.toFixed(4)+'</td>'+
-      '<td class="num">'+F.t[i].toFixed(2)+'</td><td class="num">'+tp(F.t[i])+'</td>'+
-      '<td style="color:var(--ink-60);font-size:11px">'+(Math.abs(F.t[i])<2?'유의하지 않음':
-        (b>0?'클수록 <b style="color:var(--sig)">나눠 갖는 사람이 많아짐</b>':'클수록 <b style="color:var(--ok)">나눠 갖는 사람이 적어짐</b>'))+'</td></tr>').join('')+
-    '</table></div>'+
-    '<div class="verdict"><b>결론</b> — 결정계수 R²='+F.R2.toFixed(3)+'. '+
-    '설명력은 크지 않지만 <b>「12 이하 번호 개수」와 「번호 범위」는 t값 4 이상</b>으로, 우연으로 나올 수 없는 크기입니다.<br>'+
-    '즉 <b>낮은 번호(1~12)를 적게 넣고, 번호를 넓게 퍼뜨릴수록 당첨자 수가 줄어듭니다.</b> '+
-    '효과 크기는 현실적인 조합 기준 대략 <b>±10~15%</b> — 1등 당첨금이 20억이라면 2~3억 차이입니다.<br>'+
-    '<b>이것이 이 도구 전체에서 유일하게 실증되는 신호입니다.</b> 빈도·미출현·동반쌍은 전부 잡음이지만, 이건 다릅니다. '+
-    '확률을 바꾸는 게 아니라 분배 인원을 바꾸기 때문입니다.</div>';
+      '<td class="num">'+F.A.t[i].toFixed(2)+'</td><td class="num">'+tp(F.A.t[i])+'</td>'+
+      '<td>'+dir(b,F.A.t[i])+'</td></tr>').join('')+'</table></div>';
+
+  if(F.B){
+    html += '<h3 style="padding:22px 0 6px">모델 B · 구매방식 기준 (1등 수동 비율의 시대 편차)</h3>'+
+      '<p class="note" style="padding:0 0 10px">'+nf(F.B.n)+'회차 · 1등 당첨자 '+nf(F.B.total1st)+'명 가중 · '+
+      '전체 평균 수동비율 '+pct(F.manualBase,1)+' · R²='+F.B.R2.toFixed(3)+'<br>'+
+      '자동 구매는 815만 조합에 균등하게 뿌려집니다. 수동만 사람이 좋아하는 번호로 몰립니다. '+
+      '따라서 <b>1등 당첨자 중 수동 비율이 기준선보다 높았다 = 그 번호는 사람이 고르기 좋은 번호였다</b>는 뜻입니다.</p>'+
+      '<div class="scroll"><table><tr><th>특징</th><th class="num">계수</th><th class="num">t</th><th class="num">p</th><th>방향</th></tr>'+
+      F.B.beta.map((b,i)=> i===0?'' :
+        '<tr><td>'+POP_NAMES[i]+'</td><td class="num">'+(b>=0?'+':'')+b.toFixed(4)+'</td>'+
+        '<td class="num">'+F.B.t[i].toFixed(2)+'</td><td class="num">'+tp(F.B.t[i])+'</td>'+
+        '<td>'+dir(b,F.B.t[i])+'</td></tr>').join('')+'</table></div>';
+    const same=F.A.beta.map((b,i)=>i>0 && Math.abs(F.A.t[i])>2 && Math.abs(F.B.t[i])>2 && Math.sign(b)===Math.sign(F.B.beta[i])).filter(Boolean).length;
+    const both=F.A.beta.map((b,i)=>i>0 && Math.abs(F.A.t[i])>2 && Math.abs(F.B.t[i])>2).filter(Boolean).length;
+    html += '<div class="verdict"><b>두 모델의 합의</b> — 양쪽 모두 유의한 특징 '+both+'개 중 <b>'+same+'개가 같은 방향</b>입니다.<br>'+
+      '<b>주의</b> — 「31 이하 개수」의 계수 부호는 단독으로 읽으면 안 됩니다. '+
+      '31 이하 번호가 많으면 자동으로 범위가 좁아지고 합계가 낮아져서, 그 효과를 「번호 범위」와 「합계」가 먼저 흡수합니다(다중공선성). '+
+      '단변량으로 보면 31 이하가 많을수록 당첨자가 늘어납니다 — 생일 편향은 실재합니다.<br>'+
+      '실제 조합 점수는 개별 계수가 아니라 <b>모델 전체의 예측값</b>으로 계산합니다.</div>';
+  } else {
+    html += '<p class="note">자동/수동 데이터는 262회차부터 제공됩니다. 아직 충분히 수집되지 않았습니다.</p>';
+  }
+
+  html += '<div class="verdict sig"><b>결론</b> — 이것이 이 도구 전체에서 <b>유일하게 실증되는 신호</b>입니다. '+
+    '빈도·미출현·동반쌍·추첨순서는 전부 잡음이었지만 이건 다릅니다. '+
+    '확률을 바꾸는 게 아니라 <b>분배 인원</b>을 바꾸기 때문입니다.<br>'+
+    '효과 크기는 현실적인 조합 기준 대략 <b>±10~15%</b> — 1등 당첨금이 20억이라면 2~3억 차이입니다. '+
+    '그 이상은 아닙니다.</div>';
+  box.innerHTML=html;
 }
 
 /* ════════════════ 조합 생성기 ════════════════ */
@@ -1050,7 +1277,22 @@ const STRATS = [
   {k:'balanced',n:'구조 균형', d:'합계·홀짝·구간 분포가 역대 평균에 가까운 조합만 통과시킵니다.'},
   {k:'minshare',n:'최소 분배 ★', d:'<b>실증된 유일한 전략.</b> 후보를 대량 생성한 뒤 아래 회귀 모델이 예측한 <b>분배 인원 지수가 가장 낮은 조합</b>만 남깁니다. 당첨 확률은 그대로지만 당첨 시 수령액의 기대값이 올라갑니다.'}
 ];
-let PICK_FIX=new Set(), PICK_EXC=new Set(), CUR_STRAT='unpop', GEN_RESULT=[];
+let PICK_FIX=new Set(), PICK_EXC=new Set(), CUR_STRAT='minshare', GEN_RESULT=[];
+
+/* 회차 번호를 시드로 쓰는 결정론적 난수.
+   주간 추천이 새로고침할 때마다 바뀌면 신뢰가 안 가므로,
+   같은 회차에는 항상 같은 조합이 나오도록 고정한다.
+   회차가 넘어가면 시드가 바뀌어 자동으로 새 조합이 된다. */
+function mulberry32(seed){
+  let a=seed>>>0;
+  return function(){
+    a=(a+0x6D2B79F5)>>>0;
+    let t=Math.imul(a^(a>>>15),1|a);
+    t=(t+Math.imul(t^(t>>>7),61|t))^t;
+    return ((t^(t>>>14))>>>0)/4294967296;
+  };
+}
+let RNG=Math.random;
 
 function renderPickBoard(){
   const b=$('#pickBoard'); b.innerHTML='';
@@ -1085,7 +1327,7 @@ function pickWeighted(w, exclude, k){
   const out=new Set();
   while(out.size<k && pool.length){
     let tot=0; pool.forEach(n=>{ if(!out.has(n)) tot+=w[n]; });
-    let x=Math.random()*tot;
+    let x=RNG()*tot;
     for(const n of pool){ if(out.has(n)) continue; x-=w[n]; if(x<=0){ out.add(n); break; } }
     if(out.size<k && pool.every(n=>out.has(n))) break;
   }
@@ -1133,7 +1375,7 @@ function generate(){
     tries++;
     let base=new Set(fix);
     if(seeds && base.size<4){
-      const p=seeds[Math.floor(Math.random()*seeds.length)].k.split('-').map(Number);
+      const p=seeds[Math.floor(RNG()*seeds.length)].k.split('-').map(Number);
       p.forEach(n=>{ if(!exc.has(n)) base.add(n); });
     }
     const ex=new Set([...exc,...base]);
@@ -1156,13 +1398,11 @@ function generate(){
   box.innerHTML=out.map((c,i)=>{
     const s=c.reduce((a,b)=>a+b,0), o=c.filter(n=>n%2).length;
     const bands=[0,0,0,0,0]; c.forEach(n=>bands[Math.min(4,Math.floor((n-1)/10))]++);
-    const ps=popScore(c);
     return '<div class="combo"><div class="k">'+'ABCDEFGHIJKLMNOPQRST'[i]+'</div>'+
       '<div class="balls">'+c.map(n=>ballHTML(n)).join('')+'</div>'+
       '<div class="m">합계<em>'+s+'</em>홀'+o+':짝'+(6-o)+'</div>'+
       '<div class="c">구간 '+bands.join('-')+' · 연속 '+consCount(c)+'쌍 · 31이하 '+c.filter(n=>n<=31).length+'개'+
-      (ps!=null?' · <b style="color:'+(ps<0.97?'var(--ok)':ps>1.02?'var(--sig)':'var(--ink)')+'">분배지수 '+ps.toFixed(3)+'</b>':'')+
-      '</div></div>';
+      shareTag(c)+'</div></div>';
   }).join('');
   $('#genAudit').innerHTML='<div class="verdict"><b>생성 근거</b> — 전략 «'+STRATS.find(s=>s.k===CUR_STRAT).n+'», '+
     '시도 '+nf(tries)+'회 중 필터 탈락 '+nf(rejected)+'회. 과거 1등 조합과 중복되는 것은 자동 제외했습니다.<br>'+
@@ -1484,6 +1724,13 @@ function wire(){
     alert('대시보드에 고정했습니다.'); renderPinned();
   };
   $('#sheetBtn').onclick=openSheet;
+  $('#weeklySheet').onclick=()=>{ const W=weeklyPicks(); const keep=GEN_RESULT;
+    GEN_RESULT=W.combos; try{ openSheet(); } finally { GEN_RESULT=keep; } };
+  $('#weeklyToMine').onclick=()=>{
+    const W=weeklyPicks(); const a=myLoad();
+    W.combos.forEach(c=>a.push({round:W.round,nums:c,cost:TICKET,at:Date.now()}));
+    mySave(a); alert(W.combos.length+'게임을 '+W.round+'회에 담았습니다.');
+  };
 
   $('#simBtn').onclick=()=>{ $('#simOut').innerHTML='<span class="spin"></span>'; setTimeout(()=>{ try{runSim();}catch(e){$('#simOut').innerHTML='오류: '+e.message;} renderFirstHit(); },30); };
   $('#btBtn').onclick=runBacktest;
