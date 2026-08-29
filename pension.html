@@ -208,11 +208,16 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
     </p>
   </div>
 
+  <h2>낱장과 세트</h2>
+  <p class="note">1세트 = <b>같은 번호의 1조~5조 5장</b>. 번호가 1등이면 그중 한 장이 1등, 나머지 네 장이 자동으로 2등이 됩니다.
+    공식 안내의 「세트 구매시 월 700만원 &times; 20년 <b>+ 월 400만원 &times; 10년</b>」이 바로 이 2등 4장(100만 &times; 4)입니다.</p>
+  <div class="card flat" id="setCard"></div>
+
   <h2>1등 당첨금의 실제 가치</h2>
   <div class="card flat" id="pvCard"></div>
 
   <h2>이번 회차 집중 번호</h2>
-  <p class="note">연금복권은 (조, 6자리) 조합 하나당 <b>2장</b>만 발행되므로 원하는 번호가 <b>이미 팔렸을 수 있습니다</b>. 그래서 1순위부터 10순위까지 대안을 함께 냅니다 — 앞 번호를 못 사면 다음으로 내려가세요. 설정은 <b>예상 번호</b> 탭에서 바꿉니다. 백테스트 적중률을 반드시 함께 보세요.</p>
+  <p class="note">공식 안내에 따르면 <b>복권 번호는 한 회차당 1개 번호만 인쇄</b>되고, 같은 번호를 인터넷에서도 판매합니다. 즉 (조, 6자리) 조합 하나에 실물은 <b>판매점 1장 + 인터넷 1장</b>뿐이라 원하는 번호가 <b>이미 팔렸을 수 있습니다</b>. 그래서 1순위부터 10순위까지 대안을 함께 냅니다 — 앞 번호를 못 사면 다음으로 내려가세요. 조를 고르는 게 번거로우면 <b>세트(같은 번호 1~5조 5장)</b>로 사는 방법도 있습니다. 아래 «낱장과 세트» 표를 보세요. 설정은 <b>예상 번호</b> 탭에서 바꿉니다. 백테스트 적중률을 반드시 함께 보세요.</p>
   <div class="card" id="dashPick"><span class="spin"></span></div>
 </section>
 
@@ -382,7 +387,8 @@ const LSDB = 'pensionlab.db.v1';
 const LSMY = 'pensionlab.my.v1';
 const TICKET = 1000;              // 1장 가격
 const COMB   = 5 * 1e6;           // 조 5 × 6자리 10^6
-const COPIES = 2;                 // 회차당 조합별 발행 매수(데이터로 검증됨)
+const COPIES = 2;                 // (조,번호) 조합당 실물 = 판매점 인쇄분 1 + 인터넷 1
+const SETSIZE = 5;                // 1세트 = 같은 번호의 1~5조 5장
 const HALFLIFE = 52;              // 최근가중 반감기(회)
 
 // 등위 정의: p=1장당 확률, amt=명목 총 수령액, mo=월지급액, n=지급 횟수
@@ -726,6 +732,8 @@ function renderDash(){
     +`<td class="num">—</td><td class="num"><b>${ev.toFixed(1)}원</b><br><span style="font-size:11px;color:var(--ink-60)">환급률 ${(ev/TICKET*100).toFixed(1)}%</span></td></tr>`;
   $('#oddsTbl').innerHTML=t;
 
+  renderSet();
+
   // 현재가치
   const netMo=7_000_000*(1-TAX_RATE);
   const pv=(mo,n,r)=>{ const i=r/12; return i===0? mo*n : mo*(1-Math.pow(1+i,-n))/i; };
@@ -742,6 +750,44 @@ function renderDash(){
     <p class="note" style="padding:12px 0 0">명목 16.8억원은 <b>20년에 걸쳐</b> 받는 금액입니다. 매월 700만원에 기타소득세 22%가 원천징수되어 실수령은 546만원,
       할인율 3%를 적용한 현재가치는 <b>약 9.8억원</b>입니다. 5만원 이하(5·6·7등)는 과세최저한으로 비과세입니다.
       <span style="color:var(--ink-40)">— 세율은 공개된 일반 기준이며 개인 상황에 따라 달라질 수 있습니다.</span></p>`;
+}
+
+/* 낱장 5장 vs 세트 5장 — 같은 5,000원을 어떻게 쓰는가
+   근거: 세트는 같은 번호의 1~5조 전부이므로 번호가 1등이면 한 장은 1등, 나머지 넷은 자동으로 2등이 된다.
+   3~7등은 «조 무관 · 뒤 n자리»라 세트 5장이 모두 동시에 당첨된다.
+   두 방식의 기대값은 반드시 같아야 한다(둘 다 5장이므로). 다르게 나오면 계산이 틀린 것이다. */
+function setCompare(){
+  const P1=2e-7, P2=8e-7, PB=1e-6, A1=1_680_000_000, A2=120_000_000;
+  const suffix=[{k:3,p:9e-6,a:1e6},{k:4,p:9e-5,a:1e5},{k:5,p:9e-4,a:5e4},{k:6,p:9e-3,a:5e3},{k:7,p:9e-2,a:1e3}];
+  const single={ p1:SETSIZE*P1, a1:A1, p2:SETSIZE*P2, a2:A2, pb:SETSIZE*PB, ab:A2,
+                 ev:SETSIZE*(P1*A1+P2*A2+PB*A2+suffix.reduce((s,x)=>s+x.p*x.a,0)) };
+  const set={ p1:1e-6, a1:A1+4*A2, p2:0, a2:0, pb:1e-6, ab:SETSIZE*A2,
+              ev:1e-6*(A1+4*A2) + 1e-6*(SETSIZE*A2) + suffix.reduce((s,x)=>s+x.p*(SETSIZE*x.a),0) };
+  return {single,set,cost:SETSIZE*TICKET};
+}
+function renderSet(){
+  const {single,set,cost}=setCompare();
+  const oneIn=p=>p>0?'1/'+fmt(Math.round(1/p)):'—';
+  $('#setCard').innerHTML=`
+    <div class="scroll"><table>
+      <tr><th></th><th class="num">낱장 5장 (서로 다른 번호)</th><th class="num">세트 5장 (같은 번호 1~5조)</th></tr>
+      <tr><td>가격</td><td class="num">${fmt(cost)}원</td><td class="num">${fmt(cost)}원</td></tr>
+      <tr><td><b>1등 확률</b></td><td class="num">${oneIn(single.p1)}</td><td class="num">${oneIn(set.p1)}</td></tr>
+      <tr><td>1등 시 명목 수령</td><td class="num">${fmt(single.a1)}원<br><span style="font-size:11px;color:var(--ink-60)">월 700만 × 20년</span></td>
+        <td class="num"><b>${fmt(set.a1)}원</b><br><span style="font-size:11px;color:var(--ink-60)">월 700만 × 20년 + 월 400만 × 10년</span></td></tr>
+      <tr><td>2등 단독 당첨</td><td class="num">${oneIn(single.p2)} · ${fmt(single.a2)}원</td>
+        <td class="num" style="color:var(--ink-40)">불가능<br><span style="font-size:11px">번호가 맞으면 1등이 함께 나옴</span></td></tr>
+      <tr><td>보너스</td><td class="num">${oneIn(single.pb)} · ${fmt(single.ab)}원</td><td class="num">${oneIn(set.pb)} · ${fmt(set.ab)}원</td></tr>
+      <tr class="hi"><td><b>기대값</b></td><td class="num"><b>${single.ev.toFixed(0)}원</b> (${(single.ev/cost*100).toFixed(1)}%)</td>
+        <td class="num"><b>${set.ev.toFixed(0)}원</b> (${(set.ev/cost*100).toFixed(1)}%)</td></tr>
+    </table></div>
+    <div class="verdict">
+      <b>기대값은 ${Math.abs(single.ev-set.ev)<0.5?'정확히 같습니다':'다릅니다(계산 확인 필요)'}.</b>
+      둘 다 5장이니 당연한 결과이고, 이 값이 어긋나면 계산이 틀린 것입니다. 달라지는 것은 <b>분포</b>뿐입니다 —
+      세트는 대박이 한 번에 크게(${fmt(set.a1)}원) 오고, 낱장은 2등 단독 당첨 같은 <b>중간 당첨 기회</b>가 더 자주 옵니다.<br>
+      원하는 번호의 특정 조가 품절이라면 세트가 대안이 됩니다. 조를 고르지 않아도 되기 때문입니다.
+      <span style="color:var(--ink-40)">— 세트 구매 시 번호를 직접 고를 수 있는지는 판매 채널에 따라 다를 수 있어 확인하지 못했습니다.</span>
+    </div>`;
 }
 
 /* ══════════════════ 예상 번호 ══════════════════ */
@@ -968,17 +1014,37 @@ function renderIssue(){
   const c2=rows.map(r=>r.cnt[2]).filter(v=>v!=null);
   const c8=rows.map(r=>r.cnt[8]).filter(v=>v!=null);
   const mx=a=>Math.max(...a);
+  // 판매점 매수 = 합계 − 인터넷. 등위별 «해당 등수에 걸리는 조합 수»와 비교한다.
+  const CH={1:1, 2:4, 8:5, 3:45, 4:450, 5:4500, 6:45000, 7:450000};
+  const chk=Object.keys(CH).map(k=>{
+    const kk=+k, ok=rows.filter(r=>r.cnt&&r.cnt[kk]!=null&&r.net&&r.net[kk]!=null);
+    const st=ok.map(r=>r.cnt[kk]-r.net[kk]), it=ok.map(r=>r.net[kk]);
+    const bad=ok.filter((r,i)=>st[i]>CH[kk]||it[i]>CH[kk]).length;
+    return {k:kk, n:ok.length, st:Math.max(...st,0), it:Math.max(...it,0), cap:CH[kk], bad};
+  });
+  const totalBad=chk.reduce((a,x)=>a+x.bad,0);
+  const NAMES={1:'1등',2:'2등',3:'3등',4:'4등',5:'5등',6:'6등',7:'7등',8:'보너스'};
   $('#issueCard').innerHTML=`
-    <p class="note">공식 자료에는 «회차당 몇 장을 발행하는가»가 없습니다. 당첨매수의 <b>최대값</b>에서 역산할 수 있습니다.</p>
+    <p class="note">동행복권 공식 안내에 이렇게 적혀 있습니다.<br>
+      <span style="border-left:3px solid var(--ink-30);padding-left:10px;display:inline-block;margin-top:6px">
+      「복권 번호는 한 회차당 1개 번호만 인쇄됩니다.」 · 「인쇄된 번호와 동일한 번호를 인터넷에서도 판매하고 있습니다.」</span><br><br>
+      즉 (조, 6자리) 조합 하나에 존재하는 실물은 <b>판매점 인쇄분 1장 + 인터넷 1장 = ${COPIES}장</b>입니다.
+      이 도구는 그 서술이 맞는지 <b>전 회차 전 등위</b>로 확인합니다.</p>
     <div class="scroll"><table>
-      <tr><th>관측</th><th class="num">최대 당첨매수</th><th>조합 1개당 발행</th><th class="num">역산값</th></tr>
-      <tr><td>1등 (조+6자리 일치 조합 1개)</td><td class="num">${mx(c1)}매</td><td>최대 k매</td><td class="num">${mx(c1)}</td></tr>
-      <tr><td>2등 (같은 번호 · 다른 4개 조)</td><td class="num">${mx(c2)}매</td><td>최대 4k매</td><td class="num">${(mx(c2)/4).toFixed(0)}</td></tr>
-      <tr><td>보너스 (같은 번호 · 5개 조 전부)</td><td class="num">${mx(c8)}매</td><td>최대 5k매</td><td class="num">${(mx(c8)/5).toFixed(0)}</td></tr>
+      <tr><th>등위</th><th class="num">해당 조합 수</th><th class="num">판매점 최대</th><th class="num">인터넷 최대</th><th class="num">초과 회차</th></tr>
+      ${chk.map(x=>`<tr><td>${NAMES[x.k]}</td><td class="num">${fmt(x.cap)}</td>
+        <td class="num">${fmt(x.st)}</td><td class="num">${fmt(x.it)}</td>
+        <td class="num" style="color:${x.bad?'var(--sig)':'var(--ok)'}">${x.bad}</td></tr>`).join('')}
     </table></div>
-    <div class="verdict"><b>세 관측이 모두 k=${COPIES}를 가리킵니다.</b>
-      회차마다 (조, 6자리) 조합 하나당 ${COPIES}장씩, 총 <b>${fmt(COMB*COPIES)}매</b>를 발행한다는 뜻입니다.
-      <span style="color:var(--ink-40)">— 공식 발표가 아니라 당첨매수에서 역산한 추론입니다.</span></div>`;
+    <div class="verdict ${totalBad?'sig':'ok'}">
+      판매점·인터넷 각각이 «그 등수에 걸리는 조합 수»를 넘은 회차가 <b>${totalBad}회</b>입니다
+      (${rows.length}회 &times; 8등위 전수).<br>
+      1등이 2매인 회차는 예외 없이 <b>판매점 1 + 인터넷 1</b> 이었습니다 — 같은 번호가 두 곳에서 한 장씩 팔린 것입니다.
+      회차당 발행 총량은 ${fmt(COMB)} 조합 &times; ${COPIES}장 = <b>${fmt(COMB*COPIES)}매</b>가 됩니다.
+    </div>
+    <p class="note" style="padding:12px 0 0;color:var(--ink-40)">아직 모르는 것 — 공식 당첨확률 표에 1등이
+      「1/5,000,000」과 함께 <b>「1/25,000,000 (판매점+인터넷 동시 당첨)」</b>으로도 적혀 있습니다.
+      이 25,000,000이 무엇을 세는 값인지는 확인하지 못했습니다.</p>`;
 
   // 판매율 4경로 (연도별)
   const byYear={};
