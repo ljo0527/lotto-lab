@@ -1,0 +1,231 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>주간 복권 브리핑 · 2026-08-29</title><style>
+:root{--paper:#EEF0EB;--paper-2:#F7F8F5;--ink:#16302B;--ink-60:rgba(22,48,43,.60);--ink-40:rgba(22,48,43,.40);
+ --ink-12:rgba(22,48,43,.12);--ink-06:rgba(22,48,43,.06);--sig:#B0281A;--ok:#1F6F4A}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#12181A;--paper-2:#182022;
+ --ink:#E6EDE9;--ink-60:rgba(230,237,233,.62);--ink-40:rgba(230,237,233,.40);
+ --ink-12:rgba(230,237,233,.14);--ink-06:rgba(230,237,233,.06);--sig:#FF8A78;--ok:#7FD8A8}}
+:root[data-theme="dark"]{--paper:#12181A;--paper-2:#182022;--ink:#E6EDE9;--ink-60:rgba(230,237,233,.62);
+ --ink-40:rgba(230,237,233,.40);--ink-12:rgba(230,237,233,.14);--ink-06:rgba(230,237,233,.06);--sig:#FF8A78;--ok:#7FD8A8}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+ font-size:15px;line-height:1.68;letter-spacing:-.01em;padding:0 0 70px}
+.wrap{max-width:940px;margin:0 auto;padding:18px 14px 0}
+.mono{font-family:"Space Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+header{border-bottom:1.5px solid var(--ink);padding-bottom:12px;margin-bottom:22px}
+.eyebrow{font-family:ui-monospace,monospace;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-60);
+ display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.eyebrow a{color:var(--ink-60)}
+h1{font-size:clamp(30px,7vw,46px);line-height:1.06;font-weight:800;padding:12px 0 4px;letter-spacing:-.02em}
+h1 small{display:block;font-size:.34em;font-weight:600;color:var(--ink-60);letter-spacing:.04em;padding-top:8px}
+h2{font-family:ui-monospace,monospace;font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+ padding:0 0 12px;display:flex;align-items:center;gap:10px;margin-top:34px}
+h2::after{content:"";flex:1;height:1px;background:var(--ink-12)}
+h3{font-size:14px;font-weight:700;padding:16px 0 8px;color:var(--ink-60)}
+p.note{font-size:13.5px;color:var(--ink-60);padding-bottom:12px;line-height:1.7}
+p.note b{color:var(--ink)}
+.card{background:var(--paper-2);border:1.5px solid var(--ink);padding:16px 15px;margin-bottom:12px}
+.card.flat{border-width:1px;border-color:var(--ink-12)}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:1px;background:var(--ink-12);
+ border:1.5px solid var(--ink);margin-bottom:16px}
+.kpi>div{background:var(--paper-2);padding:12px 11px}
+.kpi .k{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-60)}
+.kpi .v{font-size:27px;font-weight:800;line-height:1.12;padding-top:3px;letter-spacing:-.02em}
+.kpi .s{font-size:12px;color:var(--ink-60)}
+.ball{width:31px;height:31px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+ font-family:ui-monospace,monospace;font-weight:700;font-size:12.5px;color:#16302B;flex:none}
+.balls{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.dg{width:25px;height:31px;border:1px solid var(--ink-40);display:inline-flex;align-items:center;justify-content:center;
+ font-family:ui-monospace,monospace;font-weight:700;font-size:14px;background:var(--paper-2);flex:none}
+.dg.hi{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tk{display:inline-flex;gap:5px;align-items:center;flex-wrap:wrap}
+.bnd{font-weight:800;font-size:19px;border:1.5px solid var(--ink);padding:2px 8px;line-height:1.25}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:8px 6px;text-align:left;border-bottom:1px solid var(--ink-12);vertical-align:middle}
+th{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60)}
+td.num,th.num{text-align:right;font-family:ui-monospace,monospace}
+tr.win td{background:var(--ink-06)}
+.rk{font-weight:800;font-size:19px;width:30px;color:var(--ink-40)}
+.rk.top{color:var(--ink)}
+.scroll{overflow-x:auto}
+.tag{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;padding:2px 6px;border:1px solid currentColor;white-space:nowrap}
+.tag.sig{color:var(--sig)}.tag.noi{color:var(--ink-40)}.tag.ok{color:var(--ok)}
+.verdict{border-left:3px solid var(--ink);padding:10px 0 10px 12px;margin:12px 0;font-size:13.5px;color:var(--ink-60)}
+.verdict b{color:var(--ink)}
+.verdict.ok{border-color:var(--ok)}
+.foot{font-size:12px;color:var(--ink-40);border-top:1px solid var(--ink-12);margin-top:30px;padding-top:14px;line-height:1.8}
+@media print{body{background:#fff;padding:0}.card{break-inside:avoid}h2{break-after:avoid}}
+@page{margin:14mm}</style></head><body>
+<div class="wrap">
+<header>
+  <div class="eyebrow"><span>Weekly Lottery Brief</span>
+    <span><a href="./pension.html">PENSION LAB</a> · <a href="./index.html">LOTTO LAB</a></span></div>
+  <h1>주간 복권 브리핑<small>2026-08-29 (금) 작성 · 연금복권720+ 331회 / 로또 6/45 1239회 대상</small></h1>
+</header>
+
+<div class="kpi">
+  <div><div class="k">연금 지난 회차</div><div class="v">330회</div><div class="s">2026.08.27</div></div>
+  <div><div class="k">연금 지난주 적중</div><div class="v">3<span style="font-size:16px;color:var(--ink-60)">/10</span></div><div class="s">7등, 7등, 7등</div></div>
+  <div><div class="k">로또 지난 회차</div><div class="v">1238회</div><div class="s">2026.08.22</div></div>
+  <div><div class="k">로또 지난주 적중</div><div class="v">0<span style="font-size:16px;color:var(--ink-60)">/10</span></div><div class="s">없음</div></div>
+  <div><div class="k">연금 추정 판매</div><div class="v">7.22<span style="font-size:16px">백만</span></div><div class="s">발행 1,000만매 대비 72%</div></div>
+</div>
+
+<h2>연금복권 720+ · 331회 (2026.09.03 목 추첨)</h2>
+<div class="card">
+  <p class="note"><b>조합 하나당 2장만 발행됩니다.</b> 원하는 번호가 이미 팔렸을 수 있으니 1순위부터 시도하고, 안 되면 다음 순위로 내려가세요.</p>
+  <div class="scroll"><table><tr><th>순위</th><th>조 · 번호</th><th class="num">표기</th></tr><tr><td class="rk top">1</td>
+    <td><span class="tk"><span class="bnd">1</span><span style="font-size:11px;color:var(--ink-60)">조</span>
+    &nbsp;<span class="dg">9</span><span class="dg">9</span><span class="dg">3</span><span class="dg">0</span><span class="dg">2</span><span class="dg">4</span></span></td>
+    <td class="num" style="font-size:12px;color:var(--ink-60)">1조 993024</td></tr><tr><td class="rk top">2</td>
+    <td><span class="tk"><span class="bnd">1</span><span style="font-size:11px;color:var(--ink-60)">조</span>
+    &nbsp;<span class="dg">9</span><span class="dg">9</span><span class="dg">3</span><span class="dg">1</span><span class="dg">8</span><span class="dg">8</span></span></td>
+    <td class="num" style="font-size:12px;color:var(--ink-60)">1조 993188</td></tr><tr><td class="rk top">3</td>
+    <td><span class="tk"><span class="bnd">5</span><span style="font-size:11px;color:var(--ink-60)">조</span>
+    &nbsp;<span class="dg">3</span><span class="dg">9</span><span class="dg">3</span><span class="dg">0</span><span class="dg">2</span><span class="dg">8</span></span></td>
+    <td class="num" style="font-size:12px;color:var(--ink-60)">5조 393028</td></tr><tr><td class="rk ">4</td>
+    <td><span class="tk"><span class="bnd">5</span><span style="font-size:11px;color:var(--ink-60)">조</span>
+    &nbsp;<span class="dg">9</span><span class="dg">7</span><span class="dg">3</span><span class="dg">0</span><span class="dg">2</span><span class="dg">8</span></span></td>
+    <td class="num" style="font-size:12px;color:var(--ink-60)">5조 973028</td></tr><tr><td class="rk ">5</td>
+    <td><span class="tk"><span class="bnd">1</span><span style="font-size:11px;color:var(--ink-60)">조</span>
+    &nbsp;<span class="dg">9</span><span class="dg">7</span><span class="dg">3</span><span class="dg">0</span><span class="dg">2</span><span class="dg">7</span></span></td>
+    <td class="num" style="font-size:12px;color:var(--ink-60)">1조 973027</td></tr><tr><td class="rk ">6</td>
+    <td><span class="tk"><span class="bnd">1</span><span style="font-size:11px;color:var(--ink-60)">조</span>
+    &nbsp;<span class="dg">3</span><span class="dg">7</span><span class="dg">3</span><span class="dg">0</span><span class="dg">2</span><span class="dg">4</span></span></td>
+    <td class="num" style="font-size:12px;color:var(--ink-60)">1조 373024</td></tr><tr><td class="rk ">7</td>
+    <td><span class="tk"><span class="bnd">1</span><span style="font-size:11px;color:var(--ink-60)">조</span>
+    &nbsp;<span class="dg">9</span><span class="dg">7</span><span class="dg">3</span><span class="dg">6</span><span class="dg">8</span><span class="dg">8</span></span></td>
+    <td class="num" style="font-size:12px;color:var(--ink-60)">1조 973688</td></tr><tr><td class="rk ">8</td>
+    <td><span class="tk"><span class="bnd">1</span><span style="font-size:11px;color:var(--ink-60)">조</span>
+    &nbsp;<span class="dg">8</span><span class="dg">7</span><span class="dg">8</span><span class="dg">0</span><span class="dg">2</span><span class="dg">4</span></span></td>
+    <td class="num" style="font-size:12px;color:var(--ink-60)">1조 878024</td></tr><tr><td class="rk ">9</td>
+    <td><span class="tk"><span class="bnd">1</span><span style="font-size:11px;color:var(--ink-60)">조</span>
+    &nbsp;<span class="dg">3</span><span class="dg">7</span><span class="dg">0</span><span class="dg">1</span><span class="dg">2</span><span class="dg">4</span></span></td>
+    <td class="num" style="font-size:12px;color:var(--ink-60)">1조 370124</td></tr><tr><td class="rk ">10</td>
+    <td><span class="tk"><span class="bnd">5</span><span style="font-size:11px;color:var(--ink-60)">조</span>
+    &nbsp;<span class="dg">3</span><span class="dg">7</span><span class="dg">0</span><span class="dg">0</span><span class="dg">2</span><span class="dg">4</span></span></td>
+    <td class="num" style="font-size:12px;color:var(--ink-60)">5조 370024</td></tr></table></div>
+</div>
+<h3>자리별 상위 3 — «갭» 모델 기준 (괄호는 미출현 회차)</h3>
+<div class="card flat"><div class="scroll"><table>
+  <tr><th>자리</th><th class="num">1순위</th><th class="num">2순위</th><th class="num">3순위</th></tr><tr><td>십만</td><td class="num"><b>9</b> <span style="color:var(--ink-60);font-size:11px">22회</span></td><td class="num"><b>3</b> <span style="color:var(--ink-60);font-size:11px">14회</span></td><td class="num"><b>8</b> <span style="color:var(--ink-60);font-size:11px">13회</span></td></tr><tr><td>만</td><td class="num"><b>9</b> <span style="color:var(--ink-60);font-size:11px">60회</span></td><td class="num"><b>7</b> <span style="color:var(--ink-60);font-size:11px">38회</span></td><td class="num"><b>5</b> <span style="color:var(--ink-60);font-size:11px">20회</span></td></tr><tr><td>천</td><td class="num"><b>3</b> <span style="color:var(--ink-60);font-size:11px">47회</span></td><td class="num"><b>8</b> <span style="color:var(--ink-60);font-size:11px">29회</span></td><td class="num"><b>0</b> <span style="color:var(--ink-60);font-size:11px">16회</span></td></tr><tr><td>백</td><td class="num"><b>0</b> <span style="color:var(--ink-60);font-size:11px">46회</span></td><td class="num"><b>1</b> <span style="color:var(--ink-60);font-size:11px">33회</span></td><td class="num"><b>6</b> <span style="color:var(--ink-60);font-size:11px">23회</span></td></tr><tr><td>십</td><td class="num"><b>6</b> <span style="color:var(--ink-60);font-size:11px">19회</span></td><td class="num"><b>2</b> <span style="color:var(--ink-60);font-size:11px">11회</span></td><td class="num"><b>8</b> <span style="color:var(--ink-60);font-size:11px">10회</span></td></tr><tr><td>일</td><td class="num"><b>8</b> <span style="color:var(--ink-60);font-size:11px">14회</span></td><td class="num"><b>4</b> <span style="color:var(--ink-60);font-size:11px">12회</span></td><td class="num"><b>7</b> <span style="color:var(--ink-60);font-size:11px">10회</span></td></tr>
+  <tr><td><b>조</b></td><td class="num"><b>1조</b> <span style="color:var(--ink-60);font-size:11px">23회</span></td><td class="num"><b>5조</b> <span style="color:var(--ink-60);font-size:11px">9회</span></td><td></td></tr>
+</table></div></div>
+
+<h3>지난 회차 결과 · 330회</h3>
+<div class="card flat">
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding-bottom:10px">
+    <span class="tk"><span class="bnd">4</span><span style="font-size:11px;color:var(--ink-60)">조</span>&nbsp;<span class="dg">1</span><span class="dg">2</span><span class="dg">5</span><span class="dg">9</span><span class="dg">0</span><span class="dg">5</span></span>
+    <span style="font-size:12px;color:var(--ink-60)">보너스 <span class="dg">4</span><span class="dg">9</span><span class="dg">3</span><span class="dg">8</span><span class="dg">0</span><span class="dg">0</span></span>
+  </div>
+  <p class="note" style="padding:0">1등 2매 · 2등 6매 · 보너스 10매
+    </p>
+</div>
+<h3>지난주에 낸 10개는 어땠나</h3>
+<div class="card flat"><div class="scroll"><table><tr><th>순위</th><th>조 · 번호</th><th class="num">결과</th></tr><tr class="win"><td class="rk">1</td>
+    <td><span class="tk"><span class="bnd" style="font-size:15px">1</span>
+    <span style="font-size:11px;color:var(--ink-60)">조</span>&nbsp;<span class="dg">9</span><span class="dg">9</span><span class="dg">3</span><span class="dg">0</span><span class="dg">2</span><span class="dg hi">5</span></span></td>
+    <td class="num"><span class="tag sig">7등</span></td></tr><tr class="win"><td class="rk">2</td>
+    <td><span class="tk"><span class="bnd" style="font-size:15px">1</span>
+    <span style="font-size:11px;color:var(--ink-60)">조</span>&nbsp;<span class="dg">3</span><span class="dg">9</span><span class="dg">3</span><span class="dg">0</span><span class="dg">6</span><span class="dg hi">5</span></span></td>
+    <td class="num"><span class="tag sig">7등</span></td></tr><tr class=""><td class="rk">3</td>
+    <td><span class="tk"><span class="bnd" style="font-size:15px">1</span>
+    <span style="font-size:11px;color:var(--ink-60)">조</span>&nbsp;<span class="dg">9</span><span class="dg">7</span><span class="dg">3</span><span class="dg">6</span><span class="dg">6</span><span class="dg">8</span></span></td>
+    <td class="num"><span class="tag noi">미당첨</span></td></tr><tr class=""><td class="rk">4</td>
+    <td><span class="tk"><span class="bnd" style="font-size:15px">1</span>
+    <span style="font-size:11px;color:var(--ink-60)">조</span>&nbsp;<span class="dg">8</span><span class="dg">7</span><span class="dg">8</span><span class="dg">0</span><span class="dg">6</span><span class="dg">8</span></span></td>
+    <td class="num"><span class="tag noi">미당첨</span></td></tr><tr class=""><td class="rk">5</td>
+    <td><span class="tk"><span class="bnd" style="font-size:15px">5</span>
+    <span style="font-size:11px;color:var(--ink-60)">조</span>&nbsp;<span class="dg">3</span><span class="dg">9</span><span class="dg">0</span><span class="dg">0</span><span class="dg">6</span><span class="dg">8</span></span></td>
+    <td class="num"><span class="tag noi">미당첨</span></td></tr><tr class=""><td class="rk">6</td>
+    <td><span class="tk"><span class="bnd" style="font-size:15px">5</span>
+    <span style="font-size:11px;color:var(--ink-60)">조</span>&nbsp;<span class="dg">9</span><span class="dg">9</span><span class="dg">3</span><span class="dg">6</span><span class="dg">6</span><span class="dg">4</span></span></td>
+    <td class="num"><span class="tag noi">미당첨</span></td></tr><tr class="win"><td class="rk">7</td>
+    <td><span class="tk"><span class="bnd" style="font-size:15px">1</span>
+    <span style="font-size:11px;color:var(--ink-60)">조</span>&nbsp;<span class="dg">8</span><span class="dg">9</span><span class="dg">0</span><span class="dg">6</span><span class="dg">6</span><span class="dg hi">5</span></span></td>
+    <td class="num"><span class="tag sig">7등</span></td></tr><tr class=""><td class="rk">8</td>
+    <td><span class="tk"><span class="bnd" style="font-size:15px">5</span>
+    <span style="font-size:11px;color:var(--ink-60)">조</span>&nbsp;<span class="dg">9</span><span class="dg">7</span><span class="dg">3</span><span class="dg">1</span><span class="dg">8</span><span class="dg">8</span></span></td>
+    <td class="num"><span class="tag noi">미당첨</span></td></tr><tr class=""><td class="rk">9</td>
+    <td><span class="tk"><span class="bnd" style="font-size:15px">5</span>
+    <span style="font-size:11px;color:var(--ink-60)">조</span>&nbsp;<span class="dg">9</span><span class="dg">7</span><span class="dg">0</span><span class="dg">1</span><span class="dg">2</span><span class="dg">8</span></span></td>
+    <td class="num"><span class="tag noi">미당첨</span></td></tr><tr class=""><td class="rk">10</td>
+    <td><span class="tk"><span class="bnd" style="font-size:15px">1</span>
+    <span style="font-size:11px;color:var(--ink-60)">조</span>&nbsp;<span class="dg">8</span><span class="dg">7</span><span class="dg">3</span><span class="dg">6</span><span class="dg">2</span><span class="dg">4</span></span></td>
+    <td class="num"><span class="tag noi">미당첨</span></td></tr></table></div>
+  <p class="note" style="padding:10px 0 0">330회를 대상으로 <b>지난주와 같은 규칙</b>으로 다시 뽑은 목록입니다(회차 번호가 시드라 재현됩니다).</p></div>
+
+<h2>로또 6/45 · 1239회 (토 추첨)</h2>
+<div class="card">
+  <div class="scroll"><table><tr><th>순위</th><th>번호</th><th class="num">특성</th></tr><tr><td class="rk top">1</td>
+      <td><span class="balls"><span class="ball" style="background:#FBC400;">4</span><span class="ball" style="background:#FF7272;">24</span><span class="ball" style="background:#FF7272;">29</span><span class="ball" style="background:#FF7272;">30</span><span class="ball" style="background:#B0D840;">42</span><span class="ball" style="background:#B0D840;">45</span></span></td>
+      <td class="num" style="font-size:12px;color:var(--ink-60)">합 174<br>홀2:짝4</td></tr><tr><td class="rk top">2</td>
+      <td><span class="balls"><span class="ball" style="background:#FBC400;">2</span><span class="ball" style="background:#FF7272;">27</span><span class="ball" style="background:#FF7272;">28</span><span class="ball" style="background:#FF7272;">29</span><span class="ball" style="background:#A0A6A2;">39</span><span class="ball" style="background:#B0D840;">45</span></span></td>
+      <td class="num" style="font-size:12px;color:var(--ink-60)">합 170<br>홀4:짝2</td></tr><tr><td class="rk top">3</td>
+      <td><span class="balls"><span class="ball" style="background:#69C8F2;">13</span><span class="ball" style="background:#69C8F2;">16</span><span class="ball" style="background:#FF7272;">25</span><span class="ball" style="background:#FF7272;">27</span><span class="ball" style="background:#FF7272;">28</span><span class="ball" style="background:#B0D840;">44</span></span></td>
+      <td class="num" style="font-size:12px;color:var(--ink-60)">합 153<br>홀3:짝3</td></tr><tr><td class="rk ">4</td>
+      <td><span class="balls"><span class="ball" style="background:#FBC400;">3</span><span class="ball" style="background:#69C8F2;">17</span><span class="ball" style="background:#69C8F2;">20</span><span class="ball" style="background:#B0D840;">41</span><span class="ball" style="background:#B0D840;">42</span><span class="ball" style="background:#B0D840;">44</span></span></td>
+      <td class="num" style="font-size:12px;color:var(--ink-60)">합 167<br>홀3:짝3</td></tr><tr><td class="rk ">5</td>
+      <td><span class="balls"><span class="ball" style="background:#69C8F2;">13</span><span class="ball" style="background:#69C8F2;">18</span><span class="ball" style="background:#FF7272;">25</span><span class="ball" style="background:#FF7272;">26</span><span class="ball" style="background:#FF7272;">30</span><span class="ball" style="background:#B0D840;">43</span></span></td>
+      <td class="num" style="font-size:12px;color:var(--ink-60)">합 155<br>홀3:짝3</td></tr><tr><td class="rk ">6</td>
+      <td><span class="balls"><span class="ball" style="background:#69C8F2;">14</span><span class="ball" style="background:#FF7272;">23</span><span class="ball" style="background:#FF7272;">24</span><span class="ball" style="background:#A0A6A2;">31</span><span class="ball" style="background:#A0A6A2;">39</span><span class="ball" style="background:#A0A6A2;">40</span></span></td>
+      <td class="num" style="font-size:12px;color:var(--ink-60)">합 171<br>홀3:짝3</td></tr><tr><td class="rk ">7</td>
+      <td><span class="balls"><span class="ball" style="background:#FBC400;">2</span><span class="ball" style="background:#FF7272;">21</span><span class="ball" style="background:#FF7272;">23</span><span class="ball" style="background:#A0A6A2;">35</span><span class="ball" style="background:#A0A6A2;">36</span><span class="ball" style="background:#A0A6A2;">38</span></span></td>
+      <td class="num" style="font-size:12px;color:var(--ink-60)">합 155<br>홀3:짝3</td></tr><tr><td class="rk ">8</td>
+      <td><span class="balls"><span class="ball" style="background:#FBC400;">3</span><span class="ball" style="background:#69C8F2;">14</span><span class="ball" style="background:#69C8F2;">19</span><span class="ball" style="background:#A0A6A2;">37</span><span class="ball" style="background:#A0A6A2;">38</span><span class="ball" style="background:#A0A6A2;">40</span></span></td>
+      <td class="num" style="font-size:12px;color:var(--ink-60)">합 151<br>홀3:짝3</td></tr><tr><td class="rk ">9</td>
+      <td><span class="balls"><span class="ball" style="background:#FBC400;">4</span><span class="ball" style="background:#69C8F2;">16</span><span class="ball" style="background:#69C8F2;">17</span><span class="ball" style="background:#A0A6A2;">31</span><span class="ball" style="background:#B0D840;">41</span><span class="ball" style="background:#B0D840;">43</span></span></td>
+      <td class="num" style="font-size:12px;color:var(--ink-60)">합 152<br>홀4:짝2</td></tr><tr><td class="rk ">10</td>
+      <td><span class="balls"><span class="ball" style="background:#69C8F2;">12</span><span class="ball" style="background:#69C8F2;">19</span><span class="ball" style="background:#69C8F2;">20</span><span class="ball" style="background:#A0A6A2;">33</span><span class="ball" style="background:#A0A6A2;">35</span><span class="ball" style="background:#A0A6A2;">37</span></span></td>
+      <td class="num" style="font-size:12px;color:var(--ink-60)">합 156<br>홀4:짝2</td></tr></table></div>
+  <p class="note" style="padding:10px 0 0">분배 인원 모델 점수가 낮은 순. 두 모델 교차검증 상관 <b>0.879</b>.
+    1등 확률은 1/8,145,060 그대로이고, 바뀌는 것은 당첨 시 나눠 갖는 인원뿐입니다.</p>
+</div>
+<h3>지난 회차 결과 · 1238회</h3>
+<div class="card flat">
+  <div class="balls" style="padding-bottom:10px"><span class="ball" style="background:#FBC400;">2</span><span class="ball" style="background:#69C8F2;">13</span><span class="ball" style="background:#69C8F2;">18</span><span class="ball" style="background:#A0A6A2;">32</span><span class="ball" style="background:#A0A6A2;">38</span><span class="ball" style="background:#B0D840;">42</span>
+    <span style="color:var(--ink-40);padding:0 4px">+</span><span class="ball" style="background:#FF7272;">22</span></div>
+  <p class="note" style="padding:0">1등 23명 · 1인 1,197,258,718원 · 총 판매 1,145억원</p>
+</div>
+<h3>지난주에 낸 10개는 어땠나</h3>
+<div class="card flat"><div class="scroll"><table><tr><th>순위</th><th>번호</th><th class="num">결과</th></tr><tr class=""><td class="rk">1</td>
+    <td><span class="balls"><span class="ball" style="background:#FBC400;opacity:.28">3</span><span class="ball" style="background:#FF7272;">22</span><span class="ball" style="background:#FF7272;opacity:.28">27</span><span class="ball" style="background:#FF7272;opacity:.28">28</span><span class="ball" style="background:#B0D840;opacity:.28">41</span><span class="ball" style="background:#B0D840;opacity:.28">45</span></span></td>
+    <td class="num">0개 <span class="tag noi">미당첨</span></td></tr><tr class=""><td class="rk">2</td>
+    <td><span class="balls"><span class="ball" style="background:#69C8F2;opacity:.28">15</span><span class="ball" style="background:#FF7272;opacity:.28">25</span><span class="ball" style="background:#FF7272;opacity:.28">29</span><span class="ball" style="background:#FF7272;opacity:.28">30</span><span class="ball" style="background:#A0A6A2;opacity:.28">31</span><span class="ball" style="background:#B0D840;opacity:.28">44</span></span></td>
+    <td class="num">0개 <span class="tag noi">미당첨</span></td></tr><tr class=""><td class="rk">3</td>
+    <td><span class="balls"><span class="ball" style="background:#69C8F2;">13</span><span class="ball" style="background:#69C8F2;">18</span><span class="ball" style="background:#FF7272;opacity:.28">21</span><span class="ball" style="background:#FF7272;opacity:.28">26</span><span class="ball" style="background:#FF7272;opacity:.28">30</span><span class="ball" style="background:#B0D840;opacity:.28">45</span></span></td>
+    <td class="num">2개 <span class="tag noi">미당첨</span></td></tr><tr class=""><td class="rk">4</td>
+    <td><span class="balls"><span class="ball" style="background:#FBC400;opacity:.28">3</span><span class="ball" style="background:#FF7272;opacity:.28">24</span><span class="ball" style="background:#FF7272;opacity:.28">25</span><span class="ball" style="background:#FF7272;opacity:.28">27</span><span class="ball" style="background:#A0A6A2;">38</span><span class="ball" style="background:#A0A6A2;opacity:.28">39</span></span></td>
+    <td class="num">1개 <span class="tag noi">미당첨</span></td></tr><tr class=""><td class="rk">5</td>
+    <td><span class="balls"><span class="ball" style="background:#FBC400;">2</span><span class="ball" style="background:#FF7272;opacity:.28">28</span><span class="ball" style="background:#FF7272;opacity:.28">29</span><span class="ball" style="background:#A0A6A2;opacity:.28">36</span><span class="ball" style="background:#A0A6A2;opacity:.28">39</span><span class="ball" style="background:#A0A6A2;opacity:.28">40</span></span></td>
+    <td class="num">1개 <span class="tag noi">미당첨</span></td></tr><tr class=""><td class="rk">6</td>
+    <td><span class="balls"><span class="ball" style="background:#FBC400;opacity:.28">5</span><span class="ball" style="background:#69C8F2;">13</span><span class="ball" style="background:#69C8F2;opacity:.28">20</span><span class="ball" style="background:#B0D840;">42</span><span class="ball" style="background:#B0D840;opacity:.28">43</span><span class="ball" style="background:#B0D840;opacity:.28">44</span></span></td>
+    <td class="num">2개 <span class="tag noi">미당첨</span></td></tr><tr class=""><td class="rk">7</td>
+    <td><span class="balls"><span class="ball" style="background:#FBC400;opacity:.28">4</span><span class="ball" style="background:#FF7272;">22</span><span class="ball" style="background:#FF7272;opacity:.28">23</span><span class="ball" style="background:#FF7272;opacity:.28">24</span><span class="ball" style="background:#B0D840;opacity:.28">41</span><span class="ball" style="background:#B0D840;opacity:.28">43</span></span></td>
+    <td class="num">0개 <span class="tag noi">미당첨</span></td></tr><tr class=""><td class="rk">8</td>
+    <td><span class="balls"><span class="ball" style="background:#69C8F2;opacity:.28">14</span><span class="ball" style="background:#69C8F2;opacity:.28">17</span><span class="ball" style="background:#69C8F2;opacity:.28">19</span><span class="ball" style="background:#A0A6A2;opacity:.28">31</span><span class="ball" style="background:#A0A6A2;">32</span><span class="ball" style="background:#A0A6A2;">38</span></span></td>
+    <td class="num">2개 <span class="tag noi">미당첨</span></td></tr><tr class=""><td class="rk">9</td>
+    <td><span class="balls"><span class="ball" style="background:#69C8F2;opacity:.28">11</span><span class="ball" style="background:#69C8F2;">18</span><span class="ball" style="background:#69C8F2;opacity:.28">19</span><span class="ball" style="background:#A0A6A2;">32</span><span class="ball" style="background:#A0A6A2;opacity:.28">37</span><span class="ball" style="background:#A0A6A2;opacity:.28">40</span></span></td>
+    <td class="num">2개 <span class="tag noi">미당첨</span></td></tr><tr class=""><td class="rk">10</td>
+    <td><span class="balls"><span class="ball" style="background:#FBC400;opacity:.28">1</span><span class="ball" style="background:#FBC400;opacity:.28">10</span><span class="ball" style="background:#A0A6A2;opacity:.28">33</span><span class="ball" style="background:#A0A6A2;opacity:.28">34</span><span class="ball" style="background:#A0A6A2;opacity:.28">36</span><span class="ball" style="background:#B0D840;">42</span></span></td>
+    <td class="num">1개 <span class="tag noi">미당첨</span></td></tr></table></div></div>
+
+<h2>이번 주에 기억할 것</h2>
+<div class="verdict ok">
+  <b>연금복권</b> — 당첨금이 고정액이라 당첨자가 2명이어도 각자 월 700만원을 그대로 받습니다.
+  번호 선택으로 확률도 당첨금도 바뀌지 않습니다. 위 10개는 «규칙이 정해진 선택»일 뿐입니다.<br>
+  이 설정의 백테스트 적중률 <b>31.46%</b> · 우연 기준선 30% ·
+  95% 신뢰구간 [29.1%, 34.0%] · p=0.241
+  (100~330회, 표본 1,386건)
+</div>
+<div class="verdict">
+  <b>로또</b> — 여기서는 «분배 인원»만 바꿀 수 있습니다. 확률은 고정이고, 효과는 기대 수령액 기준 ±10~15% 수준입니다.
+</div>
+
+<div class="foot">
+  동행복권 공식 API 자료로 자동 생성 · 생성 시각 2026-08-29 16:38 (KST)<br>
+  연금복권 330회 / 로또 1238회 전수 반영. 번호는 예측이 아니라 규칙에 따른 선택입니다.<br>
+  복권 구매는 감당할 수 있는 범위 안에서. 만 19세 미만은 구매할 수 없습니다.
+</div>
+</div></body></html>

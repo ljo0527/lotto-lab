@@ -167,7 +167,7 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 <header>
   <div class="eyebrow">
     <span>Pension 720+ · Statistical Lab</span>
-    <span><a href="./index.html">→ LOTTO LAB (로또 6/45)</a></span>
+    <span><a href="./brief.html">주간 브리핑</a> · <a href="./index.html">→ LOTTO LAB</a></span>
   </div>
   <h1>PENSION<br>LAB<span>일확천금 프로젝트</span></h1>
   <div class="status" id="status"><span class="dot"></span><span id="statusTxt">초기화 중…</span></div>
@@ -212,7 +212,7 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
   <div class="card flat" id="pvCard"></div>
 
   <h2>이번 회차 집중 번호</h2>
-  <p class="note">아래는 <b>예상 번호</b> 탭의 현재 설정으로 계산한 결과입니다. 백테스트 적중률을 반드시 함께 보세요.</p>
+  <p class="note">연금복권은 (조, 6자리) 조합 하나당 <b>2장</b>만 발행되므로 원하는 번호가 <b>이미 팔렸을 수 있습니다</b>. 그래서 1순위부터 10순위까지 대안을 함께 냅니다 — 앞 번호를 못 사면 다음으로 내려가세요. 설정은 <b>예상 번호</b> 탭에서 바꿉니다. 백테스트 적중률을 반드시 함께 보세요.</p>
   <div class="card" id="dashPick"><span class="spin"></span></div>
 </section>
 
@@ -605,6 +605,17 @@ function generate(model,K,J,count,seed){
     if(guard<count*300 && tooSimilar(num,b)) continue;   // 여유가 있을 때만 다양성 규칙 적용
     seen.add(key); out.push({band:b,num});
   }
+  /* 우선순위 정렬 — 연금복권은 (조,번호) 조합당 2장뿐이라 이미 팔렸을 수 있다.
+     1번이 품절이면 2번으로 넘어가라는 뜻의 «대안 목록»이므로 순서가 의미를 가져야 한다.
+     점수 = 각 자리 숫자의 풀 내 순위 역수 합 + 조 순위 역수. 높을수록 모델이 앞에 세운 숫자로만 이루어진 조합. */
+  const rankOf=(idx,v)=>{ const i=idx.indexOf(v); return i<0?0:idx.length-i; };
+  out.forEach(c=>{
+    let s=0;
+    for(let i=0;i<6;i++) s+=rankOf(pools[i].idx, +c.num[i]);
+    s+=rankOf(bIdx, c.band-1)*1.5;
+    c.score=s;
+  });
+  out.sort((a,b)=>b.score-a.score);
   return out;
 }
 
@@ -793,21 +804,22 @@ function renderDashPick(){
   const rows=R(); if(rows.length<50) return;
   const {model,K,J}=predSettings();
   const nx=nextDraw();
-  const g=generate(model,K,J,5,(nx?nx.ep:1)*7919);
+  const g=generate(model,K,J,10,(nx?nx.ep:1)*7919);
   const start=Math.min(100, Math.floor(rows.length*0.3));
   const bt=backtest(model,K,J,start);
   $('#dashPick').innerHTML=g.map((c,i)=>
-    `<div class="combo"><div class="k">${String.fromCharCode(65+i)}</div>
+    `<div class="combo"><div class="k" style="font-size:24px">${i+1}</div>
       <div>${ticketHTML(c.band,c.num,{sm:true})}</div>
-      <div class="m"><em>${MODELNAME[model]}</em>상위 ${K}</div></div>`).join('')
+      <div class="m"><em>${i===0?'1순위':(i+1)+'순위'}</em>${MODELNAME[model]} 상위 ${K}</div></div>`).join('')
     +(bt?`<p class="note" style="padding:12px 0 0">이 설정의 백테스트 적중률 <b>${pct(bt.rateD)}</b> · 우연 기준선 ${pct(bt.baseD,0)} · ${pTag(bt.pD).replace(/<[^>]+>/g,'')}</p>`:'');
 }
 function renderGen(){
   const {model,K,J,N}=predSettings();
   lastGen=generate(model,K,J,N,Date.now()%1e9);
   $('#genCard').innerHTML=lastGen.map((c,i)=>
-    `<div class="combo"><div class="k">${i+1}</div><div>${ticketHTML(c.band,c.num,{sm:true})}</div>
-      <div class="m"><em>${c.band}조 ${c.num}</em>${MODELNAME[model]} K=${K}</div></div>`).join('');
+    `<div class="combo"><div class="k" style="font-size:24px">${i+1}</div><div>${ticketHTML(c.band,c.num,{sm:true})}</div>
+      <div class="m"><em>${c.band}조 ${c.num}</em>${i+1}순위 · ${MODELNAME[model]} K=${K}</div></div>`).join('')
+    +'<p class="note" style="padding:12px 0 0">위에서부터 순서대로 시도하세요. 품절이면 다음 순위로 내려가면 됩니다.</p>';
 }
 
 /* ══════════════════ 자리 통계 ══════════════════ */

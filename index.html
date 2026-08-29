@@ -162,7 +162,7 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 <header>
   <div class="eyebrow">
     <span>Lotto 6/45 · Statistical Lab</span>
-    <span><a href="./pension.html" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ink-30)">→ PENSION LAB (연금복권720+)</a> <span id="hdrRight" style="padding-left:10px">—</span></span>
+    <span><a href="./brief.html" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ink-30)">주간 브리핑</a> · <a href="./pension.html" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ink-30)">→ PENSION LAB</a> <span id="hdrRight" style="padding-left:10px">—</span></span>
   </div>
   <h1>LOTTO<br>LAB<span>일확천금 프로젝트</span></h1>
   <div class="status" id="status"><span class="dot"></span><span id="statusTxt">초기화 중…</span></div>
@@ -199,7 +199,7 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
   </div>
 
   <h2>이번 주 추천 조합</h2>
-  <p class="note">매 회차 자동으로 다시 계산됩니다. <b>직전 회차까지의 전체 데이터</b>를 반영하며, 같은 회차 안에서는 항상 같은 조합입니다.</p>
+  <p class="note">매 회차 자동으로 다시 계산됩니다. <b>직전 회차까지의 전체 데이터</b>를 반영하며, 같은 회차 안에서는 항상 같은 조합입니다. <b>위에서부터 1순위</b>인 10줄을 냅니다.</p>
   <div class="card" id="weeklyCard"><span class="spin"></span></div>
   <div class="row" style="padding-top:10px">
     <button class="btn ghost" id="weeklySheet">마크시트 인쇄용 열기</button>
@@ -841,18 +841,24 @@ function weeklyPicks(){
          · 두 조합이 겹치는 번호는 2개 이하
          · 한 번호가 다섯 조합 중 2번을 초과해 등장하지 않음
        (규칙이 없으면 모델이 좋아하는 극단 번호가 다섯 줄 전부에 박힌다) */
-    const out=[], useCnt={};
-    const fits=c=>out.every(o=>o.filter(n=>c.includes(n)).length<=2)
-                && c.every(n=>(useCnt[n]||0)<2);
-    for(const c of pool.slice(0,600)){
-      if(!fits(c)) continue;
-      out.push(c); c.forEach(n=>useCnt[n]=(useCnt[n]||0)+1);
-      if(out.length===5) break;
+    /* 10줄로 늘리면 «겹침 2개 이하 + 한 번호 2회 이하»를 동시에 만족시키지 못할 수 있다
+       (45개 번호에 60칸을 배치해야 한다). 규칙을 단계적으로 풀어 항상 10줄을 채운다. */
+    const WANT=10, out=[], useCnt={};
+    const fits=(c,ov,mx)=>out.every(o=>o.filter(n=>c.includes(n)).length<=ov)
+                       && c.every(n=>(useCnt[n]||0)<mx);
+    for(const [ov,mx] of [[2,2],[3,3],[4,4]]){
+      if(out.length>=WANT) break;
+      for(const c of pool.slice(0,1500)){
+        if(out.length>=WANT) break;
+        if(out.some(o=>o.join()===c.join())) continue;
+        if(!fits(c,ov,mx)) continue;
+        out.push(c); c.forEach(n=>useCnt[n]=(useCnt[n]||0)+1);
+      }
     }
-    for(let i=0;out.length<5 && i<pool.length;i++){
+    for(let i=0;out.length<WANT && i<pool.length;i++){
       const c=pool[i];
       if(out.some(o=>o.join()===c.join())) continue;
-      out.push(c);
+      out.push(c); c.forEach(n=>useCnt[n]=(useCnt[n]||0)+1);
     }
     WEEKLY_R=target;
     return (WEEKLY={ round:target, combos:out, tries });
@@ -873,15 +879,15 @@ function renderWeekly(){
       '<span>1~'+DB.latest+'회 전체 반영</span></div>'+
     W.combos.map((c,i)=>{
       const s=c.reduce((a,b)=>a+b,0), o=c.filter(n=>n%2).length;
-      return '<div class="combo"><div class="k">'+'ABCDE'[i]+'</div>'+
+      return '<div class="combo"><div class="k" style="font-size:24px">'+(i+1)+'</div>'+
         '<div class="balls">'+c.map(n=>ballHTML(n)).join('')+'</div>'+
         '<div class="m">합계<em>'+s+'</em>홀'+o+':짝'+(6-o)+'</div>'+
-        '<div class="c">'+shareTag(c).replace(/^ · /,'')+'</div></div>';
+        '<div class="c">'+(i+1)+'순위 · '+shareTag(c).replace(/^ · /,'')+'</div></div>';
     }).join('')+
     '<div class="verdict" style="margin-bottom:0"><b>이 조합이 나온 근거</b><br>'+
     '· 후보 '+nf(W.tries)+'개를 만들어 합계 100~175 / 홀짝 2~4 / 연속 2쌍 이하 / 한 구간 3개 이하 필터를 통과한 것만 남겼습니다<br>'+
     '· 과거 '+DB.latest+'회 1등 조합과 겹치는 것은 제외했습니다<br>'+
-    '· 그중 <b>분배 인원 모델 점수가 가장 낮은</b> 것들을, 서로 2개 이하로만 겹치도록 골랐습니다'+
+    '· 그중 <b>분배 인원 모델 점수가 가장 낮은</b> 것들을, 서로 겹치는 번호가 적도록 <b>10줄</b> 골랐습니다<br>'+'· 위에서부터 1순위입니다 — 몇 줄만 살 거라면 위에서부터 쓰세요'+
     (F.agree!=null?'<br>· 모델 교차검증 상관 '+F.agree.toFixed(3)+' (판매 기준 × 구매방식 기준)':'')+
     '<br>· 회차 번호를 시드로 고정했습니다 — <b>새로고침해도 같은 조합</b>이고, 회차가 넘어가면 자동으로 새로 뽑힙니다<br>'+
     '<span style="color:var(--ink-40)">1등 확률은 여전히 1/8,145,060 입니다. 바뀌는 건 당첨 시 나눠 갖는 인원뿐입니다.</span></div>';
