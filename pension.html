@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PENSION LAB · 연금복권720+ 통계 실험실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EB; --paper-2:#F7F8F5; --paper-3:#E4E7E0;
+  --ink:#16302B; --ink-60:rgba(22,48,43,.60); --ink-40:rgba(22,48,43,.40);
+  --ink-30:rgba(22,48,43,.30); --ink-12:rgba(22,48,43,.12); --ink-06:rgba(22,48,43,.06);
+  --b-yellow:#FBC400; --b-blue:#69C8F2; --b-red:#FF7272; --b-grey:#A0A6A2; --b-green:#B0D840;
+  --sig:#B0281A; --ok:#1F6F4A; --heat:#69C8F2;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#12181A; --paper-2:#182022; --paper-3:#1F2A2C;
+    --ink:#E6EDE9; --ink-60:rgba(230,237,233,.62); --ink-40:rgba(230,237,233,.40);
+    --ink-30:rgba(230,237,233,.28); --ink-12:rgba(230,237,233,.14); --ink-06:rgba(230,237,233,.06);
+    --sig:#FF8A78; --ok:#7FD8A8;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#12181A; --paper-2:#182022; --paper-3:#1F2A2C;
+  --ink:#E6EDE9; --ink-60:rgba(230,237,233,.62); --ink-40:rgba(230,237,233,.40);
+  --ink-30:rgba(230,237,233,.28); --ink-12:rgba(230,237,233,.14); --ink-06:rgba(230,237,233,.06);
+  --sig:#FF8A78; --ok:#7FD8A8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--paper);color:var(--ink);font-family:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo","Noto Sans KR",system-ui,-apple-system,sans-serif;
+  font-weight:400;line-height:1.68;font-size:15px;letter-spacing:-0.01em;padding:0 0 90px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:940px;margin:0 auto;padding:16px 14px 0}
+.mono{font-family:"Space Mono",monospace}
+
+header{border-bottom:1.5px solid var(--ink);padding-bottom:10px;margin-bottom:18px}
+.eyebrow{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-60);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.eyebrow a{color:var(--ink-60);text-decoration:none;border-bottom:1px solid var(--ink-30)}
+.eyebrow a:hover{color:var(--ink);border-color:var(--ink)}
+h1{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:clamp(46px,11.5vw,88px);
+  line-height:.84;letter-spacing:-.01em;padding:10px 0 0}
+h1 span{display:block;font-size:.24em;font-weight:700;letter-spacing:.16em;color:var(--ink-60);padding-top:10px}
+.status{font-family:"Space Mono",monospace;font-size:12.5px;color:var(--ink-60);padding-top:10px;
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--b-grey);display:inline-block;flex:none}
+.dot.live{background:var(--b-green)} .dot.warn{background:var(--b-yellow)} .dot.err{background:var(--b-red)}
+
+nav.tabs{position:sticky;top:0;z-index:40;background:var(--paper);border-bottom:1.5px solid var(--ink);
+  display:flex;gap:0;overflow-x:auto;scrollbar-width:none;margin-bottom:20px}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;color:var(--ink-60);
+  font-family:"Space Mono",monospace;font-size:13px;font-weight:700;letter-spacing:.08em;
+  padding:13px 14px;cursor:pointer;white-space:nowrap;text-transform:uppercase}
+nav.tabs button.on{color:var(--ink);border-bottom-color:var(--ink)}
+section.panel{display:none} section.panel.on{display:block}
+
+h2{font-family:"Space Mono",monospace;font-size:12.5px;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;padding:0 0 12px;display:flex;align-items:center;gap:10px;margin-top:30px}
+h2:first-child{margin-top:0}
+h2::after{content:"";flex:1;height:1px;background:var(--ink-12)}
+h3{font-size:14.5px;font-weight:600;padding-bottom:8px}
+p.note{font-size:14px;color:var(--ink-60);padding-bottom:14px;line-height:1.7}
+p.note b{color:var(--ink);font-weight:600}
+
+.card{background:var(--paper-2);border:1.5px solid var(--ink);padding:16px 15px;margin-bottom:12px}
+.card.flat{border-width:1px;border-color:var(--ink-12)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--ink-12);
+  border:1.5px solid var(--ink);margin-bottom:14px}
+.kpi>div{background:var(--paper-2);padding:13px 12px}
+.kpi .k{font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-60)}
+.kpi .v{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:34px;line-height:1.05;padding-top:4px}
+.kpi .s{font-size:12.5px;color:var(--ink-60);padding-top:2px}
+
+/* ── 연금복권 티켓 ── */
+.tk{display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap}
+.tk .bnd{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:30px;line-height:1;
+  border:1.5px solid var(--ink);padding:2px 9px 1px;min-width:34px;text-align:center}
+.tk .bndlabel{font-family:"Space Mono",monospace;font-size:10.5px;color:var(--ink-60);letter-spacing:.1em}
+.dg{width:31px;height:38px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;justify-content:center;
+  font-family:"Space Mono",monospace;font-weight:700;font-size:16px;background:var(--paper-2);flex:none}
+.dg.sm{width:24px;height:29px;font-size:13px;border-width:1px}
+.dg.hi{background:var(--ink);color:var(--paper)}
+.dg.bonus{border-style:dashed}
+.sep{width:7px}
+
+/* ── 자리 x 숫자 그리드 ── */
+.pgrid{display:grid;grid-template-columns:52px repeat(10,1fr);gap:3px;font-family:"Space Mono",monospace;font-size:11px}
+.pgrid .hd{color:var(--ink-60);font-size:10px;letter-spacing:.08em;text-align:center;padding-bottom:2px}
+.pgrid .rw{color:var(--ink-60);font-size:10px;display:flex;align-items:center}
+.pcell{aspect-ratio:1;min-height:34px;border:1px solid var(--ink-12);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;position:relative;cursor:pointer;background:var(--ink-06);
+  transition:border-color .12s}
+.pcell .d{font-weight:700;font-size:13px;line-height:1;position:relative;z-index:1}
+.pcell .c{font-size:9px;opacity:.7;line-height:1.2;position:relative;z-index:1}
+.pcell::before{content:"";position:absolute;inset:0;background:var(--heat);opacity:var(--o,0)}
+.pcell.top{border:1.5px solid var(--ink)}
+.pcell.top::after{content:"";position:absolute;top:2px;right:2px;width:5px;height:5px;background:var(--ink);border-radius:50%}
+@media(max-width:600px){.pgrid{grid-template-columns:42px repeat(10,1fr);gap:2px;font-size:10px}.pcell{min-height:28px}.pcell .d{font-size:11px}.pcell .c{font-size:8px}}
+
+.bars{display:flex;flex-direction:column;gap:3px}
+.bar{display:grid;grid-template-columns:44px 1fr 74px;gap:8px;align-items:center;font-family:"Space Mono",monospace;font-size:12px}
+.bar .t{height:13px;background:var(--ink-12);position:relative;overflow:hidden}
+.bar .t i{display:block;height:100%;background:var(--c,var(--ink-40))}
+.bar .n{text-align:right;color:var(--ink-60)}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:7px 6px;text-align:left;border-bottom:1px solid var(--ink-12)}
+th{font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60);font-weight:700}
+td.num,th.num{text-align:right;font-family:"Space Mono",monospace}
+tr.hi td{background:var(--ink-06)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+button.btn,select,input[type=text],input[type=number]{
+  font-family:"Space Mono",monospace;font-size:13.5px;color:var(--ink);background:var(--paper-2);
+  border:1.5px solid var(--ink);padding:9px 13px;cursor:pointer;border-radius:0}
+input[type=text],input[type=number]{cursor:text;font-weight:700}
+button.btn{font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+button.btn:hover{background:var(--ink);color:var(--paper)}
+button.btn.ghost{border-color:var(--ink-30);color:var(--ink-60)}
+button.btn.ghost:hover{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+button.btn:disabled{opacity:.4;cursor:not-allowed}
+input[type=range]{width:100%;accent-color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding-bottom:12px}
+label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",monospace;font-size:10.5px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60)}
+.chip{font-family:"Space Mono",monospace;font-size:12px;border:1px solid var(--ink-30);padding:5px 9px;
+  cursor:pointer;color:var(--ink-60);user-select:none}
+.chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+.tag{font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.06em;padding:2px 6px;border:1px solid currentColor}
+.tag.sig{color:var(--sig)} .tag.noi{color:var(--ink-40)} .tag.ok{color:var(--ok)}
+
+.verdict{border-left:3px solid var(--ink);padding:10px 0 10px 12px;margin:10px 0;font-size:14px;color:var(--ink-60)}
+.verdict b{color:var(--ink);font-weight:600}
+.verdict.sig{border-color:var(--sig)} .verdict.ok{border-color:var(--ok)}
+
+.combo{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:center;padding:11px 2px;
+  border-bottom:1px solid var(--ink-12)}
+.combo .k{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:29.5px;line-height:1}
+.combo .m{text-align:right;font-family:"Space Mono",monospace;font-size:10.5px;color:var(--ink-60);line-height:1.5;white-space:nowrap}
+.combo .m em{display:block;font-style:normal;color:var(--ink);font-size:13.5px;font-weight:700}
+
+.bignum{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:clamp(43px,9.5vw,70px);line-height:1}
+.disclaimer{font-size:13px;color:var(--ink-60);padding:18px 0 0;line-height:1.75;border-top:1px solid var(--ink-12);margin-top:26px}
+.spin{display:inline-block;width:11px;height:11px;border:2px solid var(--ink-30);border-top-color:var(--ink);
+  border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.prog{height:4px;background:var(--ink-12);overflow:hidden;margin-top:8px}
+.prog i{display:block;height:100%;background:var(--ink);width:0;transition:width .2s}
+.hide{display:none!important}
+.foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-family:"Space Mono",monospace;
+  font-size:10.5px;letter-spacing:.1em;color:var(--ink-40);padding-top:14px;text-transform:uppercase}
+.spark{display:flex;align-items:flex-end;gap:1px;height:44px}
+.spark i{flex:1;background:var(--ink-30);min-height:1px}
+.spark i.last{background:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">
+    <span>Pension 720+ · Statistical Lab</span>
+    <span><a href="./index.html">→ LOTTO LAB (로또 6/45)</a></span>
+  </div>
+  <h1>PENSION<br>LAB<span>일확천금 프로젝트</span></h1>
+  <div class="status" id="status"><span class="dot"></span><span id="statusTxt">초기화 중…</span></div>
+  <div class="prog hide" id="prog"><i></i></div>
+</header>
+</div>
+
+<nav class="tabs" id="tabs">
+  <button data-t="dash" class="on">대시보드</button>
+  <button data-t="pred">예상 번호</button>
+  <button data-t="stat">자리 통계</button>
+  <button data-t="fair">공정성 검정</button>
+  <button data-t="issue">발행·판매</button>
+  <button data-t="mine">내 번호</button>
+  <button data-t="data">데이터</button>
+</nav>
+
+<div class="wrap">
+
+<!-- ══════════ 대시보드 ══════════ -->
+<section class="panel on" id="p-dash">
+  <div class="kpi" id="kpiDash"></div>
+
+  <h2>최근 회차</h2>
+  <div class="card" id="recentCard"><span class="spin"></span></div>
+
+  <h2>다음 회차</h2>
+  <div class="card flat" id="nextCard"></div>
+
+  <h2>등위별 확률과 기대값</h2>
+  <div class="card flat">
+    <div class="scroll"><table id="oddsTbl"></table></div>
+    <p class="note" style="padding:12px 0 0">
+      계산 근거 · 티켓 1장 = 조(1~5) + 6자리 숫자. 조합 공간 5&times;10<sup>6</sup> = 500만.
+      1등 = 조와 6자리 모두 일치 = 1/5,000,000. 2등 = 6자리 일치·조 불일치 = 4/5,000,000.
+      3~7등 = 1등 번호의 <b>뒤 n자리</b> 일치(조 무관, 상위 등수 제외) = (1/10<sup>n</sup>)&times;(9/10).
+      보너스 = 별도 추첨 번호 6자리 일치(조 무관) = 1/1,000,000.
+    </p>
+  </div>
+
+  <h2>1등 당첨금의 실제 가치</h2>
+  <div class="card flat" id="pvCard"></div>
+
+  <h2>이번 회차 집중 번호</h2>
+  <p class="note">아래는 <b>예상 번호</b> 탭의 현재 설정으로 계산한 결과입니다. 백테스트 적중률을 반드시 함께 보세요.</p>
+  <div class="card" id="dashPick"><span class="spin"></span></div>
+</section>
+
+<!-- ══════════ 예상 번호 ══════════ -->
+<section class="panel" id="p-pred">
+  <h2>모델 선택</h2>
+  <p class="note">각 자리(십만·만·천·백·십·일)마다 10개 숫자를 점수순으로 세우고, 상위 <b>K개</b>만 남겨 조합을 만듭니다.
+    아래 백테스트는 <b>선택한 모델과 K값 그대로</b>, 과거 회차를 실제로 맞혔는지 다시 계산한 값입니다.</p>
+  <div class="row">
+    <label class="fld">모델
+      <select id="mdlSel">
+        <option value="freq">빈도 — 많이 나온 숫자</option>
+        <option value="cold">역빈도 — 적게 나온 숫자</option>
+        <option value="recent">최근가중 — 반감기 52회</option>
+        <option value="gap" selected>갭 — 오래 안 나온 숫자</option>
+        <option value="rand">무작위 — 대조군</option>
+      </select>
+    </label>
+    <label class="fld">자리별 상위 K
+      <select id="kSel"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
+    </label>
+    <label class="fld">조 상위 J
+      <select id="jSel"><option>1</option><option selected>2</option><option>3</option><option>5</option></select>
+    </label>
+    <label class="fld">생성 개수
+      <select id="cntSel"><option>5</option><option selected>10</option><option>20</option><option>50</option></select>
+    </label>
+  </div>
+
+  <h2>백테스트 — 이 설정이 실제로 맞혔는가</h2>
+  <div class="card" id="btCard"><span class="spin"></span></div>
+
+  <h2>자리별 집중도</h2>
+  <p class="note">진한 칸일수록 점수가 높습니다. 테두리와 점이 있는 칸이 <b>상위 K</b>에 뽑힌 숫자입니다.</p>
+  <div class="card"><div id="predGrid"></div></div>
+  <div class="card flat" id="bandRow"></div>
+
+  <h2>집중 조합</h2>
+  <div class="row">
+    <button class="btn" id="genBtn">조합 생성</button>
+    <button class="btn ghost" id="genSave">내 번호에 담기</button>
+  </div>
+  <div class="card" id="genCard"><span style="font-size:13px;color:var(--ink-60)">«조합 생성»을 눌러 주세요.</span></div>
+
+  <div class="verdict" id="predVerdict"></div>
+</section>
+
+<!-- ══════════ 자리 통계 ══════════ -->
+<section class="panel" id="p-stat">
+  <h2>자리 &times; 숫자 출현표</h2>
+  <p class="note">1등 번호 기준. 각 칸은 <b>관측 횟수</b>이고, 균일하다면 모두 같은 값이어야 합니다.</p>
+  <div class="row">
+    <span class="chip on" data-src="num">1등 번호</span>
+    <span class="chip" data-src="bonus">보너스 번호</span>
+    <span class="chip" data-src="both">둘 다 합산</span>
+  </div>
+  <div class="card"><div id="statGrid"></div></div>
+
+  <h2>사후확률 — 관측을 얼마나 믿을 것인가</h2>
+  <p class="note">단순 빈도는 표본이 작을수록 과장됩니다. 디리클레 사전분포 &alpha;를 섞어 <b>수축(shrinkage)</b>한 값이 실제 믿을 만한 추정치입니다.
+    &alpha;가 클수록 «균일하다»는 사전 믿음이 강해집니다.</p>
+  <div class="row">
+    <label class="fld" style="flex:1;min-width:220px">사전강도 &alpha; = <span id="alphaVal" class="mono">33</span> (자리당 &alpha;&times;10 = 가상 관측 수)
+      <input type="range" id="alphaRng" min="0" max="200" step="1" value="33">
+    </label>
+  </div>
+  <div class="card flat"><div class="scroll"><table id="postTbl"></table></div></div>
+
+  <h2>미출현 간격</h2>
+  <p class="note">각 자리에서 그 숫자가 마지막으로 나온 뒤 몇 회가 지났는지. 균일·독립이면 기대 간격은 10회, 분포는 기하분포입니다.</p>
+  <div class="card flat"><div class="scroll"><table id="gapTbl"></table></div></div>
+</section>
+
+<!-- ══════════ 공정성 검정 ══════════ -->
+<section class="panel" id="p-fair">
+  <h2>결론</h2>
+  <div class="card" id="fairSummary"><span class="spin"></span></div>
+
+  <h2>1 · 균일성 — 특정 숫자가 더 자주 나오는가</h2>
+  <div class="card flat"><div class="scroll"><table id="uniTbl"></table></div></div>
+
+  <h2>2 · 독립성 — 직전 회차가 다음 회차에 영향을 주는가</h2>
+  <div class="card flat"><div class="scroll"><table id="indTbl"></table></div></div>
+
+  <h2>3 · 다중검정 — «유의한 칸»이 몇 개까지는 우연인가</h2>
+  <div class="card flat" id="multiCard"></div>
+
+  <h2>4 · 간격 분포 — 기하분포를 따르는가</h2>
+  <div class="card flat"><div class="scroll"><table id="gapFitTbl"></table></div></div>
+</section>
+
+<!-- ══════════ 발행·판매 ══════════ -->
+<section class="panel" id="p-issue">
+  <h2>발행 구조</h2>
+  <div class="card" id="issueCard"><span class="spin"></span></div>
+
+  <h2>판매율을 네 갈래로 따로 추정하면</h2>
+  <p class="note">같은 값을 서로 다른 데이터로 네 번 구합니다. 네 값이 일치하면 <b>발행 구조 가정이 맞다</b>는 뜻입니다.</p>
+  <div class="card flat"><div class="scroll"><table id="sellTbl"></table></div></div>
+
+  <h2>회차별 추정 판매량</h2>
+  <div class="card flat" id="salesCard"></div>
+
+  <h2>1등 당첨매수 분포</h2>
+  <p class="note">당첨매수가 늘어도 <b>1인당 당첨금은 줄지 않습니다</b>. 로또와 결정적으로 다른 점입니다.</p>
+  <div class="card flat"><div class="scroll"><table id="w1Tbl"></table></div></div>
+</section>
+
+<!-- ══════════ 내 번호 ══════════ -->
+<section class="panel" id="p-mine">
+  <h2>번호 등록</h2>
+  <p class="note">저장한 번호는 이 브라우저에만 남습니다. 전 회차와 자동 대조해 당첨 등수를 표시합니다.</p>
+  <div class="row">
+    <label class="fld">조<input type="number" id="myBand" min="1" max="5" value="1" style="width:70px"></label>
+    <label class="fld">번호 6자리<input type="text" id="myNum" maxlength="6" inputmode="numeric" placeholder="000000" style="width:130px"></label>
+    <label class="fld">구매 회차<input type="number" id="myEp" min="1" style="width:100px"></label>
+    <button class="btn" id="myAdd">추가</button>
+  </div>
+  <div class="card" id="myCard"></div>
+  <h2>누적 결과</h2>
+  <div class="kpi" id="myKpi"></div>
+</section>
+
+<!-- ══════════ 데이터 ══════════ -->
+<section class="panel" id="p-data">
+  <h2>수집 상태</h2>
+  <div class="card" id="dataCard"><span class="spin"></span></div>
+  <div class="row">
+    <button class="btn" id="btnSync">최신 회차 확인</button>
+    <button class="btn ghost" id="btnFull">전체 다시 수집</button>
+    <button class="btn ghost" id="btnExport">JSON 내보내기</button>
+    <button class="btn ghost" id="btnImportBtn">JSON 붙여넣기 복구</button>
+  </div>
+  <div class="card flat hide" id="importBox">
+    <label class="fld">내보낸 JSON을 붙여넣고 «복구»
+      <textarea id="importTa" style="width:100%;height:120px;font-family:'Space Mono',monospace;font-size:12px;border:1.5px solid var(--ink);background:var(--paper-2);color:var(--ink);padding:8px"></textarea>
+    </label>
+    <div class="row" style="padding-top:8px"><button class="btn" id="btnImportGo">복구</button></div>
+  </div>
+
+  <h2>출처</h2>
+  <div class="card flat">
+    <p class="note" style="padding:0">
+      동행복권 공식 API 두 곳을 브라우저에서 직접 호출합니다.<br>
+      <code class="mono" style="font-size:12px">GET /pt720/selectPstPt720WnList.do</code> — 전 회차 번호·조·보너스 (1회 호출로 전량)<br>
+      <code class="mono" style="font-size:12px">GET /pt720/selectPstPt720WnInfo.do?srchPsltEpsd=N</code> — 회차별 등위 당첨매수<br>
+      수집한 데이터는 <code class="mono" style="font-size:12px">localStorage</code>에만 저장되며 외부로 전송되지 않습니다.
+    </p>
+  </div>
+
+  <h2>전 회차</h2>
+  <div class="card flat"><div class="scroll" style="max-height:520px"><table id="allTbl"></table></div></div>
+</section>
+
+<div class="disclaimer" id="disc"></div>
+<div class="foot">
+  <span>Pension Lab · 일확천금</span>
+  <span><a href="./index.html" style="color:inherit">Lotto Lab →</a></span>
+</div>
+</div>
+<script>
+"use strict";
+/* ══════════════════ 상수 ══════════════════ */
+const LIST_API = 'https://www.dhlottery.co.kr/pt720/selectPstPt720WnList.do';
+const INFO_API = 'https://www.dhlottery.co.kr/pt720/selectPstPt720WnInfo.do?srchPsltEpsd=';
+const LSDB = 'pensionlab.db.v1';
+const LSMY = 'pensionlab.my.v1';
+const TICKET = 1000;              // 1장 가격
+const COMB   = 5 * 1e6;           // 조 5 × 6자리 10^6
+const COPIES = 2;                 // 회차당 조합별 발행 매수(데이터로 검증됨)
+const HALFLIFE = 52;              // 최근가중 반감기(회)
+
+// 등위 정의: p=1장당 확률, amt=명목 총 수령액, mo=월지급액, n=지급 횟수
+const RANKS = [
+  {k:1, name:'1등',  p:2e-7,  amt:1_680_000_000, mo:7_000_000, n:240, cond:'조 + 6자리 전부 일치'},
+  {k:2, name:'2등',  p:8e-7,  amt:  120_000_000, mo:1_000_000, n:120, cond:'6자리 일치 · 조 불일치'},
+  {k:8, name:'보너스',p:1e-6,  amt:  120_000_000, mo:1_000_000, n:120, cond:'보너스 번호 6자리 일치(조 무관)'},
+  {k:3, name:'3등',  p:9e-6,  amt:    1_000_000, cond:'뒤 5자리 일치'},
+  {k:4, name:'4등',  p:9e-5,  amt:      100_000, cond:'뒤 4자리 일치'},
+  {k:5, name:'5등',  p:9e-4,  amt:       50_000, cond:'뒤 3자리 일치'},
+  {k:6, name:'6등',  p:9e-3,  amt:        5_000, cond:'뒤 2자리 일치'},
+  {k:7, name:'7등',  p:9e-2,  amt:        1_000, cond:'뒤 1자리 일치'},
+];
+const TAX_RATE = 0.22;            // 기타소득세 20% + 지방소득세 2%
+const TAX_FREE = 50_000;          // 과세최저한: 건별 5만원 이하 비과세
+
+/* ══════════════════ 통계 유틸 ══════════════════ */
+function logGamma(x){
+  const g=[676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,
+    12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(x<0.5) return Math.log(Math.PI/Math.sin(Math.PI*x))-logGamma(1-x);
+  x-=1; let a=0.99999999999980993, t=x+7.5;
+  for(let i=0;i<8;i++) a+=g[i]/(x+i+1);
+  return 0.5*Math.log(2*Math.PI)+(x+0.5)*Math.log(t)-t+Math.log(a);
+}
+// 하부 불완전감마 P(s,x) — 급수/연분수
+function gammaP(s,x){
+  if(x<0||s<=0) return NaN;
+  if(x===0) return 0;
+  if(x < s+1){
+    let ap=s, sum=1/s, del=sum;
+    for(let i=0;i<500;i++){ ap++; del*=x/ap; sum+=del; if(Math.abs(del)<Math.abs(sum)*1e-14) break; }
+    return sum*Math.exp(-x+s*Math.log(x)-logGamma(s));
+  }
+  let b=x+1-s, c=1e300, d=1/b, h=d;
+  for(let i=1;i<=500;i++){
+    const an=-i*(i-s); b+=2; d=an*d+b; if(Math.abs(d)<1e-300) d=1e-300;
+    c=b+an/c; if(Math.abs(c)<1e-300) c=1e-300;
+    d=1/d; const del=d*c; h*=del; if(Math.abs(del-1)<1e-14) break;
+  }
+  return 1-Math.exp(-x+s*Math.log(x)-logGamma(s))*h;
+}
+const chi2sf = (x,df)=> (x<=0?1:1-gammaP(df/2,x/2));
+function chi2Uniform(counts){
+  const n=counts.reduce((a,b)=>a+b,0), k=counts.length, e=n/k;
+  if(e<=0) return {chi2:0,df:k-1,p:1};
+  const c=counts.reduce((a,o)=>a+(o-e)*(o-e)/e,0);
+  return {chi2:c, df:k-1, p:chi2sf(c,k-1), exp:e};
+}
+const logBinom=(n,k)=>logGamma(n+1)-logGamma(k+1)-logGamma(n-k+1);
+const binomPMF=(k,n,p)=> Math.exp(logBinom(n,k)+k*Math.log(p)+(n-k)*Math.log1p(-p));
+function binomTest(k,n,p){                       // 양측 정확검정
+  if(n===0) return 1;
+  const obs=binomPMF(k,n,p), tol=obs*(1+1e-7);
+  let s=0; for(let i=0;i<=n;i++){ const v=binomPMF(i,n,p); if(v<=tol) s+=v; }
+  return Math.min(1,s);
+}
+function wilsonCI(k,n,z=1.96){                   // 비율 신뢰구간
+  if(n===0) return [0,1];
+  const ph=k/n, d=1+z*z/n, c=ph+z*z/(2*n), h=z*Math.sqrt(ph*(1-ph)/n+z*z/(4*n*n));
+  return [Math.max(0,(c-h)/d), Math.min(1,(c+h)/d)];
+}
+const fmt=n=>n.toLocaleString('ko-KR');
+const pct=(x,d=2)=>(x*100).toFixed(d)+'%';
+function pTag(p){
+  if(p<0.01) return '<span class="tag sig">p&lt;0.01</span>';
+  if(p<0.05) return '<span class="tag sig">p='+p.toFixed(3)+'</span>';
+  return '<span class="tag noi">p='+p.toFixed(3)+'</span>';
+}
+function mulberry32(a){ return function(){ a|=0;a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+
+/* ══════════════════ 저장소 ══════════════════ */
+const store={
+  get(k,f){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):f; }catch(e){ return f; } },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
+};
+let DB = store.get(LSDB, {rounds:[], updated:0});
+let MY = store.get(LSMY, []);
+const saveDB=()=>store.set(LSDB,DB);
+const saveMY=()=>store.set(LSMY,MY);
+
+/* ══════════════════ API ══════════════════ */
+async function jget(url){
+  const r=await fetch(url,{mode:'cors',cache:'no-store',credentials:'omit'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+async function fetchList(){
+  const j=await jget(LIST_API);
+  const rows=(j&&j.data&&j.data.result)||[];
+  if(!rows.length) throw new Error('빈 응답');
+  return rows.map(r=>({
+    ep:+r.psltEpsd, date:String(r.psltRflYmd),
+    band:+r.wnBndNo, num:String(r.wnRnkVl).padStart(6,'0'), bonus:String(r.bnsRnkVl).padStart(6,'0')
+  })).sort((a,b)=>a.ep-b.ep);
+}
+async function fetchInfo(ep){
+  const j=await jget(INFO_API+ep);
+  const rows=(j&&j.data&&j.data.result)||[];
+  if(!rows.length) return null;
+  const cnt={},net={};
+  rows.forEach(x=>{ cnt[x.wnRnk]=x.wnTotalCnt; net[x.wnRnk]=x.wnInternetCnt; });
+  return {cnt,net};
+}
+async function pool(items, worker, conc, onProg){
+  let i=0, done=0;
+  const run=async()=>{ while(i<items.length){ const my=i++;
+      try{ await worker(items[my]); }catch(e){}
+      done++; if(onProg) onProg(done,items.length); } };
+  await Promise.all(Array.from({length:Math.min(conc,items.length)},run));
+}
+
+/* ══════════════════ 분석 코어 ══════════════════ */
+const POSNAME=['십만','만','천','백','십','일'];
+const digitsOf=s=>String(s).padStart(6,'0').split('').map(Number);
+const R = ()=>DB.rounds;
+
+function matrix(src){                       // 6×10 출현표
+  const M=Array.from({length:6},()=>new Array(10).fill(0));
+  R().forEach(r=>{
+    if(src!=='bonus') digitsOf(r.num).forEach((d,i)=>M[i][d]++);
+    if(src!=='num')   digitsOf(r.bonus).forEach((d,i)=>M[i][d]++);
+  });
+  return M;
+}
+function bandCounts(){ const c=new Array(5).fill(0); R().forEach(r=>{ if(r.band>=1&&r.band<=5) c[r.band-1]++; }); return c; }
+
+/* 모델 점수 — hist 는 [0..9] 숫자 배열(과거→현재 순) */
+function scoreDigits(hist, model, rng){
+  const m=hist.length, s=new Array(10).fill(0);
+  if(model==='rand'){ for(let d=0;d<10;d++) s[d]=rng(); return s; }
+  const freq=new Array(10).fill(0); hist.forEach(d=>freq[d]++);
+  if(model==='freq') return freq.slice();
+  if(model==='cold') return freq.map(v=>-v);
+  if(model==='recent'){ hist.forEach((d,i)=>{ s[d]+=Math.pow(0.5,(m-1-i)/HALFLIFE); }); return s; }
+  if(model==='gap'){
+    for(let d=0;d<10;d++){ let last=-1; for(let i=m-1;i>=0;i--){ if(hist[i]===d){ last=i; break; } }
+      s[d]= last<0 ? m : (m-1-last); }
+    return s;
+  }
+  return freq.slice();
+}
+function scoreBands(hist, model, rng){       // hist = [1..5]
+  const m=hist.length, s=new Array(5).fill(0);
+  if(model==='rand'){ for(let i=0;i<5;i++) s[i]=rng(); return s; }
+  const freq=new Array(5).fill(0); hist.forEach(b=>freq[b-1]++);
+  if(model==='freq') return freq.slice();
+  if(model==='cold') return freq.map(v=>-v);
+  if(model==='recent'){ hist.forEach((b,i)=>{ s[b-1]+=Math.pow(0.5,(m-1-i)/HALFLIFE); }); return s; }
+  if(model==='gap'){ for(let b=0;b<5;b++){ let last=-1; for(let i=m-1;i>=0;i--){ if(hist[i]-1===b){ last=i; break; } }
+      s[b]= last<0?m:(m-1-last); } return s; }
+  return freq.slice();
+}
+const topIdx=(s,k)=>s.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]||a[1]-b[1]).slice(0,k).map(x=>x[1]);
+
+/* 백테스트 — start 회차부터 각 회차를 그 이전 데이터만으로 예측 */
+function backtest(model, K, J, start){
+  const rows=R(); if(rows.length<start+10) return null;
+  const rng=mulberry32(20240507);
+  let hitD=0, totD=0, hitB=0, totB=0;
+  const posHist=Array.from({length:6},()=>[]); const bHist=[];
+  for(let t=0;t<rows.length;t++){
+    const dg=digitsOf(rows[t].num);
+    if(t>=start){
+      for(let p=0;p<6;p++){
+        const s=scoreDigits(posHist[p],model,rng);
+        if(topIdx(s,K).includes(dg[p])) hitD++;
+        totD++;
+      }
+      const sb=scoreBands(bHist,model,rng);
+      if(topIdx(sb,J).map(i=>i+1).includes(rows[t].band)) hitB++;
+      totB++;
+    }
+    for(let p=0;p<6;p++) posHist[p].push(dg[p]);
+    bHist.push(rows[t].band);
+  }
+  const bD=K/10, bB=J/5;
+  return {
+    model,K,J,start:rows[start].ep,end:rows[rows.length-1].ep,
+    hitD,totD,rateD:hitD/totD,baseD:bD,ciD:wilsonCI(hitD,totD),pD:binomTest(hitD,totD,bD),
+    hitB,totB,rateB:hitB/totB,baseB:bB,ciB:wilsonCI(hitB,totB),pB:binomTest(hitB,totB,bB)
+  };
+}
+/* 다음 회차용 점수 (전체 데이터 사용) */
+function currentScores(model,seed){
+  const rng=mulberry32(seed||1);
+  const rows=R();
+  const pos=Array.from({length:6},(_,p)=>scoreDigits(rows.map(r=>digitsOf(r.num)[p]),model,rng));
+  const band=scoreBands(rows.map(r=>r.band),model,rng);
+  return {pos,band};
+}
+/* 상위 K 풀에서 조합 생성
+   가중치는 «순위 기반 선형» — 1위 K점, 2위 K-1점 … K위 1점.
+   점수 차이를 그대로 쓰면(예: 갭 23 vs 9) 1순위가 90% 가까이 독식해
+   생성 결과가 사실상 한 조합으로 굳는다. 모델이 우연과 구분되지 않는 이상
+   «순서»만 반영하고 «차이의 크기»는 반영하지 않는 것이 정직하다. */
+function rankWeights(scores, idx){
+  return idx.map((_,r)=>idx.length-r);          // idx 는 이미 점수 내림차순
+}
+function generate(model,K,J,count,seed){
+  const {pos,band}=currentScores(model,seed);
+  const rng=mulberry32(seed||1);
+  const pools=pos.map(s=>{ const idx=topIdx(s,K); return {idx,w:rankWeights(s,idx)}; });
+  const bIdx=topIdx(band,J), bW=rankWeights(band,bIdx);
+  const pick=(idx,w)=>{ const T=w.reduce((a,b)=>a+b,0); let x=rng()*T;
+    for(let i=0;i<idx.length;i++){ x-=w[i]; if(x<=0) return idx[i]; } return idx[idx.length-1]; };
+  const seen=new Set(), out=[];
+  const tooSimilar=(num,b)=>out.some(o=>{
+    let same=0; for(let i=0;i<6;i++) if(o.num[i]===num[i]) same++;
+    return same>=5 && o.band===b;                // 6자리 중 5자리 이상 + 같은 조는 제외
+  });
+  const maxPool=Math.pow(K,6)*J;
+  let guard=0;
+  while(out.length<Math.min(count,maxPool) && guard++<count*600){
+    const num=pools.map(p=>pick(p.idx,p.w)).join('');
+    const b=pick(bIdx,bW)+1;
+    const key=b+'-'+num;
+    if(seen.has(key)) continue;
+    if(guard<count*300 && tooSimilar(num,b)) continue;   // 여유가 있을 때만 다양성 규칙 적용
+    seen.add(key); out.push({band:b,num});
+  }
+  return out;
+}
+
+/* 등수 판정 */
+function gradeOf(band,num,round){
+  if(!round) return null;
+  const wn=round.num, bn=round.bonus;
+  if(num===wn) return band===round.band ? 1 : 2;
+  if(num===bn) return 8;
+  for(let n=5;n>=1;n--) if(num.slice(6-n)===wn.slice(6-n)) return 8-n; // 5자리→3등 … 1자리→7등
+  return 0;
+}
+const rankInfo=k=>RANKS.find(r=>r.k===k);
+
+/* 판매율 추정 — 4경로 */
+function sellEstimates(r){
+  const c=r.cnt; if(!c) return null;
+  const sold7 = c[7]!=null ? c[7]/9e-2 : null;
+  const cap = COMB*COPIES;
+  return {
+    sold: sold7,
+    s7: sold7!=null ? sold7/cap : null,
+    s1: c[1]!=null ? c[1]/COPIES : null,
+    s2: c[2]!=null ? c[2]/(4*COPIES) : null,
+    sB: c[8]!=null ? c[8]/(5*COPIES) : null
+  };
+}
+
+/* ══════════════════ 렌더링 유틸 ══════════════════ */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const el=(h)=>{const t=document.createElement('template');t.innerHTML=h.trim();return t.content.firstChild;};
+function ticketHTML(band,num,opt){
+  opt=opt||{};
+  const hi=opt.hi||[];
+  const d=String(num).padStart(6,'0').split('').map((c,i)=>
+    `<span class="dg${opt.sm?' sm':''}${hi.includes(i)?' hi':''}">${c}</span>`).join('');
+  const b = band==null ? '' :
+    `<span class="bnd" style="${opt.sm?'font-size:22px;padding:1px 7px':''}">${band}</span><span class="bndlabel">조</span><span class="sep"></span>`;
+  return `<span class="tk">${b}${d}</span>`;
+}
+function dstr(s){ return s ? s.slice(0,4)+'.'+s.slice(4,6)+'.'+s.slice(6,8) : '—'; }
+function nextDraw(){
+  const rows=R(); if(!rows.length) return null;
+  const last=rows[rows.length-1];
+  const y=+last.date.slice(0,4), m=+last.date.slice(4,6), d=+last.date.slice(6,8);
+  const nd=new Date(Date.UTC(y,m-1,d)); nd.setUTCDate(nd.getUTCDate()+7);
+  return {ep:last.ep+1, date:nd.toISOString().slice(0,10).replace(/-/g,'')};
+}
+function heat(v,min,max){ return max>min ? (v-min)/(max-min) : 0; }
+function gridHTML(M, tops){
+  let h='<div class="pgrid"><div class="hd"></div>';
+  for(let d=0;d<10;d++) h+=`<div class="hd">${d}</div>`;
+  for(let p=0;p<6;p++){
+    const row=M[p], mn=Math.min(...row), mx=Math.max(...row);
+    h+=`<div class="rw">${POSNAME[p]}</div>`;
+    for(let d=0;d<10;d++){
+      const o=(0.10+0.72*heat(row[d],mn,mx)).toFixed(3);
+      const isTop=tops&&tops[p]&&tops[p].includes(d);
+      h+=`<div class="pcell${isTop?' top':''}" style="--o:${o}" title="${POSNAME[p]} 자리 · 숫자 ${d}">`
+        +`<span class="d">${d}</span><span class="c">${typeof row[d]==='number'&&Number.isInteger(row[d])?row[d]:row[d].toFixed(1)}</span></div>`;
+    }
+  }
+  return h+'</div>';
+}
+
+/* ══════════════════ 대시보드 ══════════════════ */
+function renderDash(){
+  const rows=R(); if(!rows.length) return;
+  const last=rows[rows.length-1], nx=nextDraw();
+  const withCnt=rows.filter(r=>r.cnt);
+  const sold=withCnt.length? sellEstimates(withCnt[withCnt.length-1]) : null;
+
+  $('#kpiDash').innerHTML=[
+    ['수집 회차', rows.length, `1회 ~ ${last.ep}회`],
+    ['최신 추첨', last.ep+'회', dstr(last.date)],
+    ['1등 확률', '1/500만', '조 + 6자리 일치'],
+    ['환급률', '75.0%', '1,000원당 기대 750원'],
+    ['1등 미판매', ((rows.filter(r=>r.cnt&&r.cnt[1]===0).length/Math.max(1,withCnt.length))*100).toFixed(0)+'%',
+      `${rows.filter(r=>r.cnt&&r.cnt[1]===0).length}회 / ${withCnt.length}회`],
+    ['추정 판매율', sold&&sold.s7!=null? (sold.s7*100).toFixed(0)+'%' : '—', '발행 1,000만매 대비'],
+  ].map(([k,v,s])=>`<div><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join('');
+
+  $('#recentCard').innerHTML = rows.slice(-6).reverse().map(r=>{
+    const c=r.cnt||{};
+    return `<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid var(--ink-12)">
+      <span class="mono" style="font-size:12px;color:var(--ink-60);min-width:96px">${r.ep}회 · ${dstr(r.date)}</span>
+      ${ticketHTML(r.band,r.num,{sm:true})}
+      <span class="mono" style="font-size:11px;color:var(--ink-40)">보너스 ${r.bonus}</span>
+      <span class="mono" style="font-size:11px;color:var(--ink-40);margin-left:auto">${c[1]!=null?('1등 '+c[1]+'매'):''}</span>
+    </div>`;
+  }).join('');
+
+  $('#nextCard').innerHTML = nx ? `<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
+      <div><div class="mono" style="font-size:11px;letter-spacing:.12em;color:var(--ink-60)">NEXT DRAW</div>
+      <div class="bignum">${nx.ep}회</div></div>
+      <div class="mono" style="font-size:13px;color:var(--ink-60);text-align:right">${dstr(nx.date)} (목)<br>추첨 19:05 · MBC</div>
+    </div>` : '—';
+
+  // 확률표
+  let t='<tr><th>등위</th><th>조건</th><th class="num">확률</th><th class="num">명목 당첨금</th><th class="num">기대값 기여</th></tr>';
+  let ev=0;
+  RANKS.forEach(r=>{ ev+=r.p*r.amt;
+    t+=`<tr><td><b>${r.name}</b></td><td style="font-size:12.5px;color:var(--ink-60)">${r.cond}</td>`
+      +`<td class="num">1/${fmt(Math.round(1/r.p))}</td><td class="num">${fmt(r.amt)}원</td>`
+      +`<td class="num">${(r.p*r.amt).toFixed(1)}원</td></tr>`; });
+  const anyP=RANKS.reduce((a,r)=>a+r.p,0);
+  t+=`<tr class="hi"><td colspan="2"><b>합계</b></td><td class="num">${pct(anyP,4)}<br><span style="font-size:11px;color:var(--ink-60)">약 ${(1/anyP).toFixed(1)}장당 1회</span></td>`
+    +`<td class="num">—</td><td class="num"><b>${ev.toFixed(1)}원</b><br><span style="font-size:11px;color:var(--ink-60)">환급률 ${(ev/TICKET*100).toFixed(1)}%</span></td></tr>`;
+  $('#oddsTbl').innerHTML=t;
+
+  // 현재가치
+  const netMo=7_000_000*(1-TAX_RATE);
+  const pv=(mo,n,r)=>{ const i=r/12; return i===0? mo*n : mo*(1-Math.pow(1+i,-n))/i; };
+  let pvRows=[0.02,0.03,0.04,0.05].map(r=>
+    `<tr><td class="num">${(r*100).toFixed(0)}%</td><td class="num">${(pv(netMo,240,r)/1e8).toFixed(2)}억원</td>`
+    +`<td class="num">${(pv(780_000,120,r)/1e8).toFixed(2)}억원</td></tr>`).join('');
+  $('#pvCard').innerHTML=`
+    <div class="grid3" style="padding-bottom:14px">
+      <div><div class="mono" style="font-size:10.5px;color:var(--ink-60);letter-spacing:.1em">월 수령(세전)</div><div class="bignum" style="font-size:34px">700만원</div></div>
+      <div><div class="mono" style="font-size:10.5px;color:var(--ink-60);letter-spacing:.1em">월 수령(세후 22%)</div><div class="bignum" style="font-size:34px">546만원</div></div>
+      <div><div class="mono" style="font-size:10.5px;color:var(--ink-60);letter-spacing:.1em">20년 세후 명목</div><div class="bignum" style="font-size:34px">13.1억</div></div>
+    </div>
+    <div class="scroll"><table><tr><th class="num">할인율(연)</th><th class="num">1등 세후 현재가치</th><th class="num">2등·보너스 세후 현재가치</th></tr>${pvRows}</table></div>
+    <p class="note" style="padding:12px 0 0">명목 16.8억원은 <b>20년에 걸쳐</b> 받는 금액입니다. 매월 700만원에 기타소득세 22%가 원천징수되어 실수령은 546만원,
+      할인율 3%를 적용한 현재가치는 <b>약 9.8억원</b>입니다. 5만원 이하(5·6·7등)는 과세최저한으로 비과세입니다.
+      <span style="color:var(--ink-40)">— 세율은 공개된 일반 기준이며 개인 상황에 따라 달라질 수 있습니다.</span></p>`;
+}
+
+/* ══════════════════ 예상 번호 ══════════════════ */
+const MODELNAME={freq:'빈도',cold:'역빈도',recent:'최근가중',gap:'갭',rand:'무작위(대조군)'};
+let lastGen=[];
+function predSettings(){
+  return {model:$('#mdlSel').value, K:+$('#kSel').value, J:+$('#jSel').value, N:+$('#cntSel').value};
+}
+function renderPred(){
+  const rows=R(); if(rows.length<50) return;
+  const {model,K,J}=predSettings();
+  const start=Math.min(100, Math.floor(rows.length*0.3));
+  const bt=backtest(model,K,J,start);
+  const seed=(rows[rows.length-1].ep+1)*7919;
+  const {pos,band}=currentScores(model,seed);
+  const tops=pos.map(s=>topIdx(s,K));
+  const bTop=topIdx(band,J).map(i=>i+1);
+
+  // 백테스트 카드
+  if(bt){
+    const dOk=bt.pD<0.05, bOk=bt.pB<0.05;
+    const arrow=(r,b)=> r>b? '▲' : r<b? '▼':'=';
+    $('#btCard').innerHTML=`
+      <p class="note" style="padding-bottom:12px"><b>${bt.start}회 ~ ${bt.end}회</b>를 한 회차씩 앞으로 걸어가며,
+        그 시점까지의 데이터만으로 «${MODELNAME[model]}» 모델의 상위 ${K}개를 뽑고 실제 당첨 숫자가 그 안에 있었는지 세었습니다.</p>
+      <div class="scroll"><table>
+        <tr><th>대상</th><th class="num">표본</th><th class="num">적중률</th><th class="num">95% 신뢰구간</th><th class="num">우연 기준선</th><th class="num">판정</th></tr>
+        <tr><td>자리 숫자 (상위 ${K}/10)</td><td class="num">${fmt(bt.totD)}건</td>
+          <td class="num"><b>${pct(bt.rateD)}</b> ${arrow(bt.rateD,bt.baseD)}</td>
+          <td class="num">[${pct(bt.ciD[0],1)}, ${pct(bt.ciD[1],1)}]</td>
+          <td class="num">${pct(bt.baseD,0)}</td><td class="num">${pTag(bt.pD)}</td></tr>
+        <tr><td>조 (상위 ${J}/5)</td><td class="num">${fmt(bt.totB)}회차</td>
+          <td class="num"><b>${pct(bt.rateB)}</b> ${arrow(bt.rateB,bt.baseB)}</td>
+          <td class="num">[${pct(bt.ciB[0],1)}, ${pct(bt.ciB[1],1)}]</td>
+          <td class="num">${pct(bt.baseB,0)}</td><td class="num">${pTag(bt.pB)}</td></tr>
+      </table></div>
+      <div class="verdict ${dOk||bOk?'sig':''}">
+        ${dOk||bOk
+          ? `<b>주의.</b> p&lt;0.05 가 떴지만, 모델 5종 &times; K 5단계 = 25조합을 훑는 중이므로 <b>우연히 1~2개</b>는 반드시 나옵니다.
+             무작위 대조군에서도 같은 일이 일어나는지 «무작위» 모델로 바꿔 확인해 보세요.`
+          : `신뢰구간이 우연 기준선 <b>${pct(bt.baseD,0)}</b>를 포함합니다. 이 설정은 <b>동전 던지기와 구분되지 않습니다</b>.
+             아래 조합은 «근거 있는 예상»이 아니라 <b>규칙이 정해진 선택</b>입니다.`}
+      </div>`;
+  }
+  $('#predGrid').innerHTML=gridHTML(pos.map(s=>s.slice()),tops);
+  const bMin=Math.min(...band), bMax=Math.max(...band);
+  $('#bandRow').innerHTML=`<div class="mono" style="font-size:10.5px;letter-spacing:.1em;color:var(--ink-60);padding-bottom:8px">조 · 상위 ${J}개</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">`+band.map((v,i)=>{
+      const on=bTop.includes(i+1);
+      return `<div class="pcell${on?' top':''}" style="--o:${(0.10+0.72*heat(v,bMin,bMax)).toFixed(3)};min-width:54px;aspect-ratio:auto;padding:9px 4px">
+        <span class="d">${i+1}조</span><span class="c">${Number.isInteger(v)?v:v.toFixed(1)}</span></div>`;}).join('')+'</div>';
+
+  const poolSize=Math.pow(K,6)*J;
+  $('#predVerdict').innerHTML=`상위 ${K}개 &times; 6자리 &times; 조 ${J}개 = 후보 <b>${fmt(poolSize)}</b>개.
+    전체 500만 조합의 <b>${pct(poolSize/COMB,3)}</b>로 좁혔지만, 1장의 1등 확률은 여전히 <b>정확히 1/5,000,000</b>입니다.
+    좁히기는 «어디를 살지»를 정할 뿐 «맞을 확률»을 바꾸지 않습니다.`;
+  renderDashPick();
+}
+function renderDashPick(){
+  const rows=R(); if(rows.length<50) return;
+  const {model,K,J}=predSettings();
+  const nx=nextDraw();
+  const g=generate(model,K,J,5,(nx?nx.ep:1)*7919);
+  const start=Math.min(100, Math.floor(rows.length*0.3));
+  const bt=backtest(model,K,J,start);
+  $('#dashPick').innerHTML=g.map((c,i)=>
+    `<div class="combo"><div class="k">${String.fromCharCode(65+i)}</div>
+      <div>${ticketHTML(c.band,c.num,{sm:true})}</div>
+      <div class="m"><em>${MODELNAME[model]}</em>상위 ${K}</div></div>`).join('')
+    +(bt?`<p class="note" style="padding:12px 0 0">이 설정의 백테스트 적중률 <b>${pct(bt.rateD)}</b> · 우연 기준선 ${pct(bt.baseD,0)} · ${pTag(bt.pD).replace(/<[^>]+>/g,'')}</p>`:'');
+}
+function renderGen(){
+  const {model,K,J,N}=predSettings();
+  lastGen=generate(model,K,J,N,Date.now()%1e9);
+  $('#genCard').innerHTML=lastGen.map((c,i)=>
+    `<div class="combo"><div class="k">${i+1}</div><div>${ticketHTML(c.band,c.num,{sm:true})}</div>
+      <div class="m"><em>${c.band}조 ${c.num}</em>${MODELNAME[model]} K=${K}</div></div>`).join('');
+}
+
+/* ══════════════════ 자리 통계 ══════════════════ */
+let statSrc='num';
+function renderStat(){
+  const M=matrix(statSrc), n=R().length*(statSrc==='both'?2:1);
+  $('#statGrid').innerHTML=gridHTML(M,null);
+  const a=+$('#alphaRng').value; $('#alphaVal').textContent=a;
+  let t='<tr><th>자리</th>'+[...Array(10)].map((_,d)=>`<th class="num">${d}</th>`).join('')+'<th class="num">χ²</th><th class="num">p</th></tr>';
+  for(let p=0;p<6;p++){
+    const row=M[p], tst=chi2Uniform(row);
+    t+=`<tr><td><b>${POSNAME[p]}</b></td>`+row.map(c=>{
+      const post=(c+a)/(n+10*a);
+      const dev=post-0.1;
+      const col=Math.abs(dev)<0.002?'var(--ink-40)':(dev>0?'var(--ink)':'var(--ink-60)');
+      return `<td class="num" style="color:${col}">${(post*100).toFixed(2)}</td>`;
+    }).join('')+`<td class="num">${tst.chi2.toFixed(1)}</td><td class="num">${tst.p.toFixed(3)}</td></tr>`;
+  }
+  $('#postTbl').innerHTML=t;
+
+  // 갭
+  const rows=R(); let g='<tr><th>자리</th>'+[...Array(10)].map((_,d)=>`<th class="num">${d}</th>`).join('')+'</tr>';
+  for(let p=0;p<6;p++){
+    g+=`<tr><td><b>${POSNAME[p]}</b></td>`;
+    for(let d=0;d<10;d++){
+      let last=-1;
+      for(let i=rows.length-1;i>=0;i--){ if(digitsOf(rows[i].num)[p]===d){ last=i; break; } }
+      const gap= last<0? rows.length : rows.length-1-last;
+      const hot=gap>=25;
+      g+=`<td class="num" style="${hot?'color:var(--sig);font-weight:700':''}">${gap}</td>`;
+    }
+    g+='</tr>';
+  }
+  $('#gapTbl').innerHTML=g;
+}
+
+/* ══════════════════ 공정성 검정 ══════════════════ */
+function renderFair(){
+  const rows=R(), n=rows.length; if(!n) return;
+  const Mn=matrix('num'), Mb=matrix('bonus');
+
+  // 1) 균일성
+  let t='<tr><th>대상</th><th class="num">표본</th><th class="num">χ²</th><th class="num">df</th><th class="num">p</th><th>판정</th></tr>';
+  const add=(name,counts)=>{ const x=chi2Uniform(counts);
+    t+=`<tr><td>${name}</td><td class="num">${fmt(counts.reduce((a,b)=>a+b,0))}</td><td class="num">${x.chi2.toFixed(2)}</td>`
+      +`<td class="num">${x.df}</td><td class="num">${x.p.toFixed(4)}</td><td>${x.p<0.05?'<span class="tag sig">편향 의심</span>':'<span class="tag ok">균일과 무모순</span>'}</td></tr>`; };
+  for(let p=0;p<6;p++) add(`1등 번호 · ${POSNAME[p]} 자리`, Mn[p]);
+  add('1등 번호 · 6자리 통합', Mn.reduce((a,r)=>a.map((v,i)=>v+r[i]),new Array(10).fill(0)));
+  add('보너스 번호 · 6자리 통합', Mb.reduce((a,r)=>a.map((v,i)=>v+r[i]),new Array(10).fill(0)));
+  add('1등+보너스 전체 숫자', Mn.concat(Mb).reduce((a,r)=>a.map((v,i)=>v+r[i]),new Array(10).fill(0)));
+  add('조 (1~5)', bandCounts());
+  // 6×10 전체표
+  {
+    const e=n/10; let c=0; for(let p=0;p<6;p++) for(let d=0;d<10;d++) c+=(Mn[p][d]-e)*(Mn[p][d]-e)/e;
+    const pv=chi2sf(c,54);
+    t+=`<tr class="hi"><td><b>1등 번호 6×10 전체표</b></td><td class="num">${fmt(n*6)}</td><td class="num">${c.toFixed(2)}</td>`
+      +`<td class="num">54</td><td class="num">${pv.toFixed(4)}</td><td>${pv<0.05?'<span class="tag sig">편향 의심</span>':'<span class="tag ok">균일과 무모순</span>'}</td></tr>`;
+  }
+  $('#uniTbl').innerHTML=t;
+
+  // 2) 독립성
+  let it='<tr><th>자리</th><th class="num">연속 동일</th><th class="num">기대</th><th class="num">p</th><th class="num">시차1 자기상관</th><th class="num">|2SE|</th></tr>';
+  const se=2/Math.sqrt(n);
+  for(let p=0;p<6;p++){
+    const seq=rows.map(r=>digitsOf(r.num)[p]);
+    let same=0; for(let i=1;i<seq.length;i++) if(seq[i]===seq[i-1]) same++;
+    const pv=binomTest(same,seq.length-1,0.1);
+    const x=seq.map(v=>v-4.5);
+    let s1=0,s0=0,s2=0; const m=x.length;
+    for(let i=1;i<m;i++){ s1+=x[i]*x[i-1]; }
+    for(let i=0;i<m;i++){ s0+=x[i]*x[i]; }
+    const r1=s1/s0;
+    it+=`<tr><td><b>${POSNAME[p]}</b></td><td class="num">${same}회 (${pct(same/(seq.length-1),2)})</td><td class="num">10.00%</td>`
+      +`<td class="num">${pv.toFixed(3)}</td><td class="num">${r1>=0?'+':''}${r1.toFixed(3)}</td><td class="num">±${se.toFixed(3)}</td></tr>`;
+  }
+  {
+    const b=rows.map(r=>r.band); let same=0;
+    for(let i=1;i<b.length;i++) if(b[i]===b[i-1]) same++;
+    const pv=binomTest(same,b.length-1,0.2);
+    it+=`<tr class="hi"><td><b>조</b></td><td class="num">${same}회 (${pct(same/(b.length-1),2)})</td><td class="num">20.00%</td><td class="num">${pv.toFixed(3)}</td><td class="num">—</td><td class="num">—</td></tr>`;
+  }
+  $('#indTbl').innerHTML=it;
+
+  // 3) 다중검정
+  const cells=[];
+  for(let p=0;p<6;p++) for(let d=0;d<10;d++) cells.push({p,d,o:Mn[p][d],pv:binomTest(Mn[p][d],n,0.1)});
+  cells.sort((a,b)=>a.pv-b.pv);
+  const sig=cells.filter(c=>c.pv<0.05).length;
+  $('#multiCard').innerHTML=`
+    <div class="grid3" style="padding-bottom:12px">
+      <div><div class="mono" style="font-size:10.5px;color:var(--ink-60);letter-spacing:.1em">검정한 칸</div><div class="bignum" style="font-size:38px">60</div></div>
+      <div><div class="mono" style="font-size:10.5px;color:var(--ink-60);letter-spacing:.1em">p&lt;0.05 인 칸</div><div class="bignum" style="font-size:38px">${sig}</div></div>
+      <div><div class="mono" style="font-size:10.5px;color:var(--ink-60);letter-spacing:.1em">균일할 때 기대</div><div class="bignum" style="font-size:38px">3</div></div>
+    </div>
+    <div class="scroll"><table><tr><th>칸</th><th class="num">관측</th><th class="num">기대</th><th class="num">단일 p</th><th class="num">Bonferroni 보정 p</th></tr>`
+    + cells.slice(0,6).map(c=>`<tr><td>${POSNAME[c.p]} 자리 · 숫자 ${c.d}</td><td class="num">${c.o}회</td>`
+      +`<td class="num">${(n/10).toFixed(0)}회</td><td class="num">${c.pv.toFixed(4)}</td>`
+      +`<td class="num">${Math.min(1,c.pv*60).toFixed(3)}</td></tr>`).join('')
+    +`</table></div>
+    <div class="verdict ${sig>8?'sig':'ok'}">가장 «튀는» 칸조차 60개 검정을 보정하면 p&nbsp;=&nbsp;<b>${Math.min(1,cells[0].pv*60).toFixed(3)}</b>.
+      60칸을 훑으면 우연히 3개는 p&lt;0.05가 되는 것이 정상입니다. <b>«이 숫자가 잘 나온다»는 말은 여기서 만들어집니다.</b></div>`;
+
+  // 4) 간격 적합도
+  const gaps=[];
+  for(let p=0;p<6;p++) for(let d=0;d<10;d++){
+    const idx=[]; rows.forEach((r,i)=>{ if(digitsOf(r.num)[p]===d) idx.push(i); });
+    for(let i=1;i<idx.length;i++) gaps.push(idx[i]-idx[i-1]);
+  }
+  const edges=[1,2,3,5,8,12,18,26,40,Infinity];
+  const geomCDF=k=> k<1?0:1-Math.pow(0.9,k);
+  let ft='<tr><th>간격</th><th class="num">관측</th><th class="num">기하분포 기대</th><th class="num">차이</th></tr>';
+  let chi=0;
+  for(let i=0;i<edges.length-1;i++){
+    const lo=edges[i], hi=edges[i+1];
+    const o=gaps.filter(g=>g>=lo&&g<hi).length;
+    const e=gaps.length*((hi===Infinity?1:geomCDF(hi-1))-geomCDF(lo-1));
+    chi+=(o-e)*(o-e)/e;
+    ft+=`<tr><td class="mono">${lo}${hi===Infinity?'+':'–'+(hi-1)}회</td><td class="num">${o}</td><td class="num">${e.toFixed(1)}</td><td class="num">${(o-e>=0?'+':'')}${(o-e).toFixed(1)}</td></tr>`;
+  }
+  const df=edges.length-2, pv=chi2sf(chi,df);
+  ft+=`<tr class="hi"><td><b>합계</b></td><td class="num">${gaps.length}</td><td class="num">χ²=${chi.toFixed(2)} df=${df}</td><td class="num">p=${pv.toFixed(4)}</td></tr>`;
+  $('#gapFitTbl').innerHTML=ft;
+
+  // 요약
+  const uniAllP=chi2Uniform(Mn.concat(Mb).reduce((a,r)=>a.map((v,i)=>v+r[i]),new Array(10).fill(0))).p;
+  const bandP=chi2Uniform(bandCounts()).p;
+  $('#fairSummary').innerHTML=`
+    <p class="note" style="padding-bottom:10px">${n}회 전수 기준. 아래 네 검정 모두에서 «추첨이 균일·독립이 아니다»라는 증거를 찾지 못했습니다.</p>
+    <div class="scroll"><table>
+      <tr><th>검정</th><th class="num">결과</th><th>해석</th></tr>
+      <tr><td>숫자 균일성 (전체 ${fmt(n*12)}개)</td><td class="num">p=${uniAllP.toFixed(3)}</td><td>0~9가 고르게 나옴</td></tr>
+      <tr><td>조 균일성</td><td class="num">p=${bandP.toFixed(3)}</td><td>1~5조가 고르게 나옴</td></tr>
+      <tr><td>회차 간 독립성</td><td class="num">유의 없음</td><td>직전 회차가 다음 회차를 예측하지 못함</td></tr>
+      <tr><td>간격 분포</td><td class="num">p=${pv.toFixed(3)}</td><td>«오래 안 나온 숫자»는 기하분포 그대로</td></tr>
+    </table></div>
+    <div class="verdict ok"><b>이 도구의 결론.</b> 추첨기는 공정합니다. 그리고 당첨금이 고정이라 
+      <b>번호 선택으로 확률도 당첨금도 바꿀 수 없습니다.</b> 로또에서는 인기 없는 번호를 골라 «나눠 갖는 인원»을 줄일 수 있었지만,
+      연금복권은 당첨자가 2명이어도 각자 월 700만원을 그대로 받습니다.</div>`;
+}
+
+/* ══════════════════ 발행·판매 ══════════════════ */
+function renderIssue(){
+  const rows=R().filter(r=>r.cnt);
+  if(!rows.length){ $('#issueCard').innerHTML='<span style="font-size:13px;color:var(--ink-60)">당첨매수 데이터를 수집하는 중입니다. «데이터» 탭에서 진행 상황을 볼 수 있습니다.</span>'; return; }
+  const c1=rows.map(r=>r.cnt[1]).filter(v=>v!=null);
+  const c2=rows.map(r=>r.cnt[2]).filter(v=>v!=null);
+  const c8=rows.map(r=>r.cnt[8]).filter(v=>v!=null);
+  const mx=a=>Math.max(...a);
+  $('#issueCard').innerHTML=`
+    <p class="note">공식 자료에는 «회차당 몇 장을 발행하는가»가 없습니다. 당첨매수의 <b>최대값</b>에서 역산할 수 있습니다.</p>
+    <div class="scroll"><table>
+      <tr><th>관측</th><th class="num">최대 당첨매수</th><th>조합 1개당 발행</th><th class="num">역산값</th></tr>
+      <tr><td>1등 (조+6자리 일치 조합 1개)</td><td class="num">${mx(c1)}매</td><td>최대 k매</td><td class="num">${mx(c1)}</td></tr>
+      <tr><td>2등 (같은 번호 · 다른 4개 조)</td><td class="num">${mx(c2)}매</td><td>최대 4k매</td><td class="num">${(mx(c2)/4).toFixed(0)}</td></tr>
+      <tr><td>보너스 (같은 번호 · 5개 조 전부)</td><td class="num">${mx(c8)}매</td><td>최대 5k매</td><td class="num">${(mx(c8)/5).toFixed(0)}</td></tr>
+    </table></div>
+    <div class="verdict"><b>세 관측이 모두 k=${COPIES}를 가리킵니다.</b>
+      회차마다 (조, 6자리) 조합 하나당 ${COPIES}장씩, 총 <b>${fmt(COMB*COPIES)}매</b>를 발행한다는 뜻입니다.
+      <span style="color:var(--ink-40)">— 공식 발표가 아니라 당첨매수에서 역산한 추론입니다.</span></div>`;
+
+  // 판매율 4경로 (연도별)
+  const byYear={};
+  rows.forEach(r=>{ const y=r.date.slice(0,4); (byYear[y]=byYear[y]||[]).push(sellEstimates(r)); });
+  let t='<tr><th>연도</th><th class="num">회차</th><th class="num">7등 기준</th><th class="num">1등 기준</th><th class="num">2등 기준</th><th class="num">보너스 기준</th><th class="num">최대 격차</th></tr>';
+  Object.keys(byYear).sort().forEach(y=>{
+    const a=byYear[y], avg=f=>{ const v=a.map(f).filter(x=>x!=null); return v.reduce((s,x)=>s+x,0)/v.length; };
+    const v=[avg(x=>x.s7),avg(x=>x.s1),avg(x=>x.s2),avg(x=>x.sB)];
+    const spread=Math.max(...v)-Math.min(...v);
+    t+=`<tr><td><b>${y}</b></td><td class="num">${a.length}</td>`+v.map(x=>`<td class="num">${pct(x,1)}</td>`).join('')
+      +`<td class="num" style="color:${spread<0.05?'var(--ok)':'var(--sig)'}">${(spread*100).toFixed(1)}p</td></tr>`;
+  });
+  $('#sellTbl').innerHTML=t;
+
+  // 판매량 시계열
+  const est=rows.map(r=>({ep:r.ep,v:sellEstimates(r).sold})).filter(x=>x.v!=null);
+  const mn=Math.min(...est.map(x=>x.v)), mxv=Math.max(...est.map(x=>x.v));
+  $('#salesCard').innerHTML=`
+    <div class="spark">${est.map((x,i)=>`<i style="height:${(8+92*(x.v-mn)/(mxv-mn)).toFixed(1)}%" ${i===est.length-1?'class="last"':''} title="${x.ep}회 ${fmt(Math.round(x.v))}매"></i>`).join('')}</div>
+    <div class="mono" style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink-40);padding-top:6px">
+      <span>${est[0].ep}회</span><span>추정 판매매수 ${(mn/1e6).toFixed(2)}~${(mxv/1e6).toFixed(2)}백만</span><span>${est[est.length-1].ep}회</span></div>
+    <p class="note" style="padding:12px 0 0">7등(뒤 1자리 일치) 당첨매수 ÷ 0.09 로 추정했습니다.
+      최근 회차 추정 판매액은 <b>회당 약 ${(est[est.length-1].v*TICKET/1e8).toFixed(0)}억원</b>입니다.</p>`;
+
+  // 1등 당첨매수 분포
+  const dist={}; c1.forEach(v=>dist[v]=(dist[v]||0)+1);
+  let w='<tr><th>1등 당첨매수</th><th class="num">회차 수</th><th class="num">비율</th><th class="num">1인당 당첨금</th></tr>';
+  Object.keys(dist).map(Number).sort((a,b)=>a-b).forEach(k=>{
+    w+=`<tr><td>${k}매${k===0?' (아무도 안 삼)':''}</td><td class="num">${dist[k]}회</td><td class="num">${pct(dist[k]/c1.length,1)}</td>`
+      +`<td class="num">${k===0?'—':'월 700만원 (동일)'}</td></tr>`;
+  });
+  $('#w1Tbl').innerHTML=w;
+}
+
+/* ══════════════════ 내 번호 ══════════════════ */
+function renderMine(){
+  const rows=R(), byEp={}; rows.forEach(r=>byEp[r.ep]=r);
+  if(!MY.length){ $('#myCard').innerHTML='<span style="font-size:13px;color:var(--ink-60)">등록한 번호가 없습니다.</span>'; $('#myKpi').innerHTML=''; return; }
+  let spend=0, won=0, pend=0;
+  $('#myCard').innerHTML=MY.map((m,i)=>{
+    spend+=TICKET;
+    const rd=byEp[m.ep];
+    const g=rd?gradeOf(m.band,m.num,rd):null;
+    if(!rd) pend++;
+    let badge='<span class="tag noi">추첨 대기</span>', amt='';
+    if(rd){
+      if(g===0) badge='<span class="tag noi">미당첨</span>';
+      else { const ri=rankInfo(g); badge=`<span class="tag sig">${ri.name}</span>`; amt=fmt(ri.amt)+'원'; won+=ri.amt; }
+    }
+    const hi = rd && g>=3 && g<=7 ? [...Array(8-g).keys()].map(x=>5-x) : (rd&&(g===1||g===2||g===8)?[0,1,2,3,4,5]:[]);
+    return `<div class="combo"><div class="k">${i+1}</div>
+      <div>${ticketHTML(m.band,m.num,{sm:true,hi})}<div style="font-size:11.5px;color:var(--ink-60);padding-top:3px" class="mono">${m.ep}회 ${rd?'· 당첨 '+rd.band+'조 '+rd.num:''}</div></div>
+      <div class="m"><em>${badge}</em>${amt}<br><span style="cursor:pointer;color:var(--sig)" data-del="${i}">삭제</span></div></div>`;
+  }).join('');
+  $$('#myCard [data-del]').forEach(b=>b.onclick=()=>{ MY.splice(+b.dataset.del,1); saveMY(); renderMine(); });
+  $('#myKpi').innerHTML=[
+    ['등록 매수', MY.length+'장', fmt(spend)+'원'],
+    ['확인 완료', (MY.length-pend)+'장', pend?pend+'장 대기':'전부 확인됨'],
+    ['당첨 명목액', fmt(won)+'원', '세전 기준'],
+    ['수지', (won-spend>=0?'+':'')+fmt(won-spend)+'원', '명목 기준']
+  ].map(([k,v,s])=>`<div><div class="k">${k}</div><div class="v" style="font-size:26px">${v}</div><div class="s">${s}</div></div>`).join('');
+}
+
+/* ══════════════════ 데이터 ══════════════════ */
+function renderData(){
+  const rows=R(), withCnt=rows.filter(r=>r.cnt).length;
+  $('#dataCard').innerHTML=`
+    <div class="grid3">
+      <div><div class="mono" style="font-size:10.5px;color:var(--ink-60);letter-spacing:.1em">번호 데이터</div><div class="bignum" style="font-size:36px">${rows.length}회</div></div>
+      <div><div class="mono" style="font-size:10.5px;color:var(--ink-60);letter-spacing:.1em">당첨매수 데이터</div><div class="bignum" style="font-size:36px">${withCnt}회</div></div>
+      <div><div class="mono" style="font-size:10.5px;color:var(--ink-60);letter-spacing:.1em">마지막 갱신</div><div class="mono" style="font-size:13px;padding-top:8px">${DB.updated?new Date(DB.updated).toLocaleString('ko-KR'):'—'}</div></div>
+    </div>`;
+  let t='<tr><th>회차</th><th>추첨일</th><th>조</th><th>1등 번호</th><th>보너스</th><th class="num">1등</th><th class="num">2등</th><th class="num">7등</th></tr>';
+  rows.slice().reverse().forEach(r=>{ const c=r.cnt||{};
+    t+=`<tr><td class="mono">${r.ep}</td><td class="mono" style="font-size:12px">${dstr(r.date)}</td><td class="mono"><b>${r.band}</b></td>`
+      +`<td class="mono"><b>${r.num}</b></td><td class="mono" style="color:var(--ink-60)">${r.bonus}</td>`
+      +`<td class="num">${c[1]!=null?c[1]:'—'}</td><td class="num">${c[2]!=null?c[2]:'—'}</td><td class="num">${c[7]!=null?fmt(c[7]):'—'}</td></tr>`; });
+  $('#allTbl').innerHTML=t;
+}
+
+/* ══════════════════ 동기화 ══════════════════ */
+function setStatus(txt, cls){
+  $('#statusTxt').textContent=txt;
+  const d=$('#status .dot'); d.className='dot'+(cls?' '+cls:'');
+}
+function setProg(done,total){
+  const p=$('#prog'); if(total<=0||done>=total){ p.classList.add('hide'); return; }
+  p.classList.remove('hide'); p.firstElementChild.style.width=(done/total*100)+'%';
+}
+let syncing=false;
+async function sync(full){
+  if(syncing) return; syncing=true;
+  try{
+    setStatus('번호 데이터를 불러오는 중…','warn');
+    const list=await fetchList();
+    const old={}; DB.rounds.forEach(r=>old[r.ep]=r);
+    DB.rounds=list.map(r=>{ const o=old[r.ep];
+      return (o&&o.cnt&&!full) ? Object.assign({},r,{cnt:o.cnt,net:o.net}) : r; });
+    DB.updated=Date.now(); saveDB();
+    renderAll();
+    setStatus(`${DB.rounds.length}회 · 최신 ${DB.rounds[DB.rounds.length-1].ep}회`,'live');
+
+    const need=DB.rounds.filter(r=>!r.cnt);
+    if(need.length){
+      setStatus(`당첨매수 수집 중 (0/${need.length})`,'warn');
+      let done=0;
+      await pool(need, async r=>{
+        const info=await fetchInfo(r.ep);
+        if(info){ r.cnt=info.cnt; r.net=info.net; }
+      }, 6, (d,t)=>{ done=d; setProg(d,t);
+        if(d%10===0||d===t) setStatus(`당첨매수 수집 중 (${d}/${t})`,'warn'); });
+      DB.updated=Date.now(); saveDB(); setProg(1,0);
+      setStatus(`${DB.rounds.length}회 · 최신 ${DB.rounds[DB.rounds.length-1].ep}회 · 당첨매수 ${DB.rounds.filter(x=>x.cnt).length}회`,'live');
+      renderAll();
+    }
+  }catch(e){
+    setStatus('불러오기 실패 — '+e.message+(DB.rounds.length?' (저장된 데이터 사용)':''), DB.rounds.length?'warn':'err');
+    if(DB.rounds.length) renderAll();
+  }finally{ syncing=false; setProg(1,0); }
+}
+
+/* ══════════════════ 렌더 총괄 ══════════════════ */
+function renderAll(){
+  if(!R().length) return;
+  try{ renderDash(); }catch(e){ console.error('dash',e); }
+  try{ renderPred(); }catch(e){ console.error('pred',e); }
+  try{ renderStat(); }catch(e){ console.error('stat',e); }
+  try{ renderFair(); }catch(e){ console.error('fair',e); }
+  try{ renderIssue(); }catch(e){ console.error('issue',e); }
+  try{ renderMine(); }catch(e){ console.error('mine',e); }
+  try{ renderData(); }catch(e){ console.error('data',e); }
+  const nx=nextDraw();
+  $('#myEp').value=nx?nx.ep:'';
+  $('#disc').innerHTML=`이 도구는 <b>동행복권 공식 API</b>에서 연금복권720+ 전 회차를 직접 받아 계산합니다.
+    번호를 고르는 것으로 당첨 확률과 당첨금은 <b>달라지지 않습니다</b> — 확률은 1/5,000,000으로 고정이고, 당첨금은 당첨자 수와 무관한 고정액입니다.
+    «예상 번호»는 규칙이 정해진 선택일 뿐이며, 그 규칙이 실제로 맞혔는지는 같은 탭의 백테스트 숫자로 확인하실 수 있습니다.
+    복권 구매는 감당할 수 있는 범위 안에서 하시기 바랍니다. 만 19세 미만은 구매할 수 없습니다.`;
+}
+
+/* ══════════════════ 이벤트 ══════════════════ */
+$$('nav.tabs button').forEach(b=>b.onclick=()=>{
+  $$('nav.tabs button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  $$('section.panel').forEach(p=>p.classList.remove('on'));
+  $('#p-'+b.dataset.t).classList.add('on');
+  window.scrollTo({top:0,behavior:'instant'});
+});
+['mdlSel','kSel','jSel'].forEach(id=>$('#'+id).onchange=()=>{ try{renderPred();}catch(e){console.error(e);} });
+$('#genBtn').onclick=renderGen;
+$('#genSave').onclick=()=>{
+  if(!lastGen.length){ alert('먼저 조합을 생성해 주세요.'); return; }
+  const nx=nextDraw(); if(!nx) return;
+  lastGen.forEach(c=>MY.push({band:c.band,num:c.num,ep:nx.ep}));
+  saveMY(); renderMine();
+  alert(lastGen.length+'개 조합을 «내 번호»에 담았습니다.');
+};
+$('#alphaRng').oninput=()=>{ try{renderStat();}catch(e){} };
+$$('#p-stat .chip').forEach(c=>c.onclick=()=>{
+  $$('#p-stat .chip').forEach(x=>x.classList.remove('on')); c.classList.add('on');
+  statSrc=c.dataset.src; renderStat();
+});
+$('#myAdd').onclick=()=>{
+  const b=+$('#myBand').value, n=$('#myNum').value.trim(), e=+$('#myEp').value;
+  if(!(b>=1&&b<=5)) return alert('조는 1~5 사이입니다.');
+  if(!/^\d{6}$/.test(n)) return alert('번호는 숫자 6자리입니다.');
+  if(!(e>=1)) return alert('회차를 입력해 주세요.');
+  MY.push({band:b,num:n,ep:e}); saveMY(); $('#myNum').value=''; renderMine();
+};
+$('#btnSync').onclick=()=>sync(false);
+$('#btnFull').onclick=()=>{ if(confirm('전체를 다시 수집합니다. 몇 분 걸릴 수 있습니다.')) sync(true); };
+$('#btnExport').onclick=()=>{
+  const blob=new Blob([JSON.stringify(DB)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='pension720-history.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+};
+$('#btnImportBtn').onclick=()=>$('#importBox').classList.toggle('hide');
+$('#btnImportGo').onclick=()=>{
+  try{
+    const j=JSON.parse($('#importTa').value);
+    if(!j.rounds||!Array.isArray(j.rounds)) throw new Error('형식이 다릅니다');
+    DB=j; saveDB(); renderAll(); alert('복구했습니다 — '+DB.rounds.length+'회');
+  }catch(e){ alert('복구 실패: '+e.message); }
+};
+
+/* ══════════════════ 시작 ══════════════════ */
+(async function init(){
+  if(DB.rounds.length){ setStatus('저장된 데이터 '+DB.rounds.length+'회','live'); renderAll(); }
+  await sync(false);
+})();
+</script>
+</body>
+</html>
