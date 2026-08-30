@@ -32,9 +32,28 @@ async function page(center, tries = 3) {
 }
 
 const rows = new Map();
-let latest = 1238;
-for (let step = 0; step < 40; step++) {
-  const l = await page(latest + 5);
+
+/* 최신 회차 탐지
+   근거 — page(c) 는 c-5..c+4 를 주고, c 회차가 아직 없으면 빈 배열을 준다
+          (네트워크 오류는 예외로 던진다 — 빈 배열과 구분된다).
+          따라서 «center=latest+1 이 빈 배열» == «latest 가 마지막 회차» 다.
+          존재하면 그 페이지의 최대값으로 한 번에 최대 +5 전진한다.
+
+   [2026-08-30 버그 수정] 구버전은 상수 1238 에서 시작해 latest+5 를 찔렀다.
+   로또는 주 1회 추첨이라 새 회차는 늘 1개만 쌓이고 그 +5 자리는 아직 없으므로,
+   첫 반복에서 빈 배열 → break → latest 가 1238 에 영구 고정됐다.
+   그 결과 이 워크플로는 매주 «최신 회차가 통째로 빠진» 스냅샷을 만들어
+   remote 에 커밋해 왔다 (2026-08-30 커밋 c9c64d9c 는 latest:1238, count:1238).
+   시작점도 상수 대신 추첨 달력(1회차 2002-12-07, 주 1회)에서 추정한다. */
+const est = Math.floor((Date.now() - Date.UTC(2002, 11, 7)) / (7 * 864e5)) + 1;
+let latest = 0;
+for (let g = est + 5, t = 0; g >= 1 && t < 12; g -= 5, t++) {
+  const l = await page(g);
+  if (l.length) { l.forEach(o => rows.set(o.ltEpsd, o)); latest = Math.max(...l.map(o => o.ltEpsd)); break; }
+}
+if (!latest) { console.error('최신 회차 탐지 실패 — 응답이 모두 비어 있습니다'); process.exit(1); }
+for (let step = 0; step < 20; step++) {
+  const l = await page(latest + 1);
   if (!l.length) break;
   const m = Math.max(...l.map(o => o.ltEpsd));
   l.forEach(o => rows.set(o.ltEpsd, o));
