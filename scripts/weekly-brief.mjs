@@ -53,10 +53,25 @@ async function getPension(){
   }
   return rows;
 }
+/* 최신 회차 탐지
+   근거 — API 는 center-5..center+4 를 주고 center 가 아직 없으면 빈 배열을 준다.
+          따라서 «center=latest+1 이 비었다» == «latest 가 마지막 회차» 다.
+
+   [2026-08-30 버그 수정] 구버전은 상수 1238 에서 시작해 latest+5 를 찔렀다.
+   주 1회 추첨이라 실제로는 늘 1회만 뒤처지고, 그 +5 자리는 아직 비어 있으므로
+   첫 반복에서 곧바로 break → latest 가 1238 에 영구 고정됐다.
+   brief.html 이 계속 «최신 1238회 / 다음 1239회» 로 나온 직접 원인이다.
+   시작점도 상수 대신 추첨 달력(1회차 2002-12-07, 주 1회)에서 추정한다. */
 async function getLotto(){
-  let latest=1238;
-  for(let i=0;i<15;i++){
-    const l=(await jget(L645+(latest+5))).data.list||[];
+  const est=Math.floor((Date.now()-Date.UTC(2002,11,7))/(7*864e5))+1;
+  let latest=0;
+  for(let g=est+5,t=0; g>=1 && t<12; g-=5,t++){
+    const l=(await jget(L645+g)).data.list||[];
+    if(l.length){ latest=Math.max(...l.map(x=>+x.ltEpsd)); break; }
+  }
+  if(!latest) throw new Error('최신 회차 탐지 실패 — API 응답이 모두 비어 있습니다');
+  for(let i=0;i<20;i++){
+    const l=(await jget(L645+(latest+1))).data.list||[];
     if(!l.length) break;
     const m=Math.max(...l.map(x=>+x.ltEpsd));
     if(m>latest) latest=m; else break;

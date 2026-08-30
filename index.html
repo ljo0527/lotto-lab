@@ -267,7 +267,7 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
     <p class="note" style="padding:8px 0 0">
       <b>동행복권 공식 API는 당첨번호를 오름차순으로만 제공합니다.</b> 공이 실제로 나온 순서는 추첨 방송에만 존재합니다.
       이 탭의 순서 데이터는 방송 기록을 정리해 둔 외부 아카이브(lottohell.com)를 수집한 것이며,
-      <b>1~1238회 전 회차에 대해 6개 번호 집합과 보너스가 공식 데이터와 100% 일치함을 검증</b>했습니다.
+      <b>1~<span id="ordCovMax">—</span>회 전 회차에 대해 6개 번호 집합과 보너스가 공식 데이터와 100% 일치함을 검증</b>했습니다.
       다만 아래 <b>신뢰 불가 구간</b>은 순서가 오름차순 그대로여서 실제 순서가 아닌 것으로 판단됩니다.
     </p>
   </div>
@@ -289,7 +289,7 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 
   <h2>회차별 추첨순서</h2>
   <div class="row">
-    <label class="fld">회차 검색 <input type="number" id="orderSearch" placeholder="예: 1238" style="width:120px"></label>
+    <label class="fld">회차 검색 <input type="number" id="orderSearch" placeholder="회차 번호" style="width:120px"></label>
     <button class="btn ghost" id="orderSearchBtn">조회</button>
   </div>
   <div class="card flat"><div class="scroll"><table id="orderListTbl"></table></div></div>
@@ -425,7 +425,7 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 /* ════════════════════════════════════════════════════════════
    LOTTO LAB — 로또 6/45 통계 실험실
    데이터: 동행복권 공식 API (당첨번호/당첨금/판매액)
-          + 외부 아카이브 (추첨순서, 1~1238회)
+          + 외부 아카이브 (추첨순서, 1~ORDER_MAX회 — 팩 길이가 범위를 결정한다)
    ════════════════════════════════════════════════════════════ */
 
 const API   = 'https://www.dhlottery.co.kr/lt645/selectPstLt645InfoNew.do';
@@ -436,7 +436,8 @@ const A45   = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrs';
 
 /* 추첨순서 신뢰구간
    397~467회: 71회 연속 전부 오름차순 → 실제 순서가 아닌 자리표시자로 판단
-   아래 개별 회차: 오름차순이라 실제 순서인지 확인 불가 (우연 기대치 1238/720≈1.7회) */
+   아래 개별 회차: 오름차순이라 실제 순서인지 확인 불가
+   (우연히 오름차순일 기대치 = ORDER_MAX/720, 현재 팩 기준 약 1.7회) */
 const ORD_BAD_RANGE = [[397,467]];
 const ORD_SUSPECT   = [626,635,637,642,643,645,652,655,664,666,667,668,669,670,756,824];
 const ORDER_PACK = "kWJgcnPpUIYfMBeUaSKPdndNpeaBPpcnXoCZOpNanhPInYBZpYHmSkhIQDPmjBNdgYoIrFojkGApNYmUBsKrkWVpYlZFLnegBOkdCePDMklnGXFgQfkCDIASCLMifcdmlnqFZWNJTRdoQeFfLRUQEmHDFYMREQgprqHjGacFZrUqBDPDTERYGeqbAkTZaWRkiYIAAmhEMnKQjriHTDRGWibIfSFNrhYKonfDgGIIipnZkBZkqKCBmnAWZJbedgiGakpVQkdqPjqOUMGFHSGZRMYFMTlWqihUWQfRSAeFmlriAUKCdlsmaTJAgiQMeHlOWmNsZjQeaZkJFRlCPgDSnGdBVOLJrArBZPCKiODTPBcANmGfHgpmaHjUAkkernQUGedNgJkScGPYrJFYrXJngAomjsFcMYHmpjBKlSOdqNHcHOaCiUTjWClnEOZUjRNmnDqjgYmVBQGCXsGlJCjOgOmLZJPlOSHENmibqEVYSZEIocLPUZBDaKQAqLfCRnlOFniRQWXrfhBEbkYAOVCqqfrBcRkicMgJYlLXafdCNYQXdZRAKEgTGMFCBANapmOJSFhQNahWpsPKjHMeWFUmkBoLsgPWhqLDZodQXATacbngZDklricTQJZpAUXcaCgijNXQVXlrFjSosEfnhFQqhaeHNCeHAUVTTjFNGOCXWfFIPqacCkJAKApKWkGFfsiACQHiVQXnZpdaNEsOJQprhgfishoJTHbDLJXgVcAeIEDFQWRGcVrLErApjhgcGWTqVAngGejRadogcpZqDgjbIsZKSZoNbBYIbABFeehYkDBQjrVEhJiQDVCJSlNCQKUMlFJKDkfdlbLdhqIKAPjnQHRGsQdbaPcDWpYAfBigjHRTVnqGaAqEcfCJijdsLkhmWpSblYQpGasSXeUKNOJHkWCohQsqOGZDWRMCieWLTqbiNVFmPBoPjdpKYITmjGOJkbKmaSqITOKbMbSRCMQHLHpqceBLPrhdnSapqbZsHDjZQOkqMCBraTIpaiSoBYDMpFUnjghjUiYQpoKUhBambYkBRPJMSRBAOZchAEMqLMHjCKgSUinsFTPTogfSDsRdpbEBdgZSmikRDhIUMGRAodpqfCohHGmAnVhsjprlYoUAEXcGKZbrPFmKJoIaVERpMSemILsajNXajmdbDqCneJpdqaPsikSpMeBOKJcDhPYiADUXZSoigIdXChRNMmiVRPSjebgZQdhgfQDOkJqMAPFWALERKIqIEmYQfThcOUBVNUnWfsrOMcanhihXRpBnEAgFBTPoBHADlSNNDJsSUIRcABHlpSXaehdjfsNkHibNerdRHOfFXkEYHkHsDRKgjZRNmFMZrmOTWbiJSnGVeksojridhPpGsLDYsLSToBYdjVUNqFETNMQGClmXKrZmgNLraQfCKdAXGCnNiLsEcUkCAidYBCTAOqNefKCklheYrNnXRXgTBGkVkWJSYmQoMTLgHUleRKLHTCXBEDpYbkGETfGBOCrqDGjPngQAmaPigTlcNARHrTiZDkKTPKUqSEheTBinkgJGmqEcbrRAaTZClDpSdaZGESeKMjGUBHNFVhDVpPEOBQjYirmWEDIKWlifgKNEcLeJrsESaIHJLXribDFMnQmXUMZkVDaVUkZeHkmMDAHGArQXKUgDeBbhOiorOmXKGFJoPqnUBibXPaUSDhUfTqBbpLSQhlPYjMkSfIaleKVZWURMmObjnOmLMlsQHCWMaHroeCKWkqdSsllYGSFbsWesZNmbhSHYejgXATEdSaEaFApXfNKqDWUfFefkaMDneaNldQNDsipEhGXnLOkqPRqKFeBeLYXIcjAfnkbaRPjIoraEElmkIhLpCKVDIkojGhXHAXfSsJCLqETjRpfLEUIZTanaIHcCjLIGqmabXHrAehFiNOZmMYnNiTSlZmgDoOUYLJOcYMTkoKqmCMlGePkjKkXWKJjiCAFDoNLEeRfBJdeRFlHspGOBdXsbognkMsBSrpAOnQXLakFioibAQoLJCgkNlpJmfRHsMGTGpRCHsheQRfgJgcUIQAXJFQkldnlRDALPHOdCasHrSKFTfbhEacIknSYsATjCXIGZlJLmMKgkqGZSMTlfpDQslBdNqZDoJPglRmWHUGIDWohdRSYOWUsELQskOSNnBEKjARVSAEhboPaLXfDbJBFETLCYihsQIqBOSolQhBAqgsMiWKeUaJmqKjVJCmHSThQBsUpEHbVgkPWsYSoChTRLUYplfcRIqTfONjpJCYUgDjBQsTrGfQggmYPWjnLrMQfFXAbIPQFXIidQpSDCPSQDTWDrZeNImsQjPhpCqamdENiUmcOMqgIPEZWsUEThrCiPkRANfEDMpBshlPUHFNdksZRlXhcfmASqHhogNMqhAYeAQJcqOObAhBslWcpOTmBNVMErsgfaHCpMJNeXQCThENMYTXjgcXHRAiacYjEhgQToPZEXjPKcSVZsrjSqNAicEdrHlHcsNBYXkRJNUjEUAILnJkTAnJXSWYinPDWaXJaPEigdBVaCncUKNfLlFBPGENnDdEZOUYeSarLZElYrVcfCSXKUmsdZoiTqQjUsPRXprQGIOaZpRHRPNKUMskqZpOIKQYhMOZaSDsHYGnbXKMAGVFqcskWcVmhEeqiVJeFnSkAQBHZaEALJTPKOVJpXaSODkngbYfljKXVGGScLUfIGJeDnSZnqZehATcAHQfIsZRGPTWCPbQnkmOKmVbJRdHApCXGqqnbPoIUTMVbYAOiOTKeZGRhseTndLMQVYgHJOTWprGABIQSpTIUahoqBFLRelqIEIOSVjfJNVXbkZETUXgnjABJYZrDGLUXajsFGMPXYAITUVdkPFIUefnlACRfnoPKNVikmEDGmopsnBIOWhnCBNOVWrqGQTZdnXEFHKVZrDENTVqrKMOZbheBKMNbdGDIJcehaFKZabrdHOSUhrLAQabcnEJKZehrdHJNaglCDQRamqSFGOXbdULPSVknHCWbhmpPACPRdhrRVYelsFBCEKamgSWcgiqaCMTXgkiHPZdlspINTVghbKPclorUFLTZclsQTdeknYJVbhjrBAWbdhiIYacjlnoDFJSTrNKMWiqsQMTUdmsfAKLNZiFBGHIQghCGManojCJTZiqjFNSUWeMLOTXdlcHJRdfhaLXglnpdMYahloJDSTZdiXAGLRWarHJRWangDIJfjnRDFJNYnLHKbdqsoKRZeknqCTXfksDWceghrnFLOhprDAHKMVleDJMWfrTBLNQXnmHMqbkOQDlkhUVgomTPJpamFockMqjZPeYqrMWTVjHhegsMRDqNAPUIcCMkIOLlaYcNgfskRmqcdkHWaYiHrXeECdJQPWonCDcTYJPXiAqbLOVhSEsAbCfaKjZmVaQTBAYnlWqDHkaoYUHelQBdYTHDOBaKqBGZcnpmpQjiHDkneaiVpTVgZjkYqOdEGHVaMrVhDFTDcMojmrSWXTqMXoMfmNCaiTEnWqCTDhLXoApJeQDBhnfFbVZEAahjdnZVqFNreVnTYGlrKIXdFVeLngofMDiEaehqkicYqpLXgfcnLmpWCNGpZXZIDaEMAgEaWUHLiTZpAOIKBOLkWHWHrBqodLIjAboJfWhldNFFqdMHPCnVbDlaAjfRGCcSkoNMDEKknAlDsGocKsJlUWrmKcZVmiGTQNepAfLgVlYmnEQeJpeTaXRmcaPWogVAiUEIasPcXrQWCgNIOeQWJklZcXfKRLNOmhkHfGRqLqjLZWdKfJFheRKCepVqSZhMOjLCNMbHfZhqSEoZsFhZhMRerLrEjQYUJXaihYDBHkQTaqFOFhmVGbALfMUsNrcelinQAGThNkoTCFarXYJinTAfqmGcBbQkMfoQpNFjQUXZKLdbrLTWqnbTZiDeqLOZnScsYfLKrWWTcDAsbksERpGTeQMKTDgeQJPfEUYaNZhSBRsaJDnlYZEqDFoJOfPAobeQrTACnCMiXFWAcLAgaZpZqUlRKcsRCkgMAiDBqThNqOPYNSBghHTBdFiOoJYKMkQePVhgEhNpfLPpTEGVkmGfiEIKgpTrCNEgLnogNBYnQagrHXonmdRGjlPJGFoDGhULOBEecNUkfQBVOHYodHFglmbVsjTodlWmNHdMlErMEBbFqMIJXglbYkBMbHCnXlHbiENqLYCDQXHiqJWksDLlgXVciLhQEaKaEcNjrPiheBSkadVMNlBqZSYaBbhUBgFRdGlAJBIpANmFETVNlHjWmMSHDRrmoDnmhaHMNRTbWjgkVgjaBNSgFIRYnHPorKGiUHnYmrRQaRJSWinREMWsCKLEaDXbHPdqYpOidHMnFUBfsPQmnASBFpPIPOhbIUXMsmdGoYZGiASaPGCFmUTMMNZgnqOVIseBYLpGALWOKrleqSbAUQHaeXOWhADBeHRiUOfrFomTSILMaKLTDJlKMYZcgfGFPOeTZCPVklrWGVRehXFVfOYWFnOZUNRiWqRUKjkLHQRXmsfOXefgnMQEWMjbHADPZnoeIqXsoBdWPUXdEcbkMqSlDpCgoVUToCeDKGiLZcKPrRCMOnorTZFlaEmAUePZjqFGklmnrRPeNCGnmqnSNmJWjfYHSbkGcaSpRsWmDIgrNCTlaLBnIFkKEOZClpESHTJTgjorErEFlQKMBDFKQbPOQYkpqMLNOXafCGHTcglIKRZanoYiJMGeIXbesUHjqrQGcJgEIJeNYaKAsKROHGmQsAhHajoXLOrpDEYLkFsCZEGNhiDcpSfJdaUrqXcGiaQWqlBTabMFnOKmQOYAnLbnlFGRGOqLYXMMpAHbJsEiVhWOBjQSldGhhlYXgmqsOiqagPOKjfNCrhbFpKAdgGqOTYLhlZDRgNAlPhRGUBHKmgEeUgCkKMREUHPcDCcKdWbrMNjlPJCiZXPCMcIreJgobUDgAHpWssbVQFAWDJbdCFkXLSrBmiSPBshJAmrdRjJfDXgCIYJXkKiOspegdQsTSWSBEROrGVkAgnTagGrBoJMcBFdPUfSBYKbrfmTWKDnHSDqMTZhLcjAkoqoibAreUmLqdNsTijdgrVkBgiHoNFqGUSolAKWUrhXeHGJUSTJFkCdhjsQUZjKPJDNOVRmpsGYBMmfaEDQBqXfinKgMskoPlFRMkEaJoDQaURKBFORaXoMKbaqlWpjchGigVdHISPDQeUarshEPHJjknMFoSUhrOJhJUoORqWLCABIJspgjLCYNWILbGQMfCJeVcZshNXLoBXOAjSLTPDrbCQTDgqPnGBQXSkoCHecQBXfdjNbMZkJNPRabDKgFrQGAEdLqmIXgqnjIpfVqJapeLDKpsXGdCoZALUPHhqfPCJGXhVjeOAHpqLCgdimoIhUphOEeTVrldGacDoPKEGsDLAWqmIhRQFUJcdEKUFNofiHSLeUrRLhpObIpglcKLQHRIbnUTUQhLFkRikFjoUKXhFLoSDUOsaQSPmSRXKPqshelFRTPlQsONjeXJmWCVYgFOZDndTXLOPlFEPbaMIBKSmiJcSBLGFslCaHdoSLJpgBLefGjcYSBPUiqOlJeFGSdlRMhMZlCJjZUnAojEfmsEVejJfBNjVoQhsWpLgAbJLDsZkQYqrbBLRXKpJaZIENqdBjZMAJfIRfLCeMpkWelNTaiJhRFYgUefqoOXKWnQFOmEmMUJqKsSKjHUYNLCAPqJdiKhpraslUpbBdjYZQUaDReLmScGLCMYIqhOdcNbYCYPglsnOpdJUViFAXrMLcPaXRjITLnmZXRLOGIXchlZlOUHegpPXMYgjpKLErcgNcMmDGeRDesiqEcRPkElFQSCmPJeIqMnNZSdpodLRmSpiqFRHCsbJIMlibIANKZSBdbsgYFglINjQTMLCKSIiBbqcKDaNglEdKXZfpjNmlUdhSgpDsHGOMgRcAPgnsFsdoEqRMdPbLZpVPBmlVAhhEMmQcCbXTjmPERVNZernbgQdKiIZBHrWaMYTqjefCrHQOSqGnJqXorQFlbJhPqMqfIlmWVloHimXYHDfRapSUVKQYXnJqphlfqimPUbLjMCJGYffCOsgVBmOchkILNVQSnXoLqrQobYTkmFBaDfndUYpeZLdhFBlqdDfgBcLMmgEClSWbOApfVhSrmdjpPZhEUXRWQqEVLPBFKYeCiODNJATWXsSGQlfDaRTZImRshqrWkRrfgIVDbskWNQXAmsCaeWbpSskBjQNasHJlGhLCefpCMclmZDARNckFIMemobSIQpRDZjOYQAoWJnqkfoSslmePoZWZEsLYlWjLZGVFckUibpRQTUHmSgkMPRilGNEWdRhTUSWmjXGdOBUPVbsHFqZsBKDnlPCaTbEeBNfTralUcnkCUrPWVdhXiGdcgmQKaiAeDELNpfiEUVHRlJUPakNFnrpXPgSakVMBKFNUjiFVfQaWqXAChLGKeglERpNIQriChZqBgcoEVGbLABFMaqQjojWRQCZprChKqMmXhMpfDYRePTJFOqoVDlZrTDCJbdISGOWLDYrUmHlbOiNqYWfkljOFAEsjeWcakmjCdAgLflDrJTRQRcGKMqcBnJMVZeDPJjHIDsmpbKFVXoCTOKmLnNaYiLJqipRmsMAHrjmgfSMBPpkIdJgOZhSdIRnTaQiTCHZdRMoelEjUrniNdVDbCOnJBLmdeqloXgLDVlkGaVpIhZodbAIfWZgcDIHKYoTJUnDnXOjiABPikJIAANnoXOidBfsXRNKcgpeTqhbqAeRnSpFhWLimFUlqjdBcYbMjhUkYhcAjFkMAlnImXBLENgsIcnCJGUbKjPIEQBUZRFGkQmWCFZZVopekXBPrKAmfIQHVXGEYiNLDkBrVNIBJPGOhAfpHgGKPaUXPWCMiXNasqokjfrGUEMTgeMiWZqOkjJiWCRWUrhdQSJGpboPnWcBlODGMeoBdTaURacQgZjZkDYBbRMYgerlTgsZLrXFXNpRPrXaAiCHbcMDmAlGFKXOfmbPGDrXNTRsMTQpoIAbCRNhSBHVpfmLNJTFpOYlsigQOmAsqDcekdOGrmRRcMHXaQkQHOPKjKUPYHSnKedroIgcrhWnOTIjOLYhCAiLlIZpisRTEKCjUVohZfZCKaRNUkeNWgnrOphoZbrhVLWRdfsUkYSCiQmADMhFcLsoalFLsOXQcPsEKpFcbNPcJiRYVTIlRrJITcgYHGfMoeLEhisPNmaERMGLiEWkfLodmXEQKcXBIVfFGijSFjLSApbTrOiCKJglnZfeKINpihoBVfhBsEmVgNOBaeParXkGBSFmjBCZjZeHPcKGKIRFQsqNhWEODLCEVZeSbZjLQTDSUNFOokiGcYjPbBgnTrpfFLQUmfdMCEkTUQLFlqeiQZgUfidrEaQZliAsdZVhcOaSdNbsgVGgNLDeXfMsTjcsHSnaMLfKWndYphYGJnValsJCgXjkDsXiaOoefsTnLXCWFVldRFiCIVNWCfSRsXPfFUKSsbGJWgSRDSiZGgCebARVJrdFoVNCjBdUKiAmWfTRqPaldRbFfOaAboTFOiXsrWAJgIGkjCJqnDHdQhjFlJKNqRskHDXFPWMjrellIPXWAQUpahZfeGVCNlOQcpgHLMEDGQlrRjPaiYjKkhNURrMPUmdVrKeDepqkRncnSLUsAXdWbFTrsZGSgRkQqJdiVrOGFZVnonhNHcbLqAWSPLhhkngiNDXPoqULOTClnqbDecZQdqLGFpjMboZMlkVNTneLrcJBldUGAiBmPhnkFKDcAsCpjdonFNecGmSkZraMSLgnJBKTGVCoXdMqgCsDPZTrjpXTfrMUKHPgJlSfCGWLfhjHQdYPeOfDdjgCIGPKNMOsCMIsLTAColBZeShfrlXFeHFdihUCVUhSiXMZdQhHgCbgFNnYrdKIDnkEGkJOeXdfgbPEAHsQbJEhKVbYSUaOnaNFBlAgohFGbSEMhcTbNWSGCIMXWAUgSMFDrgplUiAgsODILZSTNhPciOkLEndRlcJVeGOUZiLGKTkodBbHVjQaPJbFhLDZCOFegBKrkfFSQKnqbGkKZXafPVMOFCfUOHfjSlsRmiIHYacICOBHejikfdEiIrMAJEVlfHDZaSJkalPMsmhodeGEGTZYLblUaYfkTCbmIlaGmGjMsRSBLhXTpkcbUYVTFMBgPOqDYRmWQlVlcsGFaQNpYcWaPinHemWXgIXkUdcmZXLpETClMbhpYGCLFQKSrpnIXGsdiTARECHQmNjKVpHDCFfedKiIGUcCqGOSPUqEarFKQrRPXnCUknRFLoCHNToJgbeUMYbAVjDOWQaePNWekYpQFfbcVlBbHWPMiZkEMncpCSLVDaIkcSIlieWZGSIsgAKDoLTBnmjJPWKIXSbFPQCMXOgkBahjCgOkLnOcsHNAEbqGZdlomdZgUYePXdfGTDfPBAsjGiaXIkLgEnkUGRFcmCiXebHrPdaeDWoPABACaQZpWlaJsXVKFljdapYQimTBkXAaIQlGenlWaZiJHYreEosjaYlKEBSOdJgaNOSUsrMmCOXJWNYTeJHOcobCsepfYsBAmbOeBbhqYVPjRbFMdIfDoKVQhTRPmgfZasIRrUbpHYoISgZDQbMFoArPNhoMdcreiXAkMpLhcPVCIHbpsRleNMDOLXjSVOCnTkYBGceSOiAqaKqOmGFTRLclUhJJnThkWjBMfpRlV";
@@ -579,15 +580,41 @@ async function apiPage(center){
   if(!list.length) throw new Error('빈 응답');
   return list;
 }
+/* 최신 회차 탐지
+   근거 — 이 API 는 center-5..center+4 를 돌려주고, center 회차가 아직 없으면
+          빈 응답을 준다(apiPage 가 예외로 변환). 즉
+            «center=best+1 이 비어 있다»  ==  «best 가 마지막 회차»
+          이고, 존재하면 그 페이지의 최대값으로 한 번에 최대 +5 전진한다.
+
+   [2026-08-30 버그 수정] 이전 구현은 best+5 를 찔렀다.
+   새 회차가 1~4개만 쌓인 상태에서는 best+5 자리가 아직 비어 있어 예외 → break 로
+   빠지면서 낡은 best 를 그대로 반환했다. 로또는 주 1회 추첨이라 갱신 시점의
+   실제 상태는 언제나 «정확히 1회 뒤처짐» 이므로, 이 경로는 사실상 한 번도
+   새 회차를 찾지 못했고 화면에는 «최신 1238회까지 동기화됨» 이 계속 남았다.
+   경계를 정확히 짚도록 보폭을 +1 로 바꾼다(전진량은 페이지가 알아서 +5 준다). */
 async function detectLatest(){
-  let best = DB.latest || 1238;
-  for(let step=0; step<40; step++){
-    try{
-      const l = await apiPage(best+5);
-      const m = Math.max(...l.map(o=>o.ltEpsd));
-      l.forEach(o=>{ DB.draws[o.ltEpsd]=rowFromApi(o); });
-      if(m>best) best=m; else break;
-    }catch(e){ break; }
+  let best = DB.latest || 0;
+  if(!best){
+    /* 콜드 스타트 — 1회차(2002-12-07)부터 주 1회이므로 상한을 먼저 추정하고,
+       빈 응답이면 5씩 내려오며 실재하는 페이지를 찾는다. 12회로 제한한다
+       (60회차분 오차 허용. 네트워크가 죽었을 때 수백 번 재시도하지 않기 위함). */
+    const est = Math.floor((Date.now()-Date.UTC(2002,11,7))/(7*864e5))+1;
+    for(let g=est+5, tries=0; g>=1 && tries<12; g-=5, tries++){
+      try{
+        const l = await apiPage(g);
+        l.forEach(o=>{ DB.draws[o.ltEpsd]=rowFromApi(o); });
+        best = Math.max(...l.map(o=>o.ltEpsd));
+        break;
+      }catch(e){ /* 아직 없는 회차 — 더 내려간다 */ }
+    }
+  }
+  for(let step=0; step<500; step++){
+    let l;
+    try{ l = await apiPage(best+1); }
+    catch(e){ break; }                 // best+1 이 없다 = best 가 마지막 회차
+    const m = Math.max(...l.map(o=>o.ltEpsd));
+    l.forEach(o=>{ DB.draws[o.ltEpsd]=rowFromApi(o); });
+    if(m>best) best=m; else break;
   }
   return best;
 }
@@ -986,6 +1013,10 @@ function renderStat(){
 
 function renderOrder(){
   const O=orderStats(), rs=rows(0);
+  /* 순서 아카이브가 어디까지 덮는지는 ORDER_PACK 길이가 결정한다.
+     문구에 숫자를 박아두면 팩을 갱신할 때마다 본문이 거짓말을 하므로 항상 여기서 주입한다. */
+  const ordCov=$('#ordCovMax'); if(ordCov) ordCov.textContent=ORDER_MAX;
+  const ordInp=$('#orderSearch'); if(ordInp) ordInp.placeholder='예: '+ORDER_MAX;
   const cover=rs.filter(d=>orderTrust(d.r)==='ok').length;
   renderKPI('#kpiOrder',[
     ['신뢰 가능 회차', nf(O.N), '집합·보너스 100% 검증'],
