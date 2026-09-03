@@ -69,6 +69,38 @@ if (Test-Path $srcWf) {
     }
 }
 
+# ── 병합 충돌 표식 검사 ─────────────────────────────────────
+#   [2026-09-03] lotto-history.json 에 «<<<<<<< HEAD» 가 그대로 박힌 채
+#   커밋·배포된 적이 있습니다. 원인은 이 파일을 두 곳에서 쓰기 때문입니다 —
+#   이 PC(데이터-갱신.bat · 예약 작업)와 GitHub Actions 스냅샷 작업.
+#   한 줄짜리 JSON 이라 git 이 자동 병합을 못 하고, 깨진 파일이 그대로 올라갑니다.
+#   근본 대책은 「쓰는 곳을 하나로」(update-data.yml 의 자동 실행을 껐습니다) 이고,
+#   여기서는 깨진 파일이 배포되지 않도록 한 번 더 막습니다.
+$conf = @()
+$exts = @('.json','.html','.md','.mjs','.js','.ps1','.yml','.bat')
+Get-ChildItem -LiteralPath $root -File -Recurse -ErrorAction SilentlyContinue |
+  Where-Object {
+    $exts -contains $_.Extension.ToLower() -and
+    $_.FullName -notlike "*\.git\*" -and $_.FullName -notlike "*\node_modules\*"
+  } |
+  ForEach-Object {
+    $head = Get-Content -LiteralPath $_.FullName -TotalCount 400 -ErrorAction SilentlyContinue
+    foreach ($ln in $head) {
+      if ($ln -like '<<<<<<< *' -or $ln -like '>>>>>>> *') {
+        $conf += $_.FullName.Substring($root.Length + 1); break
+      }
+    }
+  }
+if ($conf.Count -gt 0) {
+    Write-Host ""
+    Write-Host "  병합 충돌이 해결되지 않은 파일이 있습니다 — 올리지 않고 멈춥니다." -ForegroundColor Red
+    $conf | ForEach-Object { Write-Host "    $_" -ForegroundColor Red }
+    Write-Host ""
+    Write-Host "  고치는 법: 해당 파일을 열어 <<<<<<< / ======= / >>>>>>> 줄을 지우고" -ForegroundColor Yellow
+    Write-Host "  남길 쪽 내용만 남기세요. lotto-history.json 이라면 «회차 수가 많은 쪽»이 맞습니다." -ForegroundColor Yellow
+    Pause-Exit 1
+}
+
 # ── 저장소 준비 ─────────────────────────────────────────────
 if (-not (Test-Path '.git')) {
     G init -q

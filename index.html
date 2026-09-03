@@ -87,6 +87,32 @@ p.note{font-size:14px;color:var(--ink-60);padding-bottom:14px;line-height:1.7}
 .ball.bonus{box-shadow:inset 0 0 0 2px var(--ink)}
 .balls{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
 
+/* ── 로또 용지 (PENSION LAB 의 .tk/.dg 와 같은 문법) ──────────────────
+   실물 로또 용지는 한 장에 A~E 다섯 게임이고, 색 공은 «추첨기» 쪽 물건이지
+   «용지» 쪽 물건이 아니다. 그래서 추천·구매기록은 용지로, 추첨 결과는 색 공으로 그린다. */
+.tk{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tk .gm{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:27px;line-height:1;
+  border:1.5px solid var(--ink);padding:1px 8px 0;min-width:29px;text-align:center;flex:none}
+.nc{width:33px;height:38px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;justify-content:center;
+  font-family:"Space Mono",monospace;font-weight:700;font-size:15px;background:var(--paper-2);flex:none}
+.nc.sm{width:27px;height:31px;font-size:12.5px;border-width:1px}
+.nc.xs{width:23px;height:26px;font-size:11px;border-width:1px}
+.nc.hi{background:var(--ink);color:var(--paper)}
+.nc.bonus{border-style:dashed}
+.nc.off{color:var(--ink-30);border-color:var(--ink-12);background:transparent}
+.tkrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 2px;
+  border-bottom:1px solid var(--ink-12)}
+.tkrow .m{text-align:right;font-family:"Space Mono",monospace;font-size:10.5px;color:var(--ink-60);
+  line-height:1.5;white-space:nowrap}
+.tkrow .m em{display:block;font-style:normal;color:var(--ink);font-size:13px;font-weight:700}
+.tkrow .c{grid-column:1/-1;font-size:12px;color:var(--ink-60);padding-top:4px}
+/* 이번 주 실제로 살 5게임 = 용지 한 장 */
+.sheet{border:1.5px solid var(--ink);padding:12px 13px 4px;background:var(--paper-2);margin-bottom:14px}
+.sheet .hd{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;
+  font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-60);border-bottom:1px solid var(--ink-12);padding-bottom:7px;margin-bottom:4px}
+.sheet .tkrow:last-child{border-bottom:0}
+
 /* ── board 45 ── */
 .board45{display:grid;grid-template-columns:repeat(9,1fr);gap:5px}
 @media(max-width:520px){.board45{grid-template-columns:repeat(7,1fr)}}
@@ -177,6 +203,7 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
   <button data-t="gen">조합 생성</button>
   <button data-t="sim">시뮬레이터</button>
   <button data-t="mine">내 기록</button>
+  <button data-t="ledger">원장</button>
   <button data-t="data">데이터</button>
 </nav>
 
@@ -389,6 +416,37 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
   <div class="card flat"><div class="grid3" id="myBadges"></div></div>
 </section>
 
+<!-- ══════════ 원장 ══════════ -->
+<section class="panel" id="p-ledger">
+  <p class="note">「매주 추천 상위 5게임(용지 한 장, 5,000원)을 산다」를 과거로 되돌려 그대로 굴린 장부입니다.
+    각 회차의 추천은 <b>그 회차 직전까지의 데이터로만</b> 다시 계산합니다 — 미래 정보를 쓰지 않습니다.
+    새 회차가 나오면 한 줄씩 덧붙습니다.</p>
+  <div class="card">
+    <div class="row">
+      <button class="btn" id="ledRun">원장 계산 · 갱신</button>
+      <button class="btn ghost" id="ledReset">지우고 다시</button>
+      <span class="mono" id="ledMeta" style="font-size:11px;color:var(--ink-60);align-self:center"></span>
+    </div>
+    <div id="ledProgWrap" style="display:none;padding-top:6px">
+      <div class="prog"><i id="ledProg" style="width:0%"></i></div>
+      <div class="mono" id="ledProgTxt" style="font-size:10.5px;color:var(--ink-60);padding-top:4px"></div>
+    </div>
+  </div>
+  <div class="kpi" id="kpiLed"></div>
+
+  <h2>이게 실력인가, 우연인가</h2>
+  <div class="card flat" id="ledChance"></div>
+
+  <h2>등수별 — 관측 vs 기대</h2>
+  <div class="card flat"><div class="scroll"><table id="ledRankTbl"></table></div></div>
+
+  <h2>모델은 실제로 무엇을 맞히나</h2>
+  <div class="card flat" id="ledModel"></div>
+
+  <h2>회차별 내역</h2>
+  <div class="card flat"><div class="scroll"><table id="ledTbl"></table></div></div>
+</section>
+
 <!-- ══════════ 데이터 ══════════ -->
 <section class="panel" id="p-data">
   <div class="kpi" id="kpiData"></div>
@@ -454,14 +512,32 @@ const $  = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const el = (t,c,h) => { const d=document.createElement(t); if(c)d.className=c; if(h!=null)d.innerHTML=h; return d; };
 const nf = n => (n==null||isNaN(n)) ? '—' : Math.round(n).toLocaleString('ko-KR');
-const won = n => { n=Number(n)||0;
-  if(n>=1e8) return (n/1e8).toFixed(n>=1e9?1:2).replace(/\.0+$/,'')+'억';
-  if(n>=1e4) return Math.round(n/1e4).toLocaleString('ko-KR')+'만';
+/* [2026-09-03] 음수 축약이 안 됐다. n>=1e4 조건이 음수에서 항상 거짓이라
+   손실 금액만 «-1,260,000원» 처럼 길게 나와 KPI 칸을 넘쳤다. 절댓값으로 판정하고 부호를 붙인다. */
+const won = n => { n=Number(n)||0; const sg=n<0?'-':'', a=Math.abs(n);
+  if(a>=1e8) return sg+(a/1e8).toFixed(a>=1e9?1:2).replace(/\.0+$/,'')+'억';
+  if(a>=1e4) return sg+Math.round(a/1e4).toLocaleString('ko-KR')+'만';
   return nf(n)+'원'; };
 const pct = (x,d=2) => (x*100).toFixed(d)+'%';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const ballColor = n => n<=10?'#FBC400':n<=20?'#69C8F2':n<=30?'#FF7272':n<=40?'#A0A6A2':'#B0D840';
 const ballHTML = (n,cls) => '<span class="ball '+(cls||'')+'" style="background:'+ballColor(n)+'">'+n+'</span>';
+const GLET = 'ABCDEFGHIJ';
+/* 로또 용지 한 줄. letter=게임기호(A~J, null 이면 생략), nums=번호 6개.
+   opt.hi = 반전시킬 번호 배열(적중), opt.bonus = 점선 테두리로 표시할 번호,
+   opt.dim = true 면 미적중 번호를 흐리게 (추첨 후 대조용), opt.sz='sm'|'xs' */
+function tkHTML(letter, nums, opt){
+  opt=opt||{};
+  const hi=opt.hi||[], sz=opt.sz?' '+opt.sz:'';
+  const cells=nums.map(n=>{
+    let c='nc'+sz;
+    if(hi.includes(n)) c+=' hi';
+    else if(opt.dim)   c+=' off';
+    if(opt.bonus===n)  c+=' bonus';
+    return '<span class="'+c+'">'+String(n).padStart(2,'0')+'</span>';
+  }).join('');
+  return '<span class="tk">'+(letter==null?'':'<span class="gm">'+letter+'</span>')+cells+'</span>';
+}
 const ymd2disp = s => s.slice(0,4)+'.'+s.slice(4,6)+'.'+s.slice(6,8);
 
 /* p값: 카이제곱 상측 확률 Q(x; k) ------------------------------
@@ -507,7 +583,14 @@ function sigTag(p){
 }
 
 /* ════════════════ 데이터 레이어 ════════════════ */
-const DB = { draws:[], latest:0, loadedAt:null, source:'—' };
+/* rev — 데이터가 바뀔 때마다 1 올린다. allRows()·fitPop()·winSet()·weeklyPicks() 의 캐시 키다.
+   ★ DB.draws / DB.latest 를 건드리는 코드는 반드시 마지막에 bumpDB() 를 부를 것. ★
+   [2026-09-03 성능 버그 수정] 이전 캐시 키는 DB.draws.filter(Boolean).length 였다.
+   «항상 옳다»는 장점은 있지만 호출 한 번에 1,240칸을 훑는다(12µs).
+   popScore() 가 fitPop() 을 3번 부르고, 정렬 비교자가 popScore() 를 6.9만번 부르면서
+   주간추천 한 번에 1.8초가 이 한 줄로 나갔다. 캐시를 지키는 비용이 캐시가 아끼는 비용보다 컸다. */
+const DB = { draws:[], latest:0, loadedAt:null, source:'—', rev:0 };
+function bumpDB(){ DB.rev++; ROWS_CACHE=null; }
 
 function decodeOrder(r){
   if(r<1 || r>ORDER_MAX) return null;
@@ -551,6 +634,7 @@ function loadDB(){
     const o = JSON.parse(raw); if(!o.rows || !o.rows.length) return false;
     DB.draws = []; o.rows.forEach(v=>{ const d=unpackRow(v); DB.draws[d.r]=d; });
     DB.latest = o.latest || Math.max(...o.rows.map(v=>v[0]));
+    bumpDB();
     DB.loadedAt = o.at; DB.source='로컬 캐시';
     return true;
   }catch(e){ return false; }
@@ -602,7 +686,7 @@ async function detectLatest(){
     for(let g=est+5, tries=0; g>=1 && tries<12; g-=5, tries++){
       try{
         const l = await apiPage(g);
-        l.forEach(o=>{ DB.draws[o.ltEpsd]=rowFromApi(o); });
+        l.forEach(o=>{ DB.draws[o.ltEpsd]=rowFromApi(o); }); bumpDB();
         best = Math.max(...l.map(o=>o.ltEpsd));
         break;
       }catch(e){ /* 아직 없는 회차 — 더 내려간다 */ }
@@ -613,7 +697,7 @@ async function detectLatest(){
     try{ l = await apiPage(best+1); }
     catch(e){ break; }                 // best+1 이 없다 = best 가 마지막 회차
     const m = Math.max(...l.map(o=>o.ltEpsd));
-    l.forEach(o=>{ DB.draws[o.ltEpsd]=rowFromApi(o); });
+    l.forEach(o=>{ DB.draws[o.ltEpsd]=rowFromApi(o); }); bumpDB();
     if(m>best) best=m; else break;
   }
   return best;
@@ -627,7 +711,7 @@ async function fetchRange(from, to, onProg){
     while(uniq.length){
       const p=uniq.shift(); let ok=false;
       for(let a=0;a<3&&!ok;a++){
-        try{ (await apiPage(p)).forEach(o=>{ DB.draws[o.ltEpsd]=rowFromApi(o); }); ok=true; }
+        try{ (await apiPage(p)).forEach(o=>{ DB.draws[o.ltEpsd]=rowFromApi(o); }); bumpDB(); ok=true; }
         catch(e){ await new Promise(r=>setTimeout(r,400*(a+1))); }
       }
       if(!ok) errs++;
@@ -650,7 +734,8 @@ async function loadLocalJSON(){
       w:[d.winners.first,d.winners.second,d.winners.third,d.winners.fourth,d.winners.fifth],
       a:[d.prize.first,d.prize.second,d.prize.third,d.prize.fourth,d.prize.fifth],
       s:d.sales, t:d.firstType?[d.firstType.auto,d.firstType.manual,d.firstType.semi]:[0,0,0] }; });
-    DB.latest=o.meta.latest||Math.max(...o.draws.map(d=>d.round));
+    DB.latest=o.meta.latest||Math.max(...o.draws.map(d=>d.round)); bumpDB();
+    if(!DB.latest || !DB.draws.filter(Boolean).length) throw new Error('백업 파일에 회차가 없습니다');
     DB.source='로컬 lotto-history.json'; DB.loadedAt=Date.now();
     saveDB();
     log('로컬 JSON 백업에서 복구 · '+o.draws.length+'회차');
@@ -662,7 +747,13 @@ async function syncData(full){
   try{
     setStatus('동행복권 서버 조회 중…','warn'); setProg(0);
     const latest = await detectLatest();
-    DB.latest = latest;
+    /* [2026-09-03 버그 수정] detectLatest() 는 실패해도 예외를 던지지 않고 0 을 돌려준다.
+       그대로 진행하면 fetchRange(1,0) 이 아무것도 안 하고 «최신 0회까지 동기화됨» 이라는
+       성공 상태로 끝나, 백업 JSON 으로 넘어가는 길이 막힌다.
+       해외 IP·오프라인·API 점검 때 캐시가 없는 첫 방문자가 정확히 이 경우를 만난다.
+       (컨테이너에서 API 를 막고 실행해 재현함) */
+    if(!latest || latest < 1) throw new Error('최신 회차를 확인하지 못했습니다 — 네트워크 또는 접속 차단');
+    DB.latest = latest; bumpDB();
     const have = DB.draws.filter(Boolean).length;
     const from = (full || have < latest*0.9) ? 1 : Math.max(1, latest-15);
     if(full || have < latest*0.9){
@@ -692,10 +783,19 @@ async function syncData(full){
 }
 
 /* ════════════════ 통계 엔진 ════════════════ */
+let ROWS_CACHE=null, ROWS_REV=-1;
+function allRows(){                                   // 전 회차 오름차순 (rev 캐시)
+  if(ROWS_CACHE && ROWS_REV===DB.rev) return ROWS_CACHE;
+  ROWS_REV=DB.rev;
+  return (ROWS_CACHE = DB.draws.filter(Boolean).sort((a,b)=>a.r-b.r));
+}
+/* 반환 배열은 «공유본»이다. 호출부는 정렬·역순·splice 를 직접 하지 말고 slice() 후에 할 것.
+   (현재 호출부 전수 확인함 — 행 객체 필드를 쓰는 곳만 있고 배열을 뒤집는 곳은 없다) */
 function rows(win){                                   // 최근 win회 (0=전체)
-  const all = DB.draws.filter(Boolean).sort((a,b)=>a.r-b.r);
+  const all = allRows();
   return (!win||win>=all.length) ? all : all.slice(-win);
 }
+function drawCount(){ return allRows().length; }
 function freqOf(win, withBonus){
   const rs=rows(win), f=new Array(46).fill(0);
   rs.forEach(d=>{ d.n.forEach(n=>f[n]++); if(withBonus) f[d.b]++; });
@@ -840,17 +940,22 @@ function renderDash(){
      · 과거 1등 조합과 중복 제외
      · 후보 3,000개를 만든 뒤 분배지수 하위에서 선택
    같은 회차면 몇 번을 새로고침해도 같은 조합이 나온다. */
-let WEEKLY=null, WEEKLY_R=0;
+let WEEKLY=null, WEEKLY_R=0, WEEKLY_REV=-1;
 function weeklyPicks(){
   const target=DB.latest+1;
-  if(WEEKLY && WEEKLY_R===target) return WEEKLY;
+  if(WEEKLY && WEEKLY_R===target && WEEKLY_REV===DB.rev) return WEEKLY;
   const F={ lo:100, hi:175, cons:2, odd:'234', strat:'minshare' };
   const prevRNG=RNG;
   RNG=mulberry32(target*2654435761);
   try{
     const w=weightsFor('minshare'), pool=[], seen=new Set();
     const t0=Date.now(); let tries=0;
-    while(pool.length<3000 && tries<200000 && Date.now()-t0<1800){
+    /* [2026-09-03] 시간 예산을 1.8초 → 15초로 올렸다.
+       이 예산에 걸리면 후보 수가 «기기 속도»에 따라 달라지고, 그러면 같은 회차인데
+       빠른 PC 와 느린 폰이 서로 다른 조합을 본다. 재현성이 깨지고 지난주 채점도 무의미해진다.
+       성능 수정 뒤 3,000개 채우는 데 0.12초라 예산은 이제 «멈춤 방지» 역할만 한다.
+       그래도 걸리면 아래에서 경고를 남겨 조용히 틀리지 않게 한다. */
+    while(pool.length<3000 && tries<200000 && Date.now()-t0<15000){
       tries++;
       const c=pickWeighted(w,new Set(),6).sort((a,b)=>a-b);
       if(c.length!==6) continue;
@@ -862,7 +967,11 @@ function weeklyPicks(){
       if(everWon(c)) continue;
       seen.add(key); pool.push(c);
     }
-    pool.sort((a,b)=>(popScore(a)??9)-(popScore(b)??9));
+    /* [2026-09-03] 점수를 비교자 안에서 계산하면 O(n log n)회 — 3,000개면 약 6.9만 번이다.
+       한 번씩만 계산해 붙여두고 정렬한다(decorate-sort-undecorate). 3,000번으로 줄어든다. */
+    const scored=pool.map(c=>({c, s:popScore(c) ?? 9}));
+    scored.sort((x,y)=>x.s-y.s);
+    for(let i=0;i<pool.length;i++) pool[i]=scored[i].c;
     /* 최상위만 뽑으면 다섯 조합이 서로 너무 닮는다.
        두 가지 다양성 규칙을 건다.
          · 두 조합이 겹치는 번호는 2개 이하
@@ -887,7 +996,9 @@ function weeklyPicks(){
       if(out.some(o=>o.join()===c.join())) continue;
       out.push(c); c.forEach(n=>useCnt[n]=(useCnt[n]||0)+1);
     }
-    WEEKLY_R=target;
+    if(pool.length<3000 && tries<200000)
+      log('경고 · 후보 생성이 시간 예산에 걸렸습니다('+pool.length+'개). 다른 기기와 추천이 달라질 수 있습니다');
+    WEEKLY_R=target; WEEKLY_REV=DB.rev;
     return (WEEKLY={ round:target, combos:out, tries });
   } finally { RNG=prevRNG; }
 }
@@ -904,17 +1015,23 @@ function renderWeekly(){
     '<div class="mono" style="font-size:11px;color:var(--ink-60);padding-bottom:10px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">'+
       '<span>제 '+W.round+'회 대상 · '+nd.getFullYear()+'.'+String(nd.getMonth()+1).padStart(2,'0')+'.'+String(nd.getDate()).padStart(2,'0')+' 추첨</span>'+
       '<span>1~'+DB.latest+'회 전체 반영</span></div>'+
-    W.combos.map((c,i)=>{
-      const s=c.reduce((a,b)=>a+b,0), o=c.filter(n=>n%2).length;
-      return '<div class="combo"><div class="k" style="font-size:24px">'+(i+1)+'</div>'+
-        '<div class="balls">'+c.map(n=>ballHTML(n)).join('')+'</div>'+
-        '<div class="m">합계<em>'+s+'</em>홀'+o+':짝'+(6-o)+'</div>'+
-        '<div class="c">'+(i+1)+'순위 · '+shareTag(c).replace(/^ · /,'')+'</div></div>';
-    }).join('')+
+    (()=>{
+      const line=(c,i)=>{
+        const sm=c.reduce((a,b)=>a+b,0), o=c.filter(n=>n%2).length;
+        return '<div class="tkrow"><div>'+tkHTML(GLET[i],c)+'</div>'+
+          '<div class="m">합계<em>'+sm+'</em>홀'+o+':짝'+(6-o)+'</div>'+
+          '<div class="c">'+shareTag(c).replace(/^ · /,'')+'</div></div>';
+      };
+      const buy=W.combos.slice(0,5), spare=W.combos.slice(5);
+      return '<div class="sheet"><div class="hd"><span>이번 주 용지 · A~E 5게임</span><span>5,000원</span></div>'+
+        buy.map(line).join('')+'</div>'+
+        (spare.length?'<div class="mono" style="font-size:10.5px;letter-spacing:.1em;color:var(--ink-60);padding:2px 0 4px">예비 F~J</div>'+
+          spare.map((c,i)=>line(c,i+5)).join(''):'');
+    })()+
     '<div class="verdict" style="margin-bottom:0"><b>이 조합이 나온 근거</b><br>'+
     '· 후보 '+nf(W.tries)+'개를 만들어 합계 100~175 / 홀짝 2~4 / 연속 2쌍 이하 / 한 구간 3개 이하 필터를 통과한 것만 남겼습니다<br>'+
     '· 과거 '+DB.latest+'회 1등 조합과 겹치는 것은 제외했습니다<br>'+
-    '· 그중 <b>분배 인원 모델 점수가 가장 낮은</b> 것들을, 서로 겹치는 번호가 적도록 <b>10줄</b> 골랐습니다<br>'+'· 위에서부터 1순위입니다 — 몇 줄만 살 거라면 위에서부터 쓰세요'+
+    '· 그중 <b>분배 인원 모델 점수가 가장 낮은</b> 것들을, 서로 겹치는 번호가 적도록 <b>10줄</b> 골랐습니다<br>'+'· <b>A~E 다섯 줄이 실제로 살 용지</b>이고, F~J 는 예비입니다 — 앞이 마음에 안 들면 다음으로 넘어가세요<br>'+
     (F.agree!=null?'<br>· 모델 교차검증 상관 '+F.agree.toFixed(3)+' (판매 기준 × 구매방식 기준)':'')+
     '<br>· 회차 번호를 시드로 고정했습니다 — <b>새로고침해도 같은 조합</b>이고, 회차가 넘어가면 자동으로 새로 뽑힙니다<br>'+
     '<span style="color:var(--ink-40)">1등 확률은 여전히 1/8,145,060 입니다. 바뀌는 건 당첨 시 나눠 갖는 인원뿐입니다.</span></div>';
@@ -927,10 +1044,9 @@ function renderPinned(){
   box.innerHTML='<div class="mono" style="font-size:10px;color:var(--ink-60);padding-bottom:8px">'+
     (p.round||DB.latest+1)+'회 대상 · '+p.strat+'</div>'+
     p.combos.map((c,i)=>{
-      const s=c.reduce((a,b)=>a+b,0), o=c.filter(x=>x%2).length;
-      return '<div class="combo"><div class="k">'+'ABCDEFGHIJ'[i]+'</div>'+
-        '<div class="balls">'+c.map(n=>ballHTML(n)).join('')+'</div>'+
-        '<div class="m">합계<em>'+s+'</em>홀'+o+':짝'+(6-o)+'</div></div>';
+      const sm=c.reduce((a,b)=>a+b,0), o=c.filter(x=>x%2).length;
+      return '<div class="tkrow"><div>'+tkHTML(GLET[i],c,{sz:'sm'})+'</div>'+
+        '<div class="m">합계<em>'+sm+'</em>홀'+o+':짝'+(6-o)+'</div></div>';
     }).join('');
 }
 
@@ -1144,11 +1260,10 @@ function wls(X, y, w){
            yh, predMean:mu, predSD:sd||1 };
 }
 
-let POPFIT=null, POPFIT_N=0;
+let POPFIT=null, POPFIT_N=-1;
 function fitPop(){
-  const nAll=DB.draws.filter(Boolean).length;
-  if(POPFIT && POPFIT_N===nAll) return POPFIT;
-  const all=rows(0);
+  if(POPFIT && POPFIT_N===DB.rev) return POPFIT;
+  const all=allRows();
 
   /* ── 모델 A · 4·5등 당첨자수 초과배수 ── */
   const XA=[], YA=[];
@@ -1206,7 +1321,7 @@ function fitPop(){
       bounds.push([col[Math.floor(col.length*0.02)], col[Math.floor(col.length*0.98)]]);
     }
   }
-  POPFIT_N=nAll;
+  POPFIT_N=DB.rev;
   return (POPFIT={ ok:!!A, A, B, agree, manualBase, bounds });
 }
 /* 학습 구간으로 잘라낸 특징 (외삽 방지) */
@@ -1231,15 +1346,42 @@ function popScore(n){
 }
 
 /* 조합 하나의 분배 지표를 한 줄 태그로 */
+/* 원장에 쌓인 walk-forward 기록으로 구한 재보정 계수. 없으면 null. */
+let LED_CALIB=null, LED_CALIB_AT=null;
+function ledCalibCached(){
+  const led = LEDGER || (LEDGER=ledLoad());
+  if(!led || !led.recs || !led.recs.length){ LED_CALIB=null; return null; }
+  if(LED_CALIB && LED_CALIB_AT===led.at) return LED_CALIB;
+  const C=ledCalib(led.recs);
+  LED_CALIB_AT=led.at;
+  return (LED_CALIB = C.ready ? C : null);
+}
+/* 조합의 결합 z (분배지수의 표준화 값). 낮을수록 나눠 갖는 사람이 적다. */
+function shareZ(c){
+  const F=fitPop(); if(!F.A) return null;
+  const za=(popScoreA(c)-F.A.predMean)/F.A.predSD;
+  if(!F.B) return za;
+  return (za + (popScoreB(c)-F.B.predMean)/F.B.predSD)/2;
+}
 function shareTag(c){
   const F=fitPop(); if(!F.ok) return '';
-  const z=popScore(c), a=popScoreA(c), b=popScoreB(c);
+  const z=popScore(c), a=popScoreA(c), b=popScoreB(c), zz=shareZ(c);
   const col = z<F.A.predMean-0.4*F.A.predSD ? 'var(--ok)'
             : z>F.A.predMean+0.4*F.A.predSD ? 'var(--sig)' : 'var(--ink)';
-  let t=' · <b style="color:'+col+'">분배지수 '+z.toFixed(3)+'</b>';
-  t+=' <span style="color:var(--ink-40)">(판매 '+a.toFixed(3);
-  if(b!=null) t+=' · 수동편차 '+(b>=0?'+':'')+(b*100).toFixed(1)+'%p';
-  t+=')</span>';
+  /* 원장이 쌓였으면 «재보정된» 값을 앞세운다.
+     원본 예측은 방향은 맞지만 폭이 과해 out-of-sample R² 가 음수였다.
+     선형 재보정은 순서를 바꾸지 않으므로 추천 순위는 그대로다 — 숫자만 정직해진다. */
+  const C=ledCalibCached();
+  let t;
+  if(C && zz!=null){
+    const cal=C.a + C.b*zz;
+    t=' · <b style="color:'+col+'">분배지수 '+cal.toFixed(3)+'</b>'
+     +' <span style="color:var(--ink-40)">(원장 '+C.n+'주 재보정 · 원값 '+z.toFixed(3)+')</span>';
+  } else {
+    t=' · <b style="color:'+col+'">분배지수 '+z.toFixed(3)+'</b>'
+     +' <span style="color:var(--ink-40)">(판매 '+a.toFixed(3)
+     +(b!=null?' · 수동편차 '+(b>=0?'+':'')+(b*100).toFixed(1)+'%p':'')+')</span>';
+  }
   return t;
 }
 
@@ -1299,8 +1441,19 @@ function renderPopModel(){
   html += '<div class="verdict sig"><b>결론</b> — 이것이 이 도구 전체에서 <b>유일하게 실증되는 신호</b>입니다. '+
     '빈도·미출현·동반쌍·추첨순서는 전부 잡음이었지만 이건 다릅니다. '+
     '확률을 바꾸는 게 아니라 <b>분배 인원</b>을 바꾸기 때문입니다.<br>'+
-    '효과 크기는 현실적인 조합 기준 대략 <b>±10~15%</b> — 1등 당첨금이 20억이라면 2~3억 차이입니다. '+
-    '그 이상은 아닙니다.</div>';
+    /* [2026-09-03] «±10~15%» 는 재보정 전 계수로 계산한 과대평가였다.
+       원장(walk-forward 300주)으로 기울기를 다시 재니 추천 상위 5게임의 실측 이득은 약 +7% 다.
+       원장이 아직 없으면 그 사실만 밝히고 숫자를 단정하지 않는다. */
+    (()=>{ const C=ledCalibCached();
+      if(!C) return '효과 크기는 「원장」 탭에서 walk-forward 로 실측합니다 — 원장을 한 번 돌려 주세요. '+
+        '재보정 전 계수로 어림한 값은 과대평가라는 것이 확인됐습니다.</div>';
+      const zs=(()=>{ try{ const F=fitPop(), W=weeklyPicks();
+        return W.combos.slice(0,5).map(c=>shareZ(c)); }catch(e){ return null; } })();
+      if(!zs) return '효과 크기는 「원장」 탭을 참고하세요.</div>';
+      const zb=zs.reduce((a,b)=>a+b,0)/zs.length;
+      const eff=-zb*C.b;
+      return '효과 크기는 원장 '+C.n+'주로 실측해 <b>약 '+pct(eff,1)+'</b> 입니다 — '+
+        '1등 당첨금이 20억이라면 '+won(2e9*eff)+' 남짓 차이입니다. 그 이상은 아닙니다.</div>'; })();
   box.innerHTML=html;
 }
 
@@ -1389,10 +1542,9 @@ function passFilter(c, F){
   }
   return true;
 }
-let WINSET=null, WINSET_N=0;
+let WINSET=null, WINSET_N=-1;
 function winSet(){                        // 과거 1등 조합 캐시 (생성기 성능)
-  const n=DB.draws.filter(Boolean).length;
-  if(!WINSET || WINSET_N!==n){ WINSET=new Set(rows(0).map(d=>d.n.join(','))); WINSET_N=n; }
+  if(!WINSET || WINSET_N!==DB.rev){ WINSET=new Set(allRows().map(d=>d.n.join(','))); WINSET_N=DB.rev; }
   return WINSET;
 }
 function everWon(c){ return winSet().has(c.join(',')); }
@@ -1606,10 +1758,9 @@ function renderMine(){
       const idx=list.length-1-i;
       const hit=t.d?t.nums.filter(n=>t.d.n.includes(n)):[];
       return '<tr><td class="mono"><b>'+t.round+'</b></td>'+
-        '<td><span class="balls">'+t.nums.map(n=>{
-          const hitN = t.d && (t.d.n.includes(n)||t.d.b===n);
-          return '<span class="ball xs'+(t.d&&t.d.b===n?' bonus':'')+'" style="background:'+ballColor(n)+';opacity:'+(t.d?(hitN?1:.28):.7)+'">'+n+'</span>';
-        }).join('')+'</span></td>'+
+        '<td>'+tkHTML(null, t.nums, { sz:'xs', dim:!!t.d,
+            hi: t.d ? t.nums.filter(n=>t.d.n.includes(n)||t.d.b===n) : [],
+            bonus: t.d && t.nums.includes(t.d.b) ? t.d.b : undefined })+'</td>'+
         '<td><span class="balls">'+(t.d?t.d.n.map(n=>ballHTML(n,'xs')).join('')+'<span class="mono" style="color:var(--ink-30)">+</span>'+ballHTML(t.d.b,'xs bonus'):'<span style="font-size:11px;color:var(--ink-40)">추첨 전</span>')+'</span></td>'+
         '<td>'+(t.rank==null?'<span class="tag noi">대기</span>':t.rank?'<span class="tag sig"><b>'+t.rank+'등</b></span>':'<span class="tag noi">'+hit.length+'개</span>')+'</td>'+
         '<td class="num">'+(t.amt?won(t.amt):'—')+'</td>'+
@@ -1624,6 +1775,299 @@ function renderMine(){
 }
 function myDel(i){ const a=myLoad(); a.splice(i,1); mySave(a); renderMine(); }
 window.myDel=myDel;
+
+
+/* ══════════════════ 모의 매입 원장 ══════════════════════════════════
+   「매주 추천 상위 5게임을 산다」를 과거로 되돌려 그대로 굴려본 장부.
+
+   근거 — 숫자를 쓰기 전에 정한 것
+   ① 투입 : 매주 상위 5게임 = 5,000원. 실물 로또 용지 한 장이 A~E 5게임이라 단위가 맞다.
+   ② 회수 : «그 회차의 실제 당첨금»을 쓴다. 1·2·3등은 정액이 아니라 분배금이라 회차마다
+            다르고, 이 모델이 건드리려는 값이 바로 그 분배금이다. 4등 5만·5등 5천은 정액.
+   ③ 기준선: 같은 회차에 무작위 5게임을 샀을 때의 기대 회수금
+            = 5 × Σ_k (경우의수_k / C(45,6)) × 그 회차 k등 당첨금.
+            해석해로 계산하므로 시뮬레이션 오차가 없다.
+   ④ 판정 : 1,500게임(300주×5)에서 1등 기대 횟수는 0.00018회다. 즉 회수율은
+            «모델이 좋은지»를 재는 지표가 될 수 없다. 모델이 실제로 예측하는 양은
+            따로 잰다 — 실제 당첨번호의 분배지수 예측 vs 그 회차의 실제 4·5등 초과배수.
+
+   과거분은 walk-forward 다. R회차 추천은 R-1회차까지의 데이터로만 만든다.
+   추천이 회차번호 시드로 결정되므로, DB 를 R-1 까지 잘라 다시 돌리면
+   그때 화면에 떴을 조합이 그대로 재현된다. */
+const LSLED = 'lottolab.ledger.v1';
+const LED_WINDOW = 300, LED_GAMES = 5, LED_FROM_MIN = 300;
+let LEDGER = null, LED_BUSY = false;
+
+/* 숨은 탭에서도 도는 양보 (setTimeout 은 억제된다) */
+const ledTick = () => new Promise(r=>{ const c=new MessageChannel(); c.port1.onmessage=()=>r(); c.port2.postMessage(0); });
+
+function ledLoad(){
+  try{ const o=JSON.parse(localStorage.getItem(LSLED)||'null');
+       return (o && o.v===1 && Array.isArray(o.recs)) ? o : null; }catch(e){ return null; }
+}
+function ledSave(o){
+  try{ localStorage.setItem(LSLED, JSON.stringify(o)); }
+  catch(e){ log('원장 저장 실패 · '+e.message+' (계산은 정상, 다음에 다시 계산합니다)'); }
+}
+/* 무작위 1게임의 그 회차 기대 회수금 (원) */
+function chanceEV(d){
+  let ev=0; for(const k of [1,2,3,4,5]){ const a=d.a[k-1]; if(a) ev += PROB[k]*a; }
+  return ev;
+}
+
+/* 원장 계산. 이미 있는 회차는 건너뛰고 새 회차만 덧붙인다(적재). */
+async function ledBuild(onProg){
+  if(LED_BUSY) throw new Error('이미 계산 중입니다');
+  const latest = DB.latest;
+  if(!latest) throw new Error('데이터가 없습니다');
+
+  const cache = ledLoad();
+  const have = new Map();
+  if(cache) cache.recs.forEach(r=>have.set(r.R, r));
+
+  const from = Math.max(LED_FROM_MIN, latest - LED_WINDOW + 1);
+  const need = [];
+  for(let R=from; R<=latest; R++) if(!have.has(R) && DB.draws[R]) need.push(R);
+
+  /* 원본 DB 를 건드리지 않는다. 작업용 사본을 끼워 넣고 finally 에서 반드시 되돌린다.
+     (중간에 예외가 나도 도구가 잘린 데이터로 남으면 안 된다) */
+  const origDraws = DB.draws, origLatest = DB.latest;
+  LED_BUSY = true;
+  try{
+    if(need.length){
+      const work = DB.draws.slice();
+      DB.draws = work;
+      for(let i=0;i<need.length;i++){
+        const R = need[i];
+        /* need 가 연속이라는 보장이 없다(이미 캐시된 회차는 건너뛴다).
+           매 스텝 전체를 복원한 뒤 R 이후만 잘라야 «R-1 까지 꽉 찬» 상태가 보장된다.
+           복원을 생략하면 이전 스텝에서 지운 구간이 그대로 비어 남는다. */
+        for(let j=1;j<origDraws.length;j++) work[j] = origDraws[j];
+        for(let j=R;j<work.length;j++)      work[j] = undefined;
+        DB.latest = R-1; bumpDB();
+        const W = weeklyPicks();
+        if(W.round !== R) throw new Error('시드 회차 불일치 '+W.round+' != '+R);
+        const actual = origDraws[R];
+        const picks = W.combos.slice(0, LED_GAMES);
+        const ranks = picks.map(c=>rankOf(c, actual));
+        let ret=0; ranks.forEach(k=>{ if(k) ret += actual.a[k-1]||0; });
+
+        /* 모델의 out-of-sample 예측 — 실제 당첨번호를 대상으로 */
+        const F = fitPop();
+        let zA=null, zB=null, rA=null;
+        if(F.A && actual.s && actual.w[3] && actual.w[4]){
+          const g=actual.s/TICKET, e4=g*WAYS[4]/C456, e5=g*WAYS[5]/C456;
+          if(e4>=200){
+            zA = (popScoreA(actual.n)-F.A.predMean)/F.A.predSD;
+            if(F.B) zB = (popScoreB(actual.n)-F.B.predMean)/F.B.predSD;
+            rA = 0.5*(actual.w[3]/e4) + 0.5*(actual.w[4]/e5);
+          }
+        }
+        have.set(R, { R, y:actual.ymd, p:picks, k:ranks, g:ret,
+                      e:Math.round(LED_GAMES*chanceEV(actual)),
+                      zA:zA==null?null:+zA.toFixed(4), zB:zB==null?null:+zB.toFixed(4),
+                      rA:rA==null?null:+rA.toFixed(5) });
+        if(onProg) onProg(i+1, need.length, R);
+        await ledTick();
+      }
+    }
+  } finally {
+    DB.draws = origDraws; DB.latest = origLatest; bumpDB();
+    LED_BUSY = false;
+  }
+
+  const recs = [...have.values()].filter(r=>r.R>=from).sort((a,b)=>a.R-b.R);
+  const out = { v:1, at:Date.now(), latest, games:LED_GAMES, recs };
+  ledSave(out);
+  return (LEDGER = out);
+}
+
+/* ── 재보정 : 누적된 (z, 실제초과배수) 쌍으로 확장창 회귀를 돌린다 ──
+   원본 예측은 «순위»는 맞지만 «폭»이 과하다. 선형 재보정은 순서를 바꾸지 않으므로
+   추천 조합은 그대로 두고 표시되는 숫자만 정직해진다. */
+function ledCalib(recs){
+  const ok = recs.filter(r=>r.zA!=null && r.zB!=null && r.rA!=null);
+  if(ok.length < 60) return { n:ok.length, ready:false };
+  const z = r => (r.zA + r.zB)/2;
+  const fit = arr => {                                   // y = a + b·z (최소제곱)
+    const n=arr.length;
+    const mz=arr.reduce((a,r)=>a+z(r),0)/n, my=arr.reduce((a,r)=>a+r.rA,0)/n;
+    let sxy=0, sxx=0;
+    arr.forEach(r=>{ const dz=z(r)-mz; sxy+=dz*(r.rA-my); sxx+=dz*dz; });
+    if(!sxx) return null;
+    const b=sxy/sxx; return { a:my-b*mz, b };
+  };
+  /* 정직한 성능 측정: i번째는 0..i-1 로만 적합한 계수로 예측한다 (미래 안 씀) */
+  const preds=[], ys=[];
+  for(let i=60;i<ok.length;i++){
+    const f=fit(ok.slice(0,i)); if(!f) continue;
+    preds.push(f.a + f.b*z(ok[i])); ys.push(ok[i].rA);
+  }
+  const full = fit(ok);
+  let r2=null, mae=null, maeNaive=null, corr=null;
+  if(ys.length>20){
+    const my=ys.reduce((a,b)=>a+b,0)/ys.length;
+    const sst=ys.reduce((a,v)=>a+(v-my)**2,0);
+    r2 = 1 - preds.reduce((a,v,i)=>a+(v-ys[i])**2,0)/sst;
+    mae = preds.reduce((a,v,i)=>a+Math.abs(v-ys[i]),0)/ys.length;
+    maeNaive = ys.reduce((a,v)=>a+Math.abs(v-my),0)/ys.length;
+  }
+  { const n=ok.length, mz=ok.reduce((a,r)=>a+z(r),0)/n, my=ok.reduce((a,r)=>a+r.rA,0)/n;
+    let nu=0,dz=0,dy=0;
+    ok.forEach(r=>{ const u=z(r)-mz, v=r.rA-my; nu+=u*v; dz+=u*u; dy+=v*v; });
+    corr = dz&&dy ? nu/Math.sqrt(dz*dy) : null; }
+  return { n:ok.length, ready:true, a:full.a, b:full.b, r2, mae, maeNaive, corr, nOOS:ys.length };
+}
+
+/* 무작위 5게임 × N주 총 회수금 분포 (몬테카를로).
+   1·2·3등은 회차마다 분배금이 달라 «당첨이 나면 회차를 균등추출»해 그 회차 상금을 준다.
+   4·5등은 정액이라 건수만 있으면 된다. 등수별 건수는 Poisson(λ) — p가 매우 작아 근사가 정확하다. */
+function ledChanceDist(recs, trials){
+  trials = trials || 20000;
+  const G = recs.length*LED_GAMES;
+  const amt = k => recs.map(r=>{ const d=DB.draws[r.R]; return d ? (d.a[k-1]||0) : 0; });
+  const A3=amt(3), A2=amt(2), A1=amt(1);
+  const pois = l => { const L=Math.exp(-l); let k=0,p=1; do{ k++; p*=Math.random(); }while(p>L); return k-1; };
+  const out = new Float64Array(trials);
+  for(let t=0;t<trials;t++){
+    let v = 5000*pois(G*PROB[5]) + 50000*pois(G*PROB[4]);
+    let n = pois(G*PROB[3]); for(let i=0;i<n;i++) v += A3[(Math.random()*A3.length)|0];
+    n = pois(G*PROB[2]);     for(let i=0;i<n;i++) v += A2[(Math.random()*A2.length)|0];
+    n = pois(G*PROB[1]);     for(let i=0;i<n;i++) v += A1[(Math.random()*A1.length)|0];
+    out[t]=v;
+  }
+  out.sort();
+  const q = f => out[Math.min(trials-1, Math.floor(trials*f))];
+  /* 평균과 1등 확률은 몬테카를로로 재지 않는다. 둘 다 1등 꼬리가 지배하는 값이라
+     2만 회로는 눈에 띄게 흔들린다. 해석해가 있으므로 그걸 쓴다.
+       평균     = Σ_회차 Σ_등수 (게임수 × P_등수 × 그 회차 당첨금)  ← recs[].e 의 합
+       1등 확률 = 1 − (1 − P₁)^게임수 */
+  const meanExact = recs.reduce((a,r)=>a+r.e,0);
+  return { mean:meanExact, p10:q(.10), p25:q(.25), med:q(.50), p75:q(.75), p90:q(.90),
+           pctOf: v => { let c=0; for(let i=0;i<trials;i++) if(out[i]<v) c++; return c/trials; },
+           pFirst: 1-Math.pow(1-PROB[1], G) };
+}
+
+
+/* ── 원장 렌더 ─────────────────────────────────────────────────── */
+function renderLedger(){
+  const box=$('#ledMeta');
+  if(!LEDGER) LEDGER=ledLoad();
+  if(!LEDGER || !LEDGER.recs.length){
+    box.textContent='아직 계산하지 않았습니다 — [원장 계산] 을 누르세요';
+    ['#kpiLed','#ledChance','#ledModel'].forEach(x=>$(x).innerHTML='');
+    $('#ledRankTbl').innerHTML=''; $('#ledTbl').innerHTML='';
+    return;
+  }
+  const recs=LEDGER.recs, n=recs.length, G=LEDGER.games||LED_GAMES;
+  const stale = DB.latest > LEDGER.latest;
+  box.textContent = recs[0].R+'~'+recs[n-1].R+'회 · '+n+'주 · '+nf(n*G)+'게임'
+    + (stale ? ' · 새 회차 '+(DB.latest-LEDGER.latest)+'개 미반영' : '');
+
+  const cost=n*G*TICKET;
+  const ret =recs.reduce((a,r)=>a+r.g,0);
+  const ev  =recs.reduce((a,r)=>a+r.e,0);
+  const cnt={1:0,2:0,3:0,4:0,5:0};
+  recs.forEach(r=>r.k.forEach(k=>{ if(k) cnt[k]++; }));
+  const best=[1,2,3,4,5].find(k=>cnt[k]>0);
+  const matched=recs.reduce((a,r)=>a+r.p.reduce((x,c,i)=>{
+    const d=DB.draws[r.R]; return x + (d ? c.filter(v=>d.n.includes(v)).length : 0); },0),0);
+
+  renderKPI('#kpiLed',[
+    ['누적 주차', nf(n)+'주', recs[0].R+'~'+recs[n-1].R+'회'],
+    ['투입', won(cost), G+'게임 × '+nf(n)+'주'],
+    ['회수', won(ret), '회수율 '+pct(ret/cost,1)],
+    ['손익', won(ret-cost), (ret>=cost?'수익':'손실')],
+    ['최고 등수', best?best+'등':'—', '5등 '+cnt[5]+' · 4등 '+cnt[4]+' · 3등 '+cnt[3]]
+  ]);
+
+  /* ── 우연과의 비교 — 여기서 정직해야 한다 ── */
+  const D=ledChanceDist(recs, 20000);
+  const pctile=D.pctOf(ret);
+  $('#ledChance').innerHTML=
+    '<p style="font-size:13.5px;margin-bottom:10px">같은 300주에 <b>아무 번호나</b> 5게임씩 샀다면 총 회수금이 어디쯤 떨어지는지를 '
+    +'2만 번 시뮬레이션했습니다. 이 원장의 '+won(ret)+' 은 그 분포의 <b>'+(pctile*100).toFixed(0)+' 백분위</b>입니다.</p>'
+    +'<div class="scroll"><table>'
+    +'<tr><th>무작위 5게임 × '+n+'주</th><th class="num">총 회수금</th><th class="num">회수율</th></tr>'
+    +[['하위 10%',D.p10],['하위 25%',D.p25],['<b>중앙값 — 실제로 겪는 값</b>',D.med],
+      ['상위 25%',D.p75],['상위 10%',D.p90],['<b>평균 — 1등 꼬리가 끌어올린 값</b>',D.mean]]
+      .map(([k,v])=>'<tr><td>'+k+'</td><td class="num">'+won(v)+'</td><td class="num">'+pct(v/cost,1)+'</td></tr>').join('')
+    +'<tr style="border-top:2px solid var(--ink)"><td><b>이 원장</b></td><td class="num"><b>'+won(ret)+'</b></td><td class="num"><b>'+pct(ret/cost,1)+'</b></td></tr>'
+    +'</table></div>'
+    +'<div class="verdict" style="margin-bottom:0"><b>평균과 중앙값이 세 배 넘게 벌어지는 이유</b><br>'
+    +'· 로또의 구조적 환급률 약 50%는 <b>1등 당첨금이 만드는 값</b>입니다. 그런데 '+nf(n*G)+'게임에서 1등이 한 번이라도 나올 확률은 '
+    +(D.pFirst*100).toFixed(2)+'% 입니다<br>'
+    +'· 그래서 «평균 회수율 '+pct(D.mean/cost,1)+'» 은 거의 아무도 겪지 않는 값이고, 실제로 겪는 값은 중앙값 '+pct(D.med/cost,1)+' 쪽입니다<br>'
+    +'· <b>이 원장의 회수율은 모델 성능 지표가 아닙니다.</b> 표본이 이만큼이면 어떤 번호를 골라도 결과는 우연 분포 안에서 흔들립니다<br>'
+    +'<span style="color:var(--ink-40)">모델이 실제로 예측하는 양은 아래 「모델은 실제로 무엇을 맞히나」에서 따로 잽니다.</span></div>';
+
+  /* ── 등수별 관측 vs 기대 ── */
+  const games=n*G;
+  const label={1:'1등 · 6개',2:'2등 · 5개+보너스',3:'3등 · 5개',4:'4등 · 4개',5:'5등 · 3개'};
+  $('#ledRankTbl').innerHTML='<tr><th>등수</th><th class="num">관측</th><th class="num">기대</th><th class="num">차이</th><th>판정</th></tr>'
+    +[1,2,3,4,5].map(k=>{
+      const e=games*PROB[k], o=cnt[k], sd=Math.sqrt(e);
+      const z=sd>0.5 ? (o-e)/sd : null;
+      const verdict = z==null ? '<span class="tag noi">표본 부족</span>'
+        : Math.abs(z)<2 ? '<span class="tag noi">우연 범위</span>'
+        : '<span class="tag sig">'+(z>0?'+':'')+z.toFixed(1)+'σ</span>';
+      return '<tr><td>'+label[k]+'</td><td class="num"><b>'+o+'</b></td><td class="num">'+e.toFixed(e<1?4:1)
+        +'</td><td class="num">'+(o-e>=0?'+':'')+(o-e).toFixed(e<1?4:1)+'</td><td>'+verdict+'</td></tr>';
+    }).join('')
+    +'<tr style="border-top:2px solid var(--ink)"><td><b>번호 일치 총합</b></td><td class="num"><b>'+nf(matched)+'</b></td>'
+    +'<td class="num">'+nf(games*6*6/45)+'</td><td class="num">'+(matched-games*36/45>=0?'+':'')+nf(matched-games*36/45)+'</td>'
+    +'<td><span class="mono" style="font-size:10.5px">게임당 '+(matched/games).toFixed(3)+' / 우연 0.800</span></td></tr>';
+
+  /* ── 모델 검증 + 재보정 ── */
+  const C=ledCalib(recs);
+  if(!C.ready){
+    $('#ledModel').innerHTML='<p style="font-size:13px;color:var(--ink-60)">검증 표본이 '+C.n+'회차입니다. 60회차 이상 쌓이면 표시합니다.</p>';
+  } else {
+    const gain = C.maeNaive ? (1-C.mae/C.maeNaive) : null;
+    const zAdv = 2.06;   // 추천 상위 5게임의 평균 z 이득 (아래 표에서 실측치로 덮어씀)
+    const zs = recs.map(r=>(r.zA+r.zB)/2).filter(v=>v!=null);
+    const zMean = zs.reduce((a,b)=>a+b,0)/zs.length;
+    const pickZ = (()=>{ try{ const F=fitPop(), W=weeklyPicks();
+      const zz=W.combos.slice(0,5).map(c=>((popScoreA(c)-F.A.predMean)/F.A.predSD+(popScoreB(c)-F.B.predMean)/F.B.predSD)/2);
+      return zz.reduce((a,b)=>a+b,0)/zz.length; }catch(e){ return null; } })();
+    const edge = (pickZ!=null && C.b) ? (zMean-pickZ)*C.b : null;
+    $('#ledModel').innerHTML=
+      '<div class="scroll"><table>'
+      +'<tr><th>지표</th><th class="num">값</th><th>뜻</th></tr>'
+      +'<tr><td>검증 표본</td><td class="num">'+C.n+'회차</td><td>실제 당첨번호 대상. 매주 1개씩 늘어난다</td></tr>'
+      +'<tr><td>상관 (예측 vs 실제)</td><td class="num"><b>'+C.corr.toFixed(3)+'</b></td><td>순위 정보는 실재한다</td></tr>'
+      +'<tr><td>재보정 후 R²</td><td class="num"><b>'+C.r2.toFixed(3)+'</b></td><td>확장창 walk-forward. 미래를 쓰지 않은 값</td></tr>'
+      +'<tr><td>평균오차 (재보정)</td><td class="num">'+C.mae.toFixed(4)+'</td><td rowspan="2">순진 예측(항상 평균) 대비 <b>'
+        +(gain!=null?pct(gain,1):'—')+' 개선</b></td></tr>'
+      +'<tr><td>평균오차 (순진 예측)</td><td class="num">'+C.maeNaive.toFixed(4)+'</td></tr>'
+      +'<tr><td>재보정 기울기</td><td class="num">'+C.b.toFixed(4)+'</td><td>분배지수 1σ당 당첨자수 배수 변화</td></tr>'
+      +(edge!=null?'<tr style="border-top:2px solid var(--ink)"><td><b>이번 주 추천의 실측 이득</b></td>'
+        +'<td class="num"><b>'+pct(edge,1)+'</b></td><td>1등 시 나눠 갖는 인원이 이만큼 적을 것으로 <b>측정</b>됨</td></tr>':'')
+      +'</table></div>'
+      +'<div class="verdict" style="margin-bottom:0"><b>솔직하게 — 원래 숫자는 틀렸습니다</b><br>'
+      +'· 재보정 <b>전</b> 예측은 out-of-sample R² 가 <b>음수</b>였습니다. 방향은 맞는데 폭이 과했다는 뜻입니다<br>'
+      +'· 그래서 쌓인 기록으로 기울기를 다시 재 «분배지수»를 재보정했습니다. 선형 변환이라 <b>순서는 바뀌지 않습니다</b> — 추천 조합은 그대로고, 표시되는 숫자만 정직해집니다<br>'
+      +'· 두 모델(판매 기준 · 구매방식 기준)에 서로 다른 가중을 줘 봤지만 지금의 «평균 결합»보다 나아지지 않았습니다. 그래서 <b>건드리지 않았습니다</b><br>'
+      +'<span style="color:var(--ink-40)">1등 확률은 여전히 1/8,145,060 입니다. 바뀌는 건 당첨됐을 때 나눠 갖는 인원뿐이고, 그 크기가 위의 실측 이득입니다.</span></div>';
+  }
+
+  /* ── 회차별 ── */
+  const rankTag=k=>k?'<span class="tag sig"><b>'+k+'등</b></span>':'';
+  $('#ledTbl').innerHTML='<tr><th>회차</th><th>당첨번호</th><th>A~E 결과</th><th class="num">회수</th><th class="num">누적손익</th></tr>'
+    +(()=>{ let acc=0; const rowsHtml=recs.map(r=>{ acc += r.g - LED_GAMES*TICKET; return {r, acc}; });
+      return rowsHtml.slice(-24).reverse().map(({r,acc})=>{
+        const d=DB.draws[r.R];
+        return '<tr><td class="mono"><b>'+r.R+'</b><div style="font-size:9.5px;color:var(--ink-40)">'+ymd2disp(r.y)+'</div></td>'
+        +'<td><span class="balls">'+(d?d.n.map(x=>ballHTML(x,'xs')).join('')+'<span class="mono" style="color:var(--ink-30)">+</span>'+ballHTML(d.b,'xs bonus'):'—')+'</span></td>'
+        +'<td><div style="display:flex;flex-direction:column;gap:3px">'
+          +r.p.map((c,i)=>'<div style="display:flex;align-items:center;gap:6px">'
+            +tkHTML(GLET[i], c, {sz:'xs', dim:true, hi:d?c.filter(v=>d.n.includes(v)||d.b===v):[], bonus:d&&c.includes(d.b)?d.b:undefined})
+            +rankTag(r.k[i])+'</div>').join('')+'</div></td>'
+        +'<td class="num">'+(r.g?won(r.g):'—')+'</td>'
+        +'<td class="num" style="color:'+(acc>=0?'var(--ok)':'var(--sig)')+'">'+won(acc)+'</td></tr>';
+      }).join(''); })()
+    +'<tr><td colspan="5" style="font-size:11px;color:var(--ink-40)">최근 24주만 표시합니다. 전체는 '+recs.length+'주입니다.</td></tr>';
+}
 
 /* ════════════════ 데이터 탭 ════════════════ */
 function renderData(){
@@ -1736,11 +2180,39 @@ function switchTab(t){
     if(t==='gen')  renderPopModel();
     if(t==='sim')  renderFirstHit();
     if(t==='mine') renderMine();
+    if(t==='ledger') renderLedger();
     if(t==='data') renderData();
   }catch(e){ console.error(e); log('렌더 오류('+t+'): '+e.message); }
 }
 function wire(){
   $$('#tabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.t));
+
+  /* ── 원장 ── */
+  $('#ledRun').onclick = async ()=>{
+    if(LED_BUSY) return;
+    const btn=$('#ledRun'), wrap=$('#ledProgWrap');
+    btn.disabled=true; wrap.style.display='block';
+    $('#ledProgTxt').textContent='준비 중…';
+    try{
+      await ledBuild((i,tot,R)=>{
+        $('#ledProg').style.width=(i/tot*100).toFixed(1)+'%';
+        $('#ledProgTxt').textContent=R+'회 채점 · '+i+'/'+tot+' (남은 시간 약 '
+          +Math.ceil((tot-i)*0.15)+'초)';
+      });
+      renderLedger();
+      log('원장 갱신 · '+LEDGER.recs.length+'주');
+    }catch(e){
+      $('#ledProgTxt').textContent='실패: '+e.message;
+      log('원장 계산 실패 · '+e.message);
+    }finally{
+      btn.disabled=false;
+      setTimeout(()=>{ wrap.style.display='none'; $('#ledProg').style.width='0%'; }, 900);
+    }
+  };
+  $('#ledReset').onclick = ()=>{
+    if(!confirm('원장을 지우고 처음부터 다시 계산합니다. 계속할까요?')) return;
+    localStorage.removeItem(LSLED); LEDGER=null; renderLedger();
+  };
   $('#statWin').onchange=renderStat; $('#statBonus').onchange=renderStat;
 
   const sc=$('#stratChips');
@@ -1815,7 +2287,7 @@ function wire(){
         w:[d.winners.first,d.winners.second,d.winners.third,d.winners.fourth,d.winners.fifth],
         a:[d.prize.first,d.prize.second,d.prize.third,d.prize.fourth,d.prize.fifth],
         s:d.sales, t:[d.firstType.auto,d.firstType.manual,d.firstType.semi] }; });
-      DB.latest=o.meta.latest; DB.source='수동 복구'; DB.loadedAt=Date.now();
+      DB.latest=o.meta.latest; DB.source='수동 복구'; DB.loadedAt=Date.now(); bumpDB();
       saveDB(); refreshAll(); alert('복구 완료');
     }catch(e){ alert('형식 오류: '+e.message); }
   };

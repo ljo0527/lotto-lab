@@ -177,7 +177,16 @@ async function readLotto(browser, base, pension, lotto){
     &&DB.draws&&DB.draws[DB.latest],{timeout:120000});
   await p.waitForTimeout(2000);
   const r=await p.evaluate(()=>{
-    const reset=()=>{ WEEKLY=null; WEEKLY_R=0; POPFIT=null; POPFIT_N=0; WINSET=null; WINSET_N=0; };
+    /* [2026-09-03] index.html 이 캐시를 DB.rev 로 무효화하도록 바뀌었다.
+       rows(0) 결과를 담는 ROWS_CACHE 가 새로 생겼는데 이 함수는 그걸 모른다 →
+       DB 를 잘라도 낡은 배열이 그대로 나와 «지난주 추천»이 조용히 틀린다.
+       페이지가 제공하는 bumpDB() 를 쓰는 것이 정답이고, 옛 index.html 과도 호환되게 fallback 을 둔다. */
+    const reset=()=>{
+      WEEKLY=null; WEEKLY_R=0; POPFIT=null; POPFIT_N=-1; WINSET=null; WINSET_N=-1;
+      if(typeof WEEKLY_REV!=='undefined') WEEKLY_REV=-1;
+      if(typeof bumpDB==='function') bumpDB();
+      else if(typeof ROWS_CACHE!=='undefined') ROWS_CACHE=null;
+    };
     reset();
     const L=DB.latest, last=DB.draws[L];
     const W=weeklyPicks();                       // L+1 회차 대상
@@ -368,7 +377,8 @@ tr.win td{background:var(--ink-06)}
   (${P.bt.from}~${P.bt.to}회, 표본 ${fmt(P.bt.n)}건)
 </div>
 <div class="verdict">
-  <b>로또</b> — 여기서는 «분배 인원»만 바꿀 수 있습니다. 확률은 고정이고, 효과는 기대 수령액 기준 ±10~15% 수준입니다.
+  <b>로또</b> — 여기서는 «분배 인원»만 바꿀 수 있습니다. 확률은 고정이고, 효과는 walk-forward 300주로 실측해 <b>약 +7%</b> 입니다.
+  (이전에 적었던 ±10~15% 는 재보정 전 계수로 계산한 과대평가였습니다.)
 </div>
 
 <div class="foot">
