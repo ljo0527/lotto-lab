@@ -1,0 +1,94 @@
+{
+ "generated": "2026-09-06T03:28:38.800Z",
+ "window": 300,
+ "lotto": {
+  "n": 300,
+  "from": 941,
+  "to": 1240,
+  "calib": {
+   "ready": true,
+   "n": 300,
+   "nOOS": 240,
+   "a": 0.9992547697751849,
+   "b": 0.03269930628165286,
+   "r2": 0.3623240439177009,
+   "mae": 0.029782216286909472,
+   "maeNaive": 0.038241553819444454,
+   "corr": 0.6125936543554412
+  },
+  "sdWeek": 1977556.5747170157,
+  "chanceMean": 2721.47,
+  "per": {
+   "minshare": {
+    "zGain": 2.0804,
+    "vsRandomMean": 2.0765,
+    "p": 0,
+    "payoutGain": 0.068,
+    "hitsPerGame": 0.818,
+    "weeksForZ": 1,
+    "weeksForMoney": 895597674
+   },
+   "maxshare": {
+    "zGain": -2.1416,
+    "vsRandomMean": -2.1454,
+    "p": 0,
+    "payoutGain": -0.07,
+    "hitsPerGame": 0.7913,
+    "weeksForZ": 1,
+    "weeksForMoney": null
+   },
+   "random": {
+    "zGain": 0.0038,
+    "vsRandomMean": 0,
+    "p": 1,
+    "payoutGain": 0.0001,
+    "hitsPerGame": 0.8313,
+    "weeksForZ": null,
+    "weeksForMoney": 263407849842563
+   },
+   "hot": {
+    "zGain": -0.0036,
+    "vsRandomMean": -0.0074,
+    "p": 0.80723,
+    "payoutGain": -0.0001,
+    "hitsPerGame": 0.7593,
+    "weeksForZ": 39552,
+    "weeksForMoney": null
+   },
+   "cold": {
+    "zGain": -0.0782,
+    "vsRandomMean": -0.082,
+    "p": 0.01017,
+    "payoutGain": -0.0026,
+    "hitsPerGame": 0.8113,
+    "weeksForZ": 357,
+    "weeksForMoney": null
+   }
+  }
+ },
+ "pension": {
+  "tested": 25,
+  "sig": 0,
+  "sigCorrected": 0,
+  "expectedByChance": 1.3,
+  "controlSig": 0
+ },
+ "ledger": {
+  "lotto": {
+   "weeks": 0,
+   "spend": 0,
+   "ret": 0,
+   "rate": null,
+   "median": null,
+   "grades": {}
+  },
+  "pension": {
+   "weeks": 0,
+   "spend": 0,
+   "ret": 0,
+   "rate": null,
+   "median": null,
+   "grades": {}
+  }
+ }
+}

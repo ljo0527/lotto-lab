@@ -315,7 +315,7 @@ tr.win td{background:var(--ink-06)}
 <div class="wrap">
 <header>
   <div class="eyebrow"><span>Weekly Lottery Brief</span>
-    <span><a href="./pension.html">PENSION LAB</a> · <a href="./index.html">LOTTO LAB</a></span></div>
+    <span><a href="./validate.html">검증 보드</a> · <a href="./pension.html">PENSION LAB</a> · <a href="./index.html">LOTTO LAB</a></span></div>
   <h1>주간 복권 브리핑<small>${meta.date} (금) 작성 · 연금복권720+ ${P.next.ep}회 / 로또 6/45 ${L.target}회 대상</small></h1>
 </header>
 
