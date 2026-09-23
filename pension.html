@@ -154,6 +154,37 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 .combo .m{text-align:right;font-family:"Space Mono",monospace;font-size:10.5px;color:var(--ink-60);line-height:1.5;white-space:nowrap}
 .combo .m em{display:block;font-style:normal;color:var(--ink);font-size:13.5px;font-weight:700}
 
+/* ── #dashPick/#dashAlt(«이번 주 5장»·대체) 전용 — 375px에서 6자리가 한 줄에 들어가도록 축소 ── */
+@media(max-width:400px){
+  #dashPick .combo, #dashAlt .combo{
+    grid-template-columns:19px 1fr;
+    column-gap:6px; row-gap:2px;
+    padding:9px 2px;
+  }
+  #dashPick .combo .k, #dashAlt .combo .k{
+    grid-column:1; grid-row:1;
+    font-size:17px!important;
+  }
+  #dashPick .combo>div:nth-child(2), #dashAlt .combo>div:nth-child(2){
+    grid-column:2; grid-row:1; min-width:0;
+  }
+  #dashPick .combo .m, #dashAlt .combo .m{
+    grid-column:1/-1; grid-row:2;
+    display:flex; justify-content:flex-end; align-items:baseline;
+    gap:5px; white-space:nowrap; font-size:9.5px; line-height:1.3;
+  }
+  #dashPick .combo .m em, #dashAlt .combo .m em{
+    display:inline; font-size:11.5px;
+  }
+  #dashPick .tk, #dashAlt .tk{ gap:4px; flex-wrap:nowrap; }
+  #dashPick .tk .bnd, #dashAlt .tk .bnd{
+    font-size:15px!important; padding:1px 4px!important; min-width:22px;
+  }
+  #dashPick .tk .bndlabel, #dashAlt .tk .bndlabel{ font-size:8.5px; }
+  #dashPick .tk .sep, #dashAlt .tk .sep{ width:3px; }
+  #dashPick .dg.sm, #dashAlt .dg.sm{ width:21px; height:25px; font-size:11.5px; }
+}
+
 .bignum{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:clamp(43px,9.5vw,70px);line-height:1}
 .disclaimer{font-size:13px;color:var(--ink-60);padding:18px 0 0;line-height:1.75;border-top:1px solid var(--ink-12);margin-top:26px}
 .spin{display:inline-block;width:11px;height:11px;border:2px solid var(--ink-30);border-top-color:var(--ink);
