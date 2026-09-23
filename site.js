@@ -197,8 +197,15 @@ var PENSION_MY='pensionlab.my.v1'; // [{band, num, ep}]
 function sortedNums(nums){
   return (nums||[]).slice().sort(function(a,b){ return a-b; });
 }
-function markBought(kind, round, items){
+/* markBought(kind, round, items, opts?)
+   opts.batch — PLAN(라운드3 fixer) §1: 이 호출이 «새로 만드는» 행에만 찍히는 배치 꼬리표
+   (예: 'brief:lotto:1243', 'brief:pension:334:spread'). 생략 시 기본값 'site:'+kind+':'+round —
+   손으로 쓴 페이지(index/pension.html)에서 opts 없이 불러도 일관된 배치가 붙는다.
+   dedup 으로 건너뛴(이미 있던) 행은 배치를 다시 찍지 않는다 — 기존 행 그대로 둔다. */
+function markBought(kind, round, items, opts){
   items = items || [];
+  opts = opts || {};
+  var batch = opts.batch!=null ? opts.batch : ('site:'+kind+':'+round);
   if(kind==='lotto'){
     var arr = storeGet(LOTTO_MY, []);
     var seen = {};
@@ -210,7 +217,7 @@ function markBought(kind, round, items){
       var s = sortedNums(nums), key = s.join(',');
       if(!s.length || seen[key]) return;
       seen[key]=true;
-      arr.push({round:round, nums:s, cost:1000, at:Date.now()});
+      arr.push({round:round, nums:s, cost:1000, at:Date.now(), batch:batch});
       added++;
     });
     if(added) storeSet(LOTTO_MY, arr);
@@ -226,7 +233,7 @@ function markBought(kind, round, items){
       var key = it.band+':'+it.num;
       if(seen2[key]) return;
       seen2[key]=true;
-      arr2.push({band:it.band, num:it.num, ep:round});
+      arr2.push({band:it.band, num:it.num, ep:round, batch:batch});
       added2++;
     });
     if(added2) storeSet(PENSION_MY, arr2);
@@ -239,13 +246,23 @@ function markBought(kind, round, items){
 function lottoItemKey(nums){ return sortedNums(nums).join(','); }
 function pensionItemKey(band, num){ return band+':'+String(num==null?'':num).padStart(6,'0'); }
 
-/* isBought(kind, round, items?)
-   - items 생략(null/undefined): 예전 그대로 — 그 회차에 행이 하나라도 있으면 true.
-   - items 지정: 그 배열의 모든 항목이 저장돼 있어야만 true(하나라도 없으면 false). */
-function isBought(kind, round, items){
+/* isBought(kind, round, items?, opts?)
+   - opts.batch 없음(기존): items 생략 → 그 회차에 행이 하나라도 있으면 true.
+                            items 지정 → 그 배열의 모든 항목이 저장돼 있어야만 true.
+   - opts.batch 지정(라운드3 fixer §1): 그 배치로 찍힌 행만 센다 — 모든 item 에 대해
+     round/ep 가 맞고 batch===opts.batch 인 행이 있어야 true. (다른 배치·배치 없는 옛 행은 무시.) */
+function isBought(kind, round, items, opts){
+  opts = opts || {};
+  var batch = opts.batch;
   if(kind==='lotto'){
     var arr=storeGet(LOTTO_MY, []);
     var rows=arr.filter(function(t){ return t && t.round===round && Array.isArray(t.nums); });
+    if(batch!=null){
+      var haveB={};
+      rows.forEach(function(t){ if(t.batch===batch) haveB[lottoItemKey(t.nums)]=true; });
+      if(items==null) return rows.some(function(t){ return t.batch===batch; });
+      return items.every(function(nums){ return !!haveB[lottoItemKey(nums)]; });
+    }
     if(items==null) return rows.length>0;
     var have={};
     rows.forEach(function(t){ have[lottoItemKey(t.nums)]=true; });
@@ -254,6 +271,12 @@ function isBought(kind, round, items){
   if(kind==='pension'){
     var arr2=storeGet(PENSION_MY, []);
     var rows2=arr2.filter(function(t){ return t && t.ep===round; });
+    if(batch!=null){
+      var haveB2={};
+      rows2.forEach(function(t){ if(t.batch===batch) haveB2[pensionItemKey(t.band, t.num)]=true; });
+      if(items==null) return rows2.some(function(t){ return t.batch===batch; });
+      return items.every(function(it){ return !!it && !!haveB2[pensionItemKey(it.band, it.num)]; });
+    }
     if(items==null) return rows2.length>0;
     var have2={};
     rows2.forEach(function(t){ have2[pensionItemKey(t.band, t.num)]=true; });
@@ -261,18 +284,26 @@ function isBought(kind, round, items){
   }
   return false;
 }
-/* unmark(kind, round, items?)
+/* unmark(kind, round, items?, opts?)
    신규 계약(PLAN C2): items 를 생략하면 아무것도 지우지 않고 0 을 반환한다(예전처럼 그 회차를
    통째로 지우지 않음 — 손으로 넣은 다른 행이 같이 날아가지 않도록). items 를 주면 그 항목과
-   정확히 일치하는 행만 지운다. */
-function unmark(kind, round, items){
+   정확히 일치하는 행만 지운다.
+   opts.batch(라운드3 fixer §1): 주어지면 round/ep 일치 + key 일치여도 그 행의 batch 가
+   opts.batch 와 정확히 같은 행만 지운다 — 배치 없는(옛) 행이나 다른 배치의 행은 items 키가
+   같아도 손대지 않는다. opts.batch 를 안 주면 기존처럼 key 일치만으로 지운다(배치 무관). */
+function unmark(kind, round, items, opts){
   if(items==null) return 0;
+  opts = opts || {};
+  var batch = opts.batch;
   if(kind==='lotto'){
     var arr=storeGet(LOTTO_MY, []);
     var kill={};
     items.forEach(function(nums){ kill[lottoItemKey(nums)]=true; });
     var next=arr.filter(function(t){
-      return !(t && t.round===round && Array.isArray(t.nums) && kill[lottoItemKey(t.nums)]);
+      var match = t && t.round===round && Array.isArray(t.nums) && kill[lottoItemKey(t.nums)];
+      if(!match) return true;
+      if(batch!=null && t.batch!==batch) return true;
+      return false;
     });
     storeSet(LOTTO_MY, next);
     return arr.length-next.length;
@@ -282,7 +313,10 @@ function unmark(kind, round, items){
     var kill2={};
     items.forEach(function(it){ if(it) kill2[pensionItemKey(it.band, it.num)]=true; });
     var next2=arr2.filter(function(t){
-      return !(t && t.ep===round && kill2[pensionItemKey(t.band, t.num)]);
+      var match = t && t.ep===round && kill2[pensionItemKey(t.band, t.num)];
+      if(!match) return true;
+      if(batch!=null && t.batch!==batch) return true;
+      return false;
     });
     storeSet(PENSION_MY, next2);
     return arr2.length-next2.length;

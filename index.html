@@ -119,6 +119,18 @@ p.note{font-size:14px;color:var(--ink-60);padding-bottom:14px;line-height:1.7}
   font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
   color:var(--ink-60);border-bottom:1px solid var(--ink-12);padding-bottom:7px;margin-bottom:4px}
 .sheet .tkrow:last-child{border-bottom:0}
+/* 375px 폰: 기본 크기(.nc 33px)의 6개 번호+글자 키가 .m(합계/홀짝) 과 나란히면 두 줄(5+1)로 접힌다.
+   360~375px 에서는 번호 박스를 살짝 줄이고, 합계/홀짝을 번호 아래로 내려 한 줄에 다 들어오게 한다.
+   #weeklyCard 로 스코프(용지 A~E + 예비 F~J 전부 포함) — 조합 생성·마크시트 등 다른 .tkrow 재사용처
+   (pinnedCard/lastMineCard, 이미 더 작은 sm/xs 크기라 안 접힘)는 그대로 둔다. */
+@media(max-width:400px){
+  #weeklyCard .tkrow{grid-template-columns:1fr;row-gap:3px}
+  #weeklyCard .tkrow .m{grid-column:1/-1;text-align:left;padding-top:1px}
+  #weeklyCard .tkrow .m em{display:inline;margin:0 4px}
+  #weeklyCard .tk{gap:4px}
+  #weeklyCard .tk .gm{min-width:25px;padding:1px 5px 0}
+  #weeklyCard .nc{width:29px;height:34px;font-size:13px}
+}
 
 /* ── board 45 ── */
 .board45{display:grid;grid-template-columns:repeat(9,1fr);gap:5px}
@@ -227,7 +239,7 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 <!-- ══════════ 대시보드 ══════════ -->
 <section class="panel on" id="p-dash">
   <h2>이번 주 추천 조합</h2>
-  <p class="note">매 회차 자동으로 다시 계산됩니다. <b>직전 회차까지의 전체 데이터</b>를 반영하며, 같은 회차 안에서는 항상 같은 조합입니다. <b>위에서부터 1순위</b>인 10줄을 냅니다.</p>
+  <p class="note">매 회차 자동으로 다시 계산됩니다. <b>직전 회차까지의 전체 데이터</b>를 반영하며, 같은 회차 안에서는 항상 같은 조합입니다. <b>A~E 5줄(5,000원)</b>이 실제로 살 용지이고, <b>F~J</b>는 예비입니다.</p>
   <div class="card" id="weeklyCard"><span class="spin"></span></div>
   <div class="row" style="padding-top:10px">
     <button class="btn ghost" id="weeklySheet">마크시트 인쇄용 열기</button>

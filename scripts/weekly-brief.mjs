@@ -380,20 +380,32 @@ const digits=(num,hi)=>String(num).padStart(6,'0').split('')
 const GRADE=['미당첨','1등','2등','3등','4등','5등','6등','7등','보너스'];
 const esc=s=>String(s).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026'); // JSON-in-<script> 이스케이프(</script> 탈출 방지) 전용
 const escAttr=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); // HTML 속성값 이스케이프
+// 큰 금액(원)을 억 단위로 줄여 보여주되, 정확한 값은 title 속성에 남긴다 — [QA fixer] 전주 반영 1인 수령액·중앙값용.
+const eokWon=n=>(n==null||isNaN(n))?'—':`<span title="${escAttr(fmt(n)+'원')}">${eok(n)}원</span>`;
 
-/* {g} — 정직 문구의 효과 수치. PLAN §1.7: validation.json.lotto.per.portfolio.payoutGain,
-   없으면 per.minshare.payoutGain, 그것도 없으면 고정 문구 "약 +7%". 이전 실행(=이미 커밋된 값)만 읽는다 —
-   이 스크립트가 새로 계산하지 않는다(그건 validate.mjs 의 역할). */
+/* {g} — 정직 문구의 효과 수치. index.html 의 valPayoutGain() 과 같은 방식으로 고른다:
+   validation.json.lotto.per[lotto.current || 'portfolio'].payoutGain, 그 키가 없으면
+   per.portfolio → per.minshare 순으로 물러난다(옛 validation.json 은 minshare 만 있을 수 있다).
+   아무것도 없으면 고정 문구 "약 +7%". 이전 실행(=이미 커밋된 값)만 읽는다 —
+   이 스크립트가 새로 계산하지 않는다(그건 validate.mjs 의 역할).
+   [라운드3 fixer] key 가 minshare 로 물러난 경우(=현재 규칙 결과가 아직 없는 옛 파일)엔
+   이 수치를 현재 규칙(포트폴리오 등) 효과라고 말하지 않는다 — «이전 규칙(분배 최소) 기준»으로 표시. */
 function readHonestyG(){
   try{
     const vp=path.join(ROOT,'brief','validation.json');
     if(!fs.existsSync(vp)) return {g:null, label:'약 +7%'};
     const v=JSON.parse(fs.readFileSync(vp,'utf8'));
     const per=v&&v.lotto&&v.lotto.per;
-    const pg = per && ((per.portfolio&&per.portfolio.payoutGain) ?? (per.minshare&&per.minshare.payoutGain));
+    if(!per || typeof per!=='object') return {g:null, label:'약 +7%'};
+    const want = (v.lotto && v.lotto.current) || 'portfolio';
+    const key = per[want] ? want : (per.portfolio ? 'portfolio' : (per.minshare ? 'minshare' : null));
+    if(!key) return {g:null, label:'약 +7%'};
+    const pg = per[key] && per[key].payoutGain;
     if(pg==null || isNaN(pg)) return {g:null, label:'약 +7%'};
     const pct=(pg*100);
-    return {g:pct, label:(pct>=0?'+':'')+pct.toFixed(1)+'%'};
+    const pctLabel=(pct>=0?'+':'')+pct.toFixed(1)+'%';
+    if(key==='minshare') return {g:pct, label:'이전 규칙(분배 최소) 기준 '+pctLabel};
+    return {g:pct, label:pctLabel};
   }catch(e){ return {g:null, label:'약 +7%'}; }
 }
 
@@ -565,7 +577,7 @@ function carryoverSection(L,P){
   <div class="card flat">
     <h3>로또 · ${L.last.r}회</h3>
     <p class="note">1등 ${fmt(L.last.w[0])}명 — 무작위로 샀다면 기대 <b>${L.lambda!=null?L.lambda.toFixed(2):'—'}명</b><br>
-      1인 ${fmt(L.last.a[0])}원 (최근 52회 중앙값 ${fmt(L.med52)}원)</p>
+      1인 ${eokWon(L.last.a[0])} (최근 52회 중앙값 ${eokWon(L.med52)})</p>
     <p class="note">이번 주 추천과 직전 당첨번호의 겹침 <b>${L.overlapK}개</b><br>
       직전 번호를 따르거나 피하는 규칙은 확률을 바꾸지 않습니다.</p>
   </div>
@@ -626,8 +638,9 @@ header.top{border-bottom:1.5px solid var(--ink);padding-bottom:12px;margin-botto
  display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
 .eyebrow .links{display:flex;gap:10px;align-items:center}
 .eyebrow a{color:var(--ink-60)}
-h1{font-size:clamp(26px,7.4vw,40px);line-height:1.08;font-weight:800;padding:10px 0 4px;letter-spacing:-.02em}
-h1 small{display:block;font-size:.36em;font-weight:600;color:var(--ink-60);letter-spacing:.02em;padding-top:6px}
+h1{font-size:clamp(22px,6.6vw,34px);line-height:1.14;font-weight:800;padding:10px 0 4px;letter-spacing:-.02em}
+h1 .wonamt{white-space:nowrap}
+h1 small{display:block;font-size:.4em;font-weight:600;color:var(--ink-60);letter-spacing:.02em;padding-top:6px}
 h2{font-family:var(--f-mono);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
  padding:0 0 10px;display:flex;align-items:center;gap:10px;margin-top:28px}
 h2::after{content:"";flex:1;height:1px;background:var(--ink-12)}
@@ -655,6 +668,8 @@ h3{font-size:14px;font-weight:700;padding:0 0 8px;color:var(--ink-60)}
 .bndlabel{font-size:10px;color:var(--ink-60)}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:12px}
 .actions .btn[hidden]{display:none}
+.actions>.btn:last-child:nth-child(odd){grid-column:1/-1}
+.actions:has(>[hidden])>.btn:last-child{grid-column:1/-1}
 .btn{min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;
  border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);font:700 13px var(--f-body);
  text-decoration:none;cursor:pointer;padding:6px 8px}
@@ -722,7 +737,7 @@ ${gnavHTML}
 <header class="top">
   <div class="eyebrow"><span>일확천금 · 이번 주</span>
     <span class="links"><button class="theme-btn" data-theme-btn type="button">테마</button><a href="./brief/index.html">지난 호</a></span></div>
-  <h1>이번 주 5,000원 + 5,000원<small>로또 ${L.target}회 · 연금 ${P.next.ep}회 · ${meta.stamp} KST (${meta.weekday})</small></h1>
+  <h1>이번 주 <span class="wonamt">5,000원</span> + <span class="wonamt">5,000원</span><small>로또 ${L.target}회 · 연금 ${P.next.ep}회 · ${meta.stamp} KST (${meta.weekday})</small></h1>
 </header>
 
 ${summaryStrip(L,P,meta)}
@@ -859,19 +874,29 @@ try{
   });
 
   // 샀어요 토글 — C2: isBought/unmark 도 item-aware(같은 items 를 markBought 와 동일하게 넘긴다)
-  function buyItemsFor(kind){
-    if(kind==='lotto') return (WEEK.lotto && WEEK.lotto.buy) || [];
+  // [라운드3 fixer] 배치 꼬리표: 브리핑이 만든 행만 브리핑이 지운다. 로또는 'brief:lotto:<round>',
+  // 연금은 현재 토글 모드까지 포함해 'brief:pension:<ep>:<mode>' — 분산/세트가 서로 다른 배치라서
+  // 한쪽을 기록·취소해도 다른 쪽(또는 손으로 넣은 행)은 절대 건드리지 않는다.
+  function pensionMode(){
     var toggle = document.querySelector('[data-pension-toggle]');
     var cur = toggle && toggle.querySelector('[aria-checked="true"]');
-    var m = cur ? cur.getAttribute('data-mode') : ((WEEK.pension && WEEK.pension.mode) || 'spread');
+    return cur ? cur.getAttribute('data-mode') : ((WEEK.pension && WEEK.pension.mode) || 'spread');
+  }
+  function buyItemsFor(kind){
+    if(kind==='lotto') return (WEEK.lotto && WEEK.lotto.buy) || [];
+    var m = pensionMode();
     var tksEl = document.querySelector('[data-pension-tickets]');
     var items; try{ items = JSON.parse((tksEl && tksEl.getAttribute('data-'+m)) || '[]'); }catch(e){ items=[]; }
     return items;
   }
+  function batchFor(kind, round){
+    return kind==='lotto' ? ('brief:lotto:'+round) : ('brief:pension:'+round+':'+pensionMode());
+  }
   function syncBuyBtn(btn){
     var kind = btn.getAttribute('data-kind'), round = +btn.getAttribute('data-round');
     var items = buyItemsFor(kind);
-    var bought = SITE.isBought ? SITE.isBought(kind, round, items) : false;
+    var opts = {batch: batchFor(kind, round)};
+    var bought = SITE.isBought ? SITE.isBought(kind, round, items, opts) : false;
     btn.textContent = bought ? '기록됨 · 취소' : '샀어요';
     btn.classList.toggle('on', bought);
   }
@@ -880,14 +905,15 @@ try{
     btn.addEventListener('click', function(){
       var kind = btn.getAttribute('data-kind'), round = +btn.getAttribute('data-round');
       var items = buyItemsFor(kind);
-      var bought = SITE.isBought ? SITE.isBought(kind, round, items) : false;
+      var opts = {batch: batchFor(kind, round)};
+      var bought = SITE.isBought ? SITE.isBought(kind, round, items, opts) : false;
       if(bought){
         if(!confirm('기록을 취소할까요?')) return;
-        if(SITE.unmark) SITE.unmark(kind, round, items);
+        if(SITE.unmark) SITE.unmark(kind, round, items, opts);
         syncBuyBtn(btn);
         return;
       }
-      if(SITE.markBought) SITE.markBought(kind, round, items);
+      if(SITE.markBought) SITE.markBought(kind, round, items, opts);
       syncBuyBtn(btn);
     });
   });

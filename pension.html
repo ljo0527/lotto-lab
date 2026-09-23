@@ -203,6 +203,22 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 
 <!-- ══════════ 대시보드 ══════════ -->
 <section class="panel on" id="p-dash">
+  <h2>이번 주 5장</h2>
+  <p class="note">연금복권은 번호를 골라도 <b>당첨 확률도 당첨금도 그대로</b>입니다 — 5장이 <b>어떻게 흩어지는지</b>만 고를 수 있습니다.
+    <b>분산</b>은 5장의 끝자리를 서로 다르게 맞춰 «1장 이상 당첨» 확률을 넓히고, <b>세트</b>는 같은 번호를 1~5조 모두 사서 번호가 맞으면 한 번에 크게 받습니다.
+    기대값은 두 방식이 <b>정확히 같습니다</b>. 실물은 (조,번호) 조합당 <b>판매점 1장 + 인터넷 1장</b>뿐이라 매진일 수 있어 대체 번호를 함께 냅니다.</p>
+  <div class="row" id="buyModeRow" role="radiogroup" aria-label="구매 방식">
+    <span class="chip" data-mode="spread" role="radio" tabindex="0">분산 5장</span>
+    <span class="chip" data-mode="set" role="radio" tabindex="0">세트 1세트</span>
+  </div>
+  <div class="card" id="dashPick"><span class="spin"></span></div>
+  <details>
+    <summary style="cursor:pointer;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.08em;color:var(--ink-60);padding:8px 2px;text-transform:uppercase">품절 시 대체 6~10</summary>
+    <div class="card flat" id="dashAlt"></div>
+  </details>
+  <h3 style="padding-top:16px">분산 vs 세트 vs 무작위 — 결과가 어떻게 흩어지는가</h3>
+  <div class="card flat" id="distStrip"></div>
+
   <div class="kpi" id="kpiDash"></div>
 
   <h2>최근 회차</h2>
@@ -229,22 +245,6 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 
   <h2>1등 당첨금의 실제 가치</h2>
   <div class="card flat" id="pvCard"></div>
-
-  <h2>이번 주 5장</h2>
-  <p class="note">연금복권은 번호를 골라도 <b>당첨 확률도 당첨금도 그대로</b>입니다 — 5장이 <b>어떻게 흩어지는지</b>만 고를 수 있습니다.
-    <b>분산</b>은 5장의 끝자리를 서로 다르게 맞춰 «1장 이상 당첨» 확률을 넓히고, <b>세트</b>는 같은 번호를 1~5조 모두 사서 번호가 맞으면 한 번에 크게 받습니다.
-    기대값은 두 방식이 <b>정확히 같습니다</b>. 실물은 (조,번호) 조합당 <b>판매점 1장 + 인터넷 1장</b>뿐이라 매진일 수 있어 대체 번호를 함께 냅니다.</p>
-  <div class="row" id="buyModeRow" role="radiogroup" aria-label="구매 방식">
-    <span class="chip" data-mode="spread" role="radio" tabindex="0">분산 5장</span>
-    <span class="chip" data-mode="set" role="radio" tabindex="0">세트 1세트</span>
-  </div>
-  <div class="card" id="dashPick"><span class="spin"></span></div>
-  <details>
-    <summary style="cursor:pointer;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.08em;color:var(--ink-60);padding:8px 2px;text-transform:uppercase">품절 시 대체 6~10</summary>
-    <div class="card flat" id="dashAlt"></div>
-  </details>
-  <h3 style="padding-top:16px">분산 vs 세트 vs 무작위 — 결과가 어떻게 흩어지는가</h3>
-  <div class="card flat" id="distStrip"></div>
 </section>
 
 <!-- ══════════ 예상 번호 ══════════ -->

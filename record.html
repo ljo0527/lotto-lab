@@ -97,7 +97,7 @@ p.note b{color:var(--ink)}
 </div>
 
 <div id="pensionDegradedNote" class="card flat" hidden>
-  <p class="note" style="padding-bottom:0"><b>연금 결과 파일이 아직 없습니다.</b> <span class="mono">brief/pension-history.json</span>이 생성되기 전이라 연금 당첨 확인은 전부 <b>「추첨 대기」</b>로 표시됩니다. 로또는 정상 채점됩니다.</p>
+  <p class="note" style="padding-bottom:0"><b>연금 결과 파일이 아직 없습니다.</b> <span class="mono">brief/pension-history.json</span>이 생성되기 전이라 <b>「내 기록」의 연금</b> 당첨 확인은 전부 <b>「추첨 대기」</b>로 표시됩니다(로또는 정상 채점). 「추천 원장」의 연금은 원장에 이미 채점된 결과를 쓰므로 영향 없습니다.</p>
 </div>
 
 <h2>내 기록</h2>
@@ -391,16 +391,18 @@ function main(){
     function wk(lottoRound){
       if(!weeks.has(lottoRound)) weeks.set(lottoRound, {
         lottoRound:lottoRound, pensionRound:lottoRound-ROUND_OFFSET,
-        mineLotto:[], minePension:[], ledgerLottoPicks:null, ledgerPensionPicks:null
+        mineLotto:[], minePension:[], ledgerLottoRow:null, ledgerPensionRow:null
       });
       return weeks.get(lottoRound);
     }
     myLotto.forEach(function(t){ if(t && t.round!=null && Array.isArray(t.nums)) wk(t.round).mineLotto.push(t); });
     myPension.forEach(function(t){ if(t && t.ep!=null && t.num!=null) wk(t.ep+ROUND_OFFSET).minePension.push(t); });
+    // 추천 원장은 원장(brief/purchases.json) 행을 통째로 붙잡아 둔다 — status/result/spend/return 을
+    // 그대로 쓰기 위함(재채점하지 않음). lotto-history/pension-history 는 표시용(볼 하이라이트)에만 쓴다.
     ledgerRows.forEach(function(row){
       if(!row || !Array.isArray(row.picks)) return;
-      if(row.kind==='lotto') wk(row.round).ledgerLottoPicks = row.picks;
-      else if(row.kind==='pension') wk(row.round+ROUND_OFFSET).ledgerPensionPicks = row.picks;
+      if(row.kind==='lotto') wk(row.round).ledgerLottoRow = row;
+      else if(row.kind==='pension') wk(row.round+ROUND_OFFSET).ledgerPensionRow = row;
     });
 
     var list = Array.from(weeks.values()).sort(function(a,b){ return a.lottoRound-b.lottoRound; });
@@ -424,31 +426,47 @@ function main(){
       w.mineSpend=mineSpend; w.mineGain=mineGain; w.mineNet=mineGain-mineSpend; w.minePending=minePending;
       cumMine += w.mineNet; w.cumMine=cumMine;
 
+      // 추천 원장: purchases.json 행의 status/result/spend/return 을 그대로 쓴다(재채점 없음) —
+      // validate.mjs 의 done 행 합산(led.rounds.filter(status==='done'))과 바이트 단위로 같아야 한다.
       var ledgerSpend=0, ledgerGain=0, ledgerPending=0;
-      w.ledgerLottoGraded = (w.ledgerLottoPicks||[]).map(function(s){
-        var nums=parseLottoPick(s), g=gradeLottoEntry(nums, lottoMap, w.lottoRound);
-        if(g.grade==null) ledgerPending++; else { ledgerSpend += 1000; ledgerGain += g.amt; }
-        return Object.assign({nums:nums}, g);
-      });
-      w.ledgerPensionGraded = (w.ledgerPensionPicks||[]).map(function(s){
-        var p=parsePensionPick(s);
-        if(!p) return {band:null, num:null, grade:null, amt:0};
-        var g=gradePensionEntry(p.band, p.num, pensionMap, w.pensionRound);
-        if(g.grade==null) ledgerPending++; else { ledgerSpend += 1000; ledgerGain += g.amt; }
-        return Object.assign({band:p.band, num:p.num}, g);
-      });
+      var lr = w.ledgerLottoRow, lrKnown = !!lr && lr.status==='done';
+      w.ledgerLottoGraded = lr ? lr.picks.map(function(s,i){
+        var nums = parseLottoPick(s);
+        var res = lrKnown && Array.isArray(lr.result) ? lr.result[i] : null;
+        var grade = res ? res.grade : null;
+        var d = lottoMap ? lottoMap[w.lottoRound] : null; // 볼 하이라이트 표시용만(집계에는 안 씀)
+        var amt = (lrKnown && grade) ? ((d && d.a[grade-1]) || 0) : 0;
+        return {nums:nums, grade: lrKnown ? grade : null, amt:amt, d: lrKnown ? d : null};
+      }) : [];
+      if(lr){ if(lrKnown){ ledgerSpend += lr.spend||0; ledgerGain += lr.return||0; } else { ledgerPending += lr.picks.length; } }
+
+      var pr = w.ledgerPensionRow, prKnown = !!pr && pr.status==='done';
+      w.ledgerPensionGraded = pr ? pr.picks.map(function(s,i){
+        var p = parsePensionPick(s);
+        var res = prKnown && Array.isArray(pr.result) ? pr.result[i] : null;
+        var grade = res ? res.grade : null;
+        return {band: p?p.band:null, num: p?p.num:null, grade: prKnown ? grade : null,
+          amt: (prKnown && grade) ? (PENSION_AMT[grade]||0) : 0};
+      }) : [];
+      if(pr){ if(prKnown){ ledgerSpend += pr.spend||0; ledgerGain += pr.return||0; } else { ledgerPending += pr.picks.length; } }
+
       w.ledgerSpend=ledgerSpend; w.ledgerGain=ledgerGain; w.ledgerNet=ledgerGain-ledgerSpend; w.ledgerPending=ledgerPending;
       cumLedger += w.ledgerNet; w.cumLedger=cumLedger;
     });
 
     var mineWeeks = list.filter(function(w){ return w.mineLotto.length>0 || w.minePension.length>0; });
+    // KPI 의 «주»·게임·장 은 결과가 알려진(known) 행만 센다 — 옆 「투입」의 "결과 확정분만"과 숫자가 맞아야 한다.
+    var mineWeeksKnown = mineWeeks.filter(function(w){
+      return w.mineLottoGraded.some(function(t){ return t.grade!=null; }) ||
+             w.minePensionGraded.some(function(t){ return t.grade!=null; });
+    });
     var totalMineSpend = mineWeeks.reduce(function(s,w){ return s+w.mineSpend; },0);
     var totalMineGain  = mineWeeks.reduce(function(s,w){ return s+w.mineGain; },0);
     var totalMinePending = mineWeeks.reduce(function(s,w){ return s+w.minePending; },0);
-    var mineL = mineWeeks.reduce(function(s,w){ return s+w.mineLotto.length; },0);
-    var mineP = mineWeeks.reduce(function(s,w){ return s+w.minePension.length; },0);
+    var mineL = mineWeeks.reduce(function(s,w){ return s+w.mineLottoGraded.filter(function(t){ return t.grade!=null; }).length; },0);
+    var mineP = mineWeeks.reduce(function(s,w){ return s+w.minePensionGraded.filter(function(t){ return t.grade!=null; }).length; },0);
     renderKPI('#kpiMine',[
-      ['주', mineWeeks.length+'주', mineL+'게임 · '+mineP+'장'],
+      ['주', mineWeeksKnown.length+'주', mineL+'게임 · '+mineP+'장 (확정분)'],
       ['투입', won(totalMineSpend), '결과 확정분만'],
       ['수령', won(totalMineGain), '회수율 '+recoveryLabel(totalMineGain,totalMineSpend)],
       ['손익', won(totalMineGain-totalMineSpend), (totalMineGain-totalMineSpend>=0?'수익':'손실')]
@@ -456,15 +474,20 @@ function main(){
     var pendingMineEl=document.getElementById('pendingMineNote');
     if(pendingMineEl){
       pendingMineEl.hidden = totalMinePending<=0;
-      pendingMineEl.textContent = '추첨 대기 '+totalMinePending+'장 — 위 집계에서 빠져 있습니다(결과가 나오면 자동으로 반영)';
+      pendingMineEl.textContent = '추첨 대기 '+totalMinePending+'장 ('+nf(totalMinePending*1000)+'원) — 위 집계에서 빠져 있습니다(결과가 나오면 자동으로 반영)';
     }
 
-    var ledgerWeeks = list.filter(function(w){ return w.ledgerLottoPicks || w.ledgerPensionPicks; });
-    var totalLedgerSpend = ledgerWeeks.reduce(function(s,w){ return s+w.ledgerSpend; },0);
-    var totalLedgerGain  = ledgerWeeks.reduce(function(s,w){ return s+w.ledgerGain; },0);
-    var totalLedgerPending = ledgerWeeks.reduce(function(s,w){ return s+w.ledgerPending; },0);
+    var ledgerWeeksAny = list.filter(function(w){ return w.ledgerLottoRow || w.ledgerPensionRow; });
+    var ledgerWeeksKnown = ledgerWeeksAny.filter(function(w){
+      return (w.ledgerLottoRow && w.ledgerLottoRow.status==='done') || (w.ledgerPensionRow && w.ledgerPensionRow.status==='done');
+    });
+    var totalLedgerSpend = ledgerWeeksAny.reduce(function(s,w){ return s+w.ledgerSpend; },0);
+    var totalLedgerGain  = ledgerWeeksAny.reduce(function(s,w){ return s+w.ledgerGain; },0);
+    var totalLedgerPending = ledgerWeeksAny.reduce(function(s,w){ return s+w.ledgerPending; },0);
+    var ledgerL = ledgerWeeksAny.reduce(function(s,w){ return s + (w.ledgerLottoRow && w.ledgerLottoRow.status==='done' ? w.ledgerLottoRow.picks.length : 0); },0);
+    var ledgerP = ledgerWeeksAny.reduce(function(s,w){ return s + (w.ledgerPensionRow && w.ledgerPensionRow.status==='done' ? w.ledgerPensionRow.picks.length : 0); },0);
     renderKPI('#kpiLedger',[
-      ['주', ledgerWeeks.length+'주', ''],
+      ['주', ledgerWeeksKnown.length+'주', ledgerL+'게임 · '+ledgerP+'장 (확정분)'],
       ['투입', won(totalLedgerSpend), '결과 확정분만'],
       ['수령', won(totalLedgerGain), '회수율 '+recoveryLabel(totalLedgerGain,totalLedgerSpend)],
       ['손익', won(totalLedgerGain-totalLedgerSpend), (totalLedgerGain-totalLedgerSpend>=0?'수익':'손실')]
@@ -472,7 +495,7 @@ function main(){
     var pendingLedgerEl=document.getElementById('pendingLedgerNote');
     if(pendingLedgerEl){
       pendingLedgerEl.hidden = totalLedgerPending<=0;
-      pendingLedgerEl.textContent = '추첨 대기 '+totalLedgerPending+'장 — 위 집계에서 빠져 있습니다(결과가 나오면 자동으로 반영)';
+      pendingLedgerEl.textContent = '추첨 대기 '+totalLedgerPending+'장 ('+nf(totalLedgerPending*1000)+'원) — 위 집계에서 빠져 있습니다(결과가 나오면 자동으로 반영)';
     }
 
     var chartEl=document.getElementById('chartWrap');
