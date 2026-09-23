@@ -18,7 +18,8 @@ name: Compute & Deploy
 
 on:
   push:
-    branches: [main]
+    # main — 계산 → 커밋 → 배포 / dev/** — 계산만 해 보고 결과 요약을 주석으로 남긴다(커밋·배포 없음, 통합 테스트용)
+    branches: [main, 'dev/**']
   schedule:
     # 연금복권 — 목 19:05 KST 추첨 → 목 21:30 KST, 금 09:00 KST 재확인
     - cron: '30 12 * * 4'
@@ -77,8 +78,22 @@ jobs:
         continue-on-error: true
         run: node scripts/fetch-history.mjs --cache /tmp/lab-data.json
 
+      # 결과 요약을 notice 주석으로 남긴다(공개 API 로 확인 가능). dev 브랜치 통합 테스트의 판정 근거.
+      - name: 결과 요약
+        if: always()
+        continue-on-error: true
+        run: |
+          node -e "
+            const fs=require('fs'); const j=f=>{try{return JSON.parse(fs.readFileSync(f,'utf8'))}catch(e){return null}};
+            const s=j('brief/latest-summary.json')||{}, v=j('brief/validation.json')||{};
+            const line=o=>JSON.stringify(o).slice(0,3500);
+            console.log('::notice title=brief::'+line({date:s.date,pension:s.pension&&{last:s.pension.last,next:s.pension.next,picks:s.pension.picks},lotto:s.lotto&&{last:s.lotto.last,next:s.lotto.next,picks:s.lotto.picks},extra:s.extra}));
+            console.log('::notice title=validation::'+line({generated:v.generated,lotto:v.lotto&&{n:v.lotto.n,per:v.lotto.per},pension:v.pension}));
+          "
+
       - name: 결과 커밋
         id: commit
+        if: github.ref == 'refs/heads/main'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -102,7 +117,7 @@ jobs:
 
   deploy:
     needs: compute
-    if: always()
+    if: always() && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
