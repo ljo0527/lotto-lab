@@ -22,13 +22,13 @@ const KST =()=>new Date(Date.now()+9*3600e3);
 const kstStr=d=>d.toISOString().slice(0,10);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
-async function jget(url,tries=6){
+async function jget(url,tries=8){
   for(let i=0;i<tries;i++){
     try{
       const r=await fetch(url,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 (lotto-lab)'}});
       if(!r.ok) throw new Error('HTTP '+r.status);
       return await r.json();
-    }catch(e){ if(i===tries-1) throw e; await sleep(500*(i+1)); }
+    }catch(e){ if(i===tries-1) throw e; await sleep(Math.min(20000,1000*2**i)); }
   }
 }
 
@@ -84,6 +84,25 @@ async function getLotto(){
   }
   const eps=Object.keys(all).map(Number).sort((a,b)=>a-b);
   return {latest, rows:eps.map(e=>all[e])};
+}
+
+/* 데이터 캐시 — 같은 실행(Actions 한 잡) 안에서 스크립트끼리 한 번 받은 데이터를 나눠 쓴다.
+   [2026-09-23] weekly-brief → validate 가 연달아 동행복권을 수백 번 부르자
+   세 번째 호출자(validate)가 «fetch failed» 로 죽었다. --cache 를 주면 먼저 받은 쪽이 저장하고
+   다음 쪽은 네트워크 없이 그대로 읽는다. 주지 않으면 예전처럼 직접 받는다. */
+async function getData(){
+  const cache=arg('--cache',null);
+  if(cache && fs.existsSync(cache)){
+    try{
+      const o=JSON.parse(fs.readFileSync(cache,'utf8'));
+      if(o.pension&&o.pension.length&&o.lotto&&o.lotto.rows&&o.lotto.rows.length){
+        console.error('      데이터 캐시 사용: '+cache); return [o.pension,o.lotto];
+      }
+    }catch(e){ console.error('      캐시 읽기 실패, 새로 받습니다: '+e.message); }
+  }
+  const [pension, lotto] = await Promise.all([getPension(), getLotto()]);
+  if(cache){ try{ fs.writeFileSync(cache, JSON.stringify({at:new Date().toISOString(),pension,lotto})); }catch(e){} }
+  return [pension, lotto];
 }
 
 /* ── 2. 도구를 실제로 띄워 추천을 꺼낸다 ─────────────────────── */
@@ -393,7 +412,7 @@ tr.win td{background:var(--ink-06)}
 (async function main(){
   const t0=Date.now();
   console.error('[1/4] 데이터 수집…');
-  const [pension, lotto] = await Promise.all([getPension(), getLotto()]);
+  const [pension, lotto] = await getData();
   console.error(`      연금 ${pension.length}회(최신 ${pension.at(-1).ep}) · 로또 ${lotto.rows.length}회(최신 ${lotto.latest})`);
 
   for(const f of ['pension.html','index.html']){

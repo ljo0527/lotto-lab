@@ -8,7 +8,7 @@
  * 해외 IP 에서 차단될 수 있다. 그 경우 0이 아닌 코드로 종료하고
  * 워크플로는 배포를 건드리지 않고 넘어간다.
  */
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 
 const API = 'https://www.dhlottery.co.kr/lt645/selectPstLt645InfoNew.do';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -33,6 +33,20 @@ async function page(center, tries = 3) {
 
 const rows = new Map();
 
+/* --cache <file> — weekly-brief/validate 가 이미 받아 둔 로또 원본 행을 재사용한다(네트워크 호출 0회).
+   [2026-09-23] 한 잡에서 세 스크립트가 각자 전량을 받자 동행복권이 연결을 끊었다. */
+const ci = process.argv.indexOf('--cache');
+const cacheFile = ci > 0 ? process.argv[ci + 1] : null;
+let fromCache = false;
+if (cacheFile && existsSync(cacheFile)) {
+  try {
+    const o = JSON.parse(readFileSync(cacheFile, 'utf8'));
+    (o.lotto?.rows ?? []).forEach(r => rows.set(+r.ltEpsd, r));
+    fromCache = rows.size > 0;
+    if (fromCache) console.log('데이터 캐시 사용:', cacheFile, rows.size, '회차');
+  } catch (e) { console.error('캐시 읽기 실패, 새로 받습니다:', e.message); }
+}
+
 /* 최신 회차 탐지
    근거 — page(c) 는 c-5..c+4 를 주고, c 회차가 아직 없으면 빈 배열을 준다
           (네트워크 오류는 예외로 던진다 — 빈 배열과 구분된다).
@@ -45,38 +59,42 @@ const rows = new Map();
    그 결과 이 워크플로는 매주 «최신 회차가 통째로 빠진» 스냅샷을 만들어
    remote 에 커밋해 왔다 (2026-08-30 커밋 c9c64d9c 는 latest:1238, count:1238).
    시작점도 상수 대신 추첨 달력(1회차 2002-12-07, 주 1회)에서 추정한다. */
-const est = Math.floor((Date.now() - Date.UTC(2002, 11, 7)) / (7 * 864e5)) + 1;
 let latest = 0;
-for (let g = est + 5, t = 0; g >= 1 && t < 12; g -= 5, t++) {
-  const l = await page(g);
-  if (l.length) { l.forEach(o => rows.set(o.ltEpsd, o)); latest = Math.max(...l.map(o => o.ltEpsd)); break; }
-}
-if (!latest) { console.error('최신 회차 탐지 실패 — 응답이 모두 비어 있습니다'); process.exit(1); }
-for (let step = 0; step < 20; step++) {
-  const l = await page(latest + 1);
-  if (!l.length) break;
-  const m = Math.max(...l.map(o => o.ltEpsd));
-  l.forEach(o => rows.set(o.ltEpsd, o));
-  if (m > latest) latest = m; else break;
-}
-console.log('최신 회차:', latest);
-
-const centers = [];
-for (let e = latest; e >= 8; e -= 10) centers.push(e);
-centers.push(1);
-
-let idx = 0;
-const worker = async () => {
-  while (idx < centers.length) {
-    const c = centers[idx++];
-    (await page(c)).forEach(o => rows.set(o.ltEpsd, o));
+if (fromCache) {
+  latest = Math.max(...rows.keys());
+} else {
+  const est = Math.floor((Date.now() - Date.UTC(2002, 11, 7)) / (7 * 864e5)) + 1;
+  for (let g = est + 5, t = 0; g >= 1 && t < 12; g -= 5, t++) {
+    const l = await page(g);
+    if (l.length) { l.forEach(o => rows.set(o.ltEpsd, o)); latest = Math.max(...l.map(o => o.ltEpsd)); break; }
   }
-};
-await Promise.all([0, 0, 0, 0].map(worker));
+  if (!latest) { console.error('최신 회차 탐지 실패 — 응답이 모두 비어 있습니다'); process.exit(1); }
+  for (let step = 0; step < 20; step++) {
+    const l = await page(latest + 1);
+    if (!l.length) break;
+    const m = Math.max(...l.map(o => o.ltEpsd));
+    l.forEach(o => rows.set(o.ltEpsd, o));
+    if (m > latest) latest = m; else break;
+  }
+  console.log('최신 회차:', latest);
 
-const missing = [];
-for (let e = 1; e <= latest; e++) if (!rows.has(e)) missing.push(e);
-for (const e of missing) (await page(e)).forEach(o => rows.set(o.ltEpsd, o));
+  const centers = [];
+  for (let e = latest; e >= 8; e -= 10) centers.push(e);
+  centers.push(1);
+
+  let idx = 0;
+  const worker = async () => {
+    while (idx < centers.length) {
+      const c = centers[idx++];
+      (await page(c)).forEach(o => rows.set(o.ltEpsd, o));
+    }
+  };
+  await Promise.all([0, 0, 0, 0].map(worker));
+
+  const missing = [];
+  for (let e = 1; e <= latest; e++) if (!rows.has(e)) missing.push(e);
+  for (const e of missing) (await page(e)).forEach(o => rows.set(o.ltEpsd, o));
+}
 
 const still = [];
 for (let e = 1; e <= latest; e++) if (!rows.has(e)) still.push(e);
