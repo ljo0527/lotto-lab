@@ -42,9 +42,10 @@ jobs:
     outputs:
       committed: ${{ steps.commit.outputs.committed }}
     steps:
+      # main 이면 main 끝(예약 실행 포함), dev/** 이면 그 브랜치를 계산한다
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref == 'refs/heads/main' && 'main' || github.ref }}
 
       - uses: actions/setup-node@v4
         with:
@@ -55,16 +56,9 @@ jobs:
           npm install --no-save --no-package-lock --no-audit --no-fund playwright@1
           npx playwright install --with-deps chromium
 
-      # 실패하면 stderr 끝부분을 ::error:: 주석으로 올린다 — 공개 저장소에서도 로그는 로그인해야 보이지만
-      # 주석(annotation)은 실행 요약 화면과 공개 API 에서 바로 보인다.
-      - name: 주간 브리핑 (추천 + 지난주 채점)
-        id: brief
-        run: |
-          set -o pipefail
-          node scripts/weekly-brief.mjs --root . --out . --cache /tmp/lab-data.json 2> >(tee /tmp/brief.err >&2) || {
-            echo "::error title=weekly-brief 실패::$(tail -c 1800 /tmp/brief.err | tr -s '\r\n' '  ')"; exit 1; }
-
-      # 검증 보드가 실패해도 브리핑(이번 주 추천)은 커밋되도록 계속 진행하고, 잡은 마지막에 실패로 표시한다.
+      # 검증 보드를 브리핑보다 먼저 돌린다 — 브리핑의 «300주 실측 효과» 가 같은 실행의 validation.json 을 읽도록.
+      # 실패하면 stderr 끝부분을 ::error:: 주석으로 올린다(공개 저장소도 로그는 로그인해야 보이지만 주석은 공개 API 로 보인다).
+      # 검증이 실패해도 브리핑(이번 주 추천)은 계속 만들어 커밋하고, 잡은 마지막에 실패로 표시한다.
       - name: 검증 보드 + 실구매 원장
         id: validate
         continue-on-error: true
@@ -73,23 +67,57 @@ jobs:
           node scripts/validate.mjs --root . --out . --window 300 --purchases brief/purchases.json --cache /tmp/lab-data.json 2> >(tee /tmp/validate.err >&2) || {
             echo "::error title=validate 실패::$(tail -c 1800 /tmp/validate.err | tr -s '\r\n' '  ')"; exit 1; }
 
-      # 브리핑이 받아 둔 데이터를 재사용한다(동행복권 추가 호출 없음)
+      # 데이터는 위 단계가 받아 둔 캐시를 쓴다(검증이 데이터 수집 전에 실패했으면 여기서 직접 받는다).
+      - name: 주간 브리핑 (추천 + 지난주 채점)
+        id: brief
+        run: |
+          set -o pipefail
+          node scripts/weekly-brief.mjs --root . --out . --cache /tmp/lab-data.json 2> >(tee /tmp/brief.err >&2) || {
+            echo "::error title=weekly-brief 실패::$(tail -c 1800 /tmp/brief.err | tr -s '\r\n' '  ')"; exit 1; }
+
+      # 앞 단계가 받아 둔 데이터를 재사용한다(동행복권 추가 호출 없음)
       - name: 로또 전 회차 스냅샷 (lotto-history.json)
         continue-on-error: true
         run: node scripts/fetch-history.mjs --cache /tmp/lab-data.json
 
       # 결과 요약을 notice 주석으로 남긴다(공개 API 로 확인 가능). dev 브랜치 통합 테스트의 판정 근거.
+      # 주석 하나에 3,500자 안쪽 — 넘치면 JSON 이 잘려 읽을 수 없으므로 넷으로 나누고(브리핑 · 검증 · 연금 · 원장),
+      # 그래도 길면 더 짧은 모양으로 바꿔 싣는다. 스크립트는 따옴표 heredoc 이라 셸이 $·따옴표를 건드리지 않는다.
       - name: 결과 요약
         if: always()
         continue-on-error: true
         run: |
-          node -e "
-            const fs=require('fs'); const j=f=>{try{return JSON.parse(fs.readFileSync(f,'utf8'))}catch(e){return null}};
-            const s=j('brief/latest-summary.json')||{}, v=j('brief/validation.json')||{};
-            const line=o=>JSON.stringify(o).slice(0,3500);
-            console.log('::notice title=brief::'+line({date:s.date,pension:s.pension&&{last:s.pension.last,next:s.pension.next,picks:s.pension.picks},lotto:s.lotto&&{last:s.lotto.last,next:s.lotto.next,picks:s.lotto.picks},extra:s.extra}));
-            console.log('::notice title=validation::'+line({generated:v.generated,lotto:v.lotto&&{n:v.lotto.n,per:v.lotto.per},pension:v.pension}));
-          "
+          node - <<'JS'
+          const fs=require('fs'); const j=f=>{try{return JSON.parse(fs.readFileSync(f,'utf8'))}catch(e){return null}};
+          const s=j('brief/latest-summary.json')||{}, v=j('brief/validation.json')||{}, led=j('brief/purchases.json')||{};
+          const V=v.lotto||{}, per=V.per||{}, PN=v.pension||{}, PS=PN.structure||{};
+          const pick=(o,ks)=>o?Object.fromEntries(ks.filter(k=>o[k]!==undefined).map(k=>[k,o[k]])):null;
+          /* 후보를 차례로 시도해 3,500자 안에 드는 첫 JSON 을 싣는다(마지막 후보도 넘치면 자른다). %·줄바꿈은 명령 이스케이프 */
+          const note=(title,...cands)=>{
+            let t='';
+            for(const o of cands){ t=JSON.stringify(o); if(t.length<3500) break; }
+            console.log('::notice title='+title+'::'+t.slice(0,3499).replace(/%/g,'%25').replace(/\r/g,'%0D').replace(/\n/g,'%0A'));
+          };
+          const side=(x,n)=>x&&{last:x.last,next:x.next,picks:(x.picks||[]).slice(0,n)};
+          note('brief', {date:s.date,pension:side(s.pension,10),lotto:side(s.lotto,10)},
+                        {date:s.date,pension:side(s.pension,5),lotto:side(s.lotto,5)});
+          const ck=V.checks||{}, K=['zGain','payoutGain','pAnyTheory','anyHitRate','ev5Model','evVsRandomPct','ovMax','degraded','hitsPerGame'];
+          const ms={payoutGain:per.minshare?per.minshare.payoutGain:null};
+          note('validation',
+            {generated:v.generated,current:V.current,checks:ck,portfolio:per.portfolio,minshare:ms,random:per.random},
+            {generated:v.generated,current:V.current,
+             checks:Object.fromEntries(Object.entries(ck).map(([k,c])=>[k,c&&c.ok===false?{ok:false,soft:!!c.soft,value:c.value}:(c&&c.ok)])),
+             portfolio:pick(per.portfolio,K),minshare:ms,random:pick(per.random,K)});
+          const sm=m=>pick(PS[m],['n','anyHitRate','pAnyTheory','within99','meanRet','distinctFail']);
+          const rp=(PS.repro||[]).map(x=>({ep:x.ep,rule:x.rule,table:x.table,order:x.order,set:x.set}));
+          const pst={from:PS.from,to:PS.to,mode:PS.mode,dist:PS.dist,spread:sm('spread'),set:sm('set'),legacy:sm('legacy')};
+          const pbase={tested:PN.tested,sig:PN.sig,sigCorrected:PN.sigCorrected,controlSig:PN.controlSig,weeklyMode:PN.weeklyMode,structure:pst};
+          note('pension', {...pbase,repro:rp},
+                          {...pbase,repro:{n:rp.length,ok:rp.filter(x=>x.set).length,fail:rp.filter(x=>!x.set).slice(-20)}});
+          const pend=(led.rounds||[]).filter(r=>r.status==='pending');
+          note('ledger', {updated:led.updated,totals:v.ledger||null,pending:pend.map(r=>({kind:r.kind,round:r.round,rule:r.rule,mode:r.mode,picks:r.picks}))},
+                         {updated:led.updated,totals:v.ledger||null,pending:pend.map(r=>({kind:r.kind,round:r.round,rule:r.rule,mode:r.mode}))});
+          JS
 
       - name: 결과 커밋
         id: commit

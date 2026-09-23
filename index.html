@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<script>if(/\/$/.test(location.pathname)&&!location.hash&&!navigator.webdriver)location.replace('./brief.html')</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>LOTTO LAB · 로또 6/45 통계 실험실</title>
+<meta name="theme-color" content="#16302B">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<script>try{var t=localStorage.getItem('lottolab.theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./site.css">
 <style>
 :root{
   --paper:#EEF0EB; --paper-2:#F7F8F5; --paper-3:#E4E7E0;
@@ -32,15 +39,15 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
 body{background:var(--paper);color:var(--ink);font-family:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo","Noto Sans KR",system-ui,-apple-system,sans-serif;
-  font-weight:400;line-height:1.68;font-size:15px;letter-spacing:-0.01em;padding:0 0 90px;-webkit-font-smoothing:antialiased}
-.wrap{max-width:940px;margin:0 auto;padding:16px 14px 0}
+  font-weight:400;line-height:1.68;font-size:15px;letter-spacing:-0.01em;-webkit-font-smoothing:antialiased}
+.wrap{max-width:940px;margin:0 auto;padding:16px 16px 0}
 .mono{font-family:"Space Mono",monospace}
 
 /* ── header ── */
 header{border-bottom:1.5px solid var(--ink);padding-bottom:10px;margin-bottom:18px}
 .eyebrow{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
   color:var(--ink-60);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
-h1{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:clamp(52px,13vw,97px);
+h1{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:clamp(34px,9vw,60px);
   line-height:.84;letter-spacing:-.01em;padding:10px 0 0}
 h1 span{display:block;font-size:.22em;font-weight:700;letter-spacing:.18em;color:var(--ink-60);padding-top:10px}
 .status{font-family:"Space Mono",monospace;font-size:12.5px;color:var(--ink-60);padding-top:10px;
@@ -112,6 +119,18 @@ p.note{font-size:14px;color:var(--ink-60);padding-bottom:14px;line-height:1.7}
   font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
   color:var(--ink-60);border-bottom:1px solid var(--ink-12);padding-bottom:7px;margin-bottom:4px}
 .sheet .tkrow:last-child{border-bottom:0}
+/* 375px 폰: 기본 크기(.nc 33px)의 6개 번호+글자 키가 .m(합계/홀짝) 과 나란히면 두 줄(5+1)로 접힌다.
+   360~375px 에서는 번호 박스를 살짝 줄이고, 합계/홀짝을 번호 아래로 내려 한 줄에 다 들어오게 한다.
+   #weeklyCard 로 스코프(용지 A~E + 예비 F~J 전부 포함) — 조합 생성·마크시트 등 다른 .tkrow 재사용처
+   (pinnedCard/lastMineCard, 이미 더 작은 sm/xs 크기라 안 접힘)는 그대로 둔다. */
+@media(max-width:400px){
+  #weeklyCard .tkrow{grid-template-columns:1fr;row-gap:3px}
+  #weeklyCard .tkrow .m{grid-column:1/-1;text-align:left;padding-top:1px}
+  #weeklyCard .tkrow .m em{display:inline;margin:0 4px}
+  #weeklyCard .tk{gap:4px}
+  #weeklyCard .tk .gm{min-width:25px;padding:1px 5px 0}
+  #weeklyCard .nc{width:29px;height:34px;font-size:13px}
+}
 
 /* ── board 45 ── */
 .board45{display:grid;grid-template-columns:repeat(9,1fr);gap:5px}
@@ -182,13 +201,21 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 .foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-family:"Space Mono",monospace;
   font-size:10.5px;letter-spacing:.1em;color:var(--ink-40);padding-top:14px;text-transform:uppercase}
 </style>
+<script src="./site.js" defer></script>
 </head>
 <body>
+<nav class="gnav" aria-label="사이트">
+<a href="./brief.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="5" width="17.6" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.2 9.6h17.6"/></svg><span>이번 주</span></a>
+<a href="./index.html" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><path d="M8.6 8.9a2.4 2.4 0 0 1 2.4-2.3"/></svg><span>로또</span></a>
+<a href="./pension.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2.1a2 2 0 0 0 0 3.8v2.1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2.1a2 2 0 0 0 0-3.8V8.2Z"/><path d="M9.3 6.4v11.3" stroke-dasharray="2.1 2.1"/></svg><span>연금</span></a>
+<a href="./validate.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 19 6v6c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6l7-2.8Z"/><path d="M8.7 12.2 11 14.5l4.3-4.3"/></svg><span>검증</span></a>
+<a href="./record.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.2" y="3" width="15.6" height="18" rx="1.4"/><path d="M7.6 8h8.8M7.6 12h8.8M7.6 16h5.6"/></svg><span>기록</span></a>
+</nav>
 <div class="wrap">
 <header>
   <div class="eyebrow">
-    <span>Lotto 6/45 · Statistical Lab</span>
-    <span><a href="./validate.html" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ink-30)">검증 보드</a> · <a href="./brief.html" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ink-30)">주간 브리핑</a> · <a href="./pension.html" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ink-30)">→ PENSION LAB</a> <span id="hdrRight" style="padding-left:10px">—</span></span>
+    <span>Lotto 6/45 · Statistical Lab · <span id="hdrRight">—</span></span>
+    <button id="themeBtn" class="theme-btn" type="button">시스템</button>
   </div>
   <h1>LOTTO<br>LAB<span>일확천금 프로젝트</span></h1>
   <div class="status" id="status"><span class="dot"></span><span id="statusTxt">초기화 중…</span></div>
@@ -203,7 +230,7 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
   <button data-t="gen">조합 생성</button>
   <button data-t="sim">시뮬레이터</button>
   <button data-t="mine">내 기록</button>
-  <button data-t="ledger">원장</button>
+  <button data-t="ledger">300주 재현</button>
   <button data-t="data">데이터</button>
 </nav>
 
@@ -211,27 +238,34 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 
 <!-- ══════════ 대시보드 ══════════ -->
 <section class="panel on" id="p-dash">
-  <div class="kpi" id="kpiDash"></div>
-
-  <h2>최근 회차</h2>
-  <div class="card" id="recentCard"><span class="spin"></span></div>
-
-  <h2>다음 회차 예고</h2>
-  <div class="card flat" id="nextCard"></div>
-
-  <h2>지금 이 순간의 확률</h2>
-  <div class="card flat">
-    <div class="scroll"><table id="oddsTbl"></table></div>
-    <p class="note" style="padding:12px 0 0">계산 근거 · 전체 조합수 C(45,6)=8,145,060. 1등 1가지, 2등 6가지(5개+보너스), 3등 C(6,5)&times;C(38,1)=228가지, 4등 C(6,4)&times;C(39,2)=11,115가지, 5등 C(6,3)&times;C(39,3)=182,780가지.</p>
-  </div>
-
   <h2>이번 주 추천 조합</h2>
-  <p class="note">매 회차 자동으로 다시 계산됩니다. <b>직전 회차까지의 전체 데이터</b>를 반영하며, 같은 회차 안에서는 항상 같은 조합입니다. <b>위에서부터 1순위</b>인 10줄을 냅니다.</p>
+  <p class="note">매 회차 자동으로 다시 계산됩니다. <b>직전 회차까지의 전체 데이터</b>를 반영하며, 같은 회차 안에서는 항상 같은 조합입니다. <b>A~E 5줄(5,000원)</b>이 실제로 살 용지이고, <b>F~J</b>는 예비입니다.</p>
   <div class="card" id="weeklyCard"><span class="spin"></span></div>
   <div class="row" style="padding-top:10px">
     <button class="btn ghost" id="weeklySheet">마크시트 인쇄용 열기</button>
     <button class="btn ghost" id="weeklyToMine">내 기록에 담기</button>
   </div>
+
+  <h2>지난 회차 내 기록</h2>
+  <p class="note">직전 회차(추첨 완료)에 실제로 산 번호를 채점합니다.</p>
+  <div class="card flat" id="lastMineCard"><span style="font-size:13px;color:var(--ink-60)">불러오는 중…</span></div>
+
+  <h2>최근 회차</h2>
+  <div class="card" id="recentCard"><span class="spin"></span></div>
+
+  <h2>회차 요약</h2>
+  <div class="kpi" id="kpiDash"></div>
+
+  <h2>다음 회차 예고</h2>
+  <div class="card flat" id="nextCard"></div>
+
+  <details style="margin-bottom:12px">
+    <summary style="cursor:pointer;font-family:'Space Mono',monospace;font-size:12.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-60);padding:11px 2px;border-bottom:1px solid var(--ink-12)">지금 이 순간의 확률</summary>
+    <div class="card flat" style="margin-top:10px">
+      <div class="scroll"><table id="oddsTbl"></table></div>
+      <p class="note" style="padding:12px 0 0">계산 근거 · 전체 조합수 C(45,6)=8,145,060. 1등 1가지, 2등 6가지(5개+보너스), 3등 C(6,5)&times;C(38,1)=228가지, 4등 C(6,4)&times;C(39,2)=11,115가지, 5등 C(6,3)&times;C(39,3)=182,780가지.</p>
+    </div>
+  </details>
 
   <h2>직접 고정한 조합</h2>
   <p class="note"><b>조합 생성</b> 탭에서 만든 뒤 «대시보드에 고정»을 누르면 여기 남습니다.</p>
@@ -358,6 +392,7 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
   <div class="card flat" id="popModel"></div>
 
   <h2>생성 결과</h2>
+  <p class="note">A~E 는 실물 용지 한 장(5,000원), F 이후는 추가분입니다. <b>이번 주 실제 구매</b>는 <a href="./brief.html" style="color:inherit">이번 주</a> 페이지의 추천을 씁니다 — 여기서 만든 조합은 연습·비교용입니다.</p>
   <div class="card" id="genOut"><span style="font-size:12px;color:var(--ink-60)">아직 생성하지 않았습니다.</span></div>
   <div id="genAudit"></div>
 </section>
@@ -394,7 +429,7 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 
 <!-- ══════════ 내 기록 ══════════ -->
 <section class="panel" id="p-mine">
-  <p class="note">실제로 산 번호를 넣어두면 회차가 발표될 때마다 자동으로 대조해 등수를 판정하고 누적 손익을 계산합니다. 데이터는 이 브라우저에만 저장됩니다.</p>
+  <p class="note">실제로 산 번호를 넣어두면 회차가 발표될 때마다 자동으로 대조해 등수를 판정하고 누적 손익을 계산합니다. 데이터는 이 브라우저에만 저장됩니다. <b>연금과 합친 기록</b>은 → <a href="./record.html" style="color:inherit">기록</a></p>
   <div class="card">
     <div class="row">
       <label class="fld">회차 <input type="number" id="myRound" style="width:110px"></label>
@@ -506,6 +541,10 @@ const C456   = 8145060;                 // C(45,6)
 const WAYS   = {1:1, 2:6, 3:228, 4:11115, 5:182780};
 const PROB   = {1:1/C456, 2:6/C456, 3:228/C456, 4:11115/C456, 5:182780/C456};
 const TICKET = 1000;
+const DRAW_HM = '20:35';       // 로또 추첨 시각(KST). 다음 회차 예고·이번 주 카드가 함께 쓴다(D2 A6).
+/* 진입 시점의 해시를 미리 떼어둔다 — switchTab() 이 history.replaceState 로 계속 덮어쓰므로
+   init() 맨 끝에서 location.hash 를 다시 읽으면 이미 '#dash' 로 바뀌어 있다(D2 A9 딥링크). */
+const INITIAL_HASH = (typeof location!=='undefined' ? location.hash : '') || '';
 
 /* ── 유틸 ──────────────────────────────────────────────────── */
 const $  = s => document.querySelector(s);
@@ -911,14 +950,14 @@ function renderDash(){
     c.appendChild(row);
   });
 
-  const nd=new Date(last.ymd.slice(0,4)+'-'+last.ymd.slice(4,6)+'-'+last.ymd.slice(6,8)+'T20:45:00+09:00');
+  const nd=new Date(last.ymd.slice(0,4)+'-'+last.ymd.slice(4,6)+'-'+last.ymd.slice(6,8)+'T'+DRAW_HM+':00+09:00');
   nd.setDate(nd.getDate()+7);
   const days=Math.ceil((nd-new Date())/86400000);
   $('#nextCard').innerHTML =
     '<div style="display:flex;gap:16px;align-items:baseline;flex-wrap:wrap">'+
     '<div class="bignum">'+(DB.latest+1)+'회</div>'+
     '<div style="font-size:12.5px;color:var(--ink-60)">'+
-    nd.getFullYear()+'.'+String(nd.getMonth()+1).padStart(2,'0')+'.'+String(nd.getDate()).padStart(2,'0')+' 토요일 20:45 추첨'+
+    nd.getFullYear()+'.'+String(nd.getMonth()+1).padStart(2,'0')+'.'+String(nd.getDate()).padStart(2,'0')+' 토요일 '+DRAW_HM+' 추첨'+
     (days>=0?' · <b style="color:var(--ink)">D-'+days+'</b>':' · 발표 대기')+'</div></div>';
 
   const t=$('#oddsTbl'); const G=5;
@@ -932,18 +971,417 @@ function renderDash(){
   $('#footN').textContent='N='+rs.length+' rounds';
   $('#hdrRight').textContent=DB.latest+'회 · '+ymd2disp(last.ymd);
   renderPinned();
+  renderLastMine();
 }
+/* ═══ 5게임 포트폴리오 (2026-09 개편) ═══════════════════════════════════
+   바뀌지 않는 것부터: 어떤 조합이든 1등 확률은 1/8,145,060, 줄마다 5등 이상 확률은
+   194,130/C456 = 2.3834% 다. 이 블록이 건드릴 수 있는 레버는 둘뿐이다.
+     ① 인기도(분배 인원) — 1·2·3등 «나눠 갖는» 금액의 기대값(₩)을 바꾼다.
+     ② 다섯 줄 사이의 겹침 — 기대값은 그대로, «한 주에 한 장이라도» 맞을 확률과
+        두 장 이상 몰려 맞을 확률 사이의 모양만 바꾼다. (기대 당첨 장수 5p 는 불변)
+   선택은 DB + 회차 번호만의 순수함수다(보정값·localStorage·시계 사용 금지 —
+   기기·스크립트가 같은 조합을 봐야 지난주 채점과 원장이 맞는다). ₩ 표시만 보정값을 쓴다.
+
+   [재현성] 이미 추첨된 회차는 «그때 규칙»으로 재현돼야 하므로 규칙을 회차로 가른다.
+   target < PORTFOLIO_RULES[0].from 은 옛 규칙(diversifyLegacy 10줄)을 바이트 단위로 그대로 쓴다.
+
+   [C1 규칙 이력표] 설정을 바꿀 때는 과거 항목을 절대 고치지 말고 새 항목을 뒤에 «추가»만 한다.
+   이미 지난 회차를 지금 설정으로 다시 계산하면 그 주의 브리핑·원장(purchases.json)과 어긋난다.
+   다음 회차부터 설정을 바꾸려면:
+     PORTFOLIO_RULES.push({ from: <적용을 시작할 회차>, opts: {...} });
+   from 오름차순을 유지한다(맨 뒤에 추가하면 자동으로 유지됨). */
+const PORTFOLIO_RULES = [
+  { from:1243, opts:{ n:5, maxOv:1, dz:0.15, N:1500, carry:false } }
+];
+/* target(적용 대상 회차)에 맞는 규칙 — «from<=target» 인 마지막 항목의 opts.
+   target 이 PORTFOLIO_RULES[0].from 보다 작으면 null(= 레거시 diversifyLegacy). */
+function portfolioOptsFor(target){
+  let opts=null;
+  for(const r of PORTFOLIO_RULES) if(r.from<=target) opts=r.opts;
+  return opts;
+}
+const PORTFOLIO = PORTFOLIO_RULES[PORTFOLIO_RULES.length-1].opts;  // 하위호환 별칭 = 최신 규칙(원장이 가정하는 규칙)
+const PORTFOLIO_FROM = PORTFOLIO_RULES[0].from;                    // 하위호환 별칭 = 첫 규칙 시작 회차
+/* 겹침 o개인 두 줄이 같은 추첨에서 «둘 다 3개 이상» 맞는 경우의 수 (/C456).
+   Q[o] = Σ C(o,s)·C(6−o,x)·C(6−o,y)·C(33+o,6−s−x−y)  (s+x≥3, s+y≥3) — 닫힌 식으로 검산됨 */
+const PAIR_Q = [400, 3700, 13900, 31470, 60486, 109770, 194130];
+const P_LINE = 194130/C456;                                         // 한 줄이 5등 이상일 확률
+/* 전주 번호 회피(carry) 의 z 환산 계수 κ=γ/b. D1 walk-forward(300주, 1242회 기준) 값.
+   PORTFOLIO.carry=false 인 동안은 «그림자»로만 쓰인다(validate 의 portfolio_carry). */
+const CARRY_KAPPA = -0.38;
+const EV_SHARE = {1:0.75, 2:0.125, 3:0.125};                       // 1·2·3등 분배 비율
+
+function popcount32(x){
+  x = x - ((x>>>1) & 0x55555555);
+  x = (x & 0x33333333) + ((x>>>2) & 0x33333333);
+  return Math.imul((x + (x>>>4)) & 0x0F0F0F0F, 0x01010101) >>> 24;
+}
+/* 조합 → 비트마스크 두 개 (lo: 1~30, hi: 31~45). 겹침 계산을 popcount 로 끝낸다. */
+function lineMask(c){
+  const a = Array.isArray(c) ? c : c.c;
+  let lo=0, hi=0;
+  for(const n of a){ if(n<=30) lo |= 1<<(n-1); else hi |= 1<<(n-31); }
+  return { lo, hi };
+}
+function ovMask(a,b){ return popcount32(a.lo & b.lo) + popcount32(a.hi & b.hi); }
+function toMask_(x){ return (x && typeof x.lo==='number') ? x : lineMask(x); }
+/* 2차 포함배제 근사: P(한 장이라도 5등+) ≈ n·p − Σ_{i<j} Q[o_ij]/C456.
+   서로 안 겹치는 줄끼리는 정확하고, 3차 항은 항상 6e-5 이하다. 마스크·조합 모두 받는다. */
+function pairQSum_(ms){
+  let q=0;
+  for(let i=0;i<ms.length;i++) for(let j=i+1;j<ms.length;j++) q += PAIR_Q[ovMask(ms[i],ms[j])];
+  return q;
+}
+function pAnyApprox(masks){
+  const ms = masks.map(toMask_);
+  return ms.length*P_LINE - pairQSum_(ms)/C456;
+}
+/* 정확 계산: 8,145,060 가지 추첨 전부를 센다. 줄마다 일치 개수를 3비트씩 한 정수에 모아
+   (줄 ≤ 6개면) 상태 히스토그램 한 번의 증가로 끝낸다 — 데스크톱 수십 ms.
+   UI·브리핑 전용. ledBuild·validate 루프 안에서는 부르지 않는다.
+   → { n, rawAny, rawAny4, rawBig, pAny, pAny4, pBig, nWin[0..n], fixedHist:[[원,p]], fixedMean, ms } */
+function coverExact(lines){
+  const L = (lines||[]).map(x => Array.isArray(x) ? x : x.c);
+  const n = L.length;
+  if(!n || n>10) return null;
+  const now = () => (typeof performance!=='undefined' ? performance.now() : Date.now());
+  const t0 = now();
+  const add = new Int32Array(46);
+  L.forEach((c,i)=>c.forEach(v=>{ add[v] += 1 << (3*i); }));
+  let rawAny=0, rawAny4=0, rawBig=0;
+  const nWin = new Array(n+1).fill(0), fixed = new Map();
+  const tally = (st, cnt) => {
+    let k=0, mx=0, fx=0;
+    for(let i=0;i<n;i++){
+      const m = (st >>> (3*i)) & 7;
+      if(m>mx) mx=m;
+      if(m>=3) k++;
+      if(m===4) fx += 50000; else if(m===3) fx += 5000;
+    }
+    if(mx>=3) rawAny += cnt;
+    if(mx>=4) rawAny4 += cnt;
+    if(mx>=5) rawBig += cnt;
+    nWin[k] += cnt;
+    fixed.set(fx, (fixed.get(fx)||0) + cnt);
+  };
+  if(n<=6){
+    const H = new Uint32Array(1 << (3*n));
+    for(let a=1;a<=40;a++){ const s1=add[a];
+     for(let b=a+1;b<=41;b++){ const s2=s1+add[b];
+      for(let c=b+1;c<=42;c++){ const s3=s2+add[c];
+       for(let d=c+1;d<=43;d++){ const s4=s3+add[d];
+        for(let e=d+1;e<=44;e++){ const s5=s4+add[e];
+         for(let f=e+1;f<=45;f++) H[s5+add[f]]++; }}}}}
+    for(let st=0; st<H.length; st++) if(H[st]) tally(st, H[st]);
+  } else {
+    for(let a=1;a<=40;a++){ const s1=add[a];
+     for(let b=a+1;b<=41;b++){ const s2=s1+add[b];
+      for(let c=b+1;c<=42;c++){ const s3=s2+add[c];
+       for(let d=c+1;d<=43;d++){ const s4=s3+add[d];
+        for(let e=d+1;e<=44;e++){ const s5=s4+add[e];
+         for(let f=e+1;f<=45;f++) tally(s5+add[f], 1); }}}}}
+  }
+  const fixedHist = [...fixed.entries()].sort((x,y)=>x[0]-y[0]).map(([w,c])=>[w, c/C456]);
+  const fixedMean = fixedHist.reduce((s,[w,p])=>s+w*p, 0);
+  return { n, total:C456, rawAny, rawAny4, rawBig,
+           pAny:rawAny/C456, pAny4:rawAny4/C456, pBig:rawBig/C456,
+           nWin:nWin.map(c=>c/C456), fixedHist, fixedMean, ms:Math.round(now()-t0) };
+}
+let COVER=null, COVER_KEY='';
+function coverKey_(lines){ return lines.map(c=>(Array.isArray(c)?c:c.c).join(',')).join('|'); }
+function coverExactCached(lines){
+  const key = coverKey_(lines);
+  if(COVER && COVER_KEY===key) return COVER;
+  COVER = coverExact(lines); COVER_KEY = key;
+  return COVER;
+}
+/* 조합의 결합 z (판매 기준 A, 구매방식 기준 B 의 표준화 점수 평균). 정본 — validate 도 같은 식.
+   낮을수록 나눠 갖는 사람이 적을 것으로 추정된다. 모델이 없으면 null. */
+function zOf(c){
+  const F=fitPop(); if(!F.A) return null;
+  const za=(popScoreA(c)-F.A.predMean)/F.A.predSD;
+  if(!F.B) return za;
+  return (za + (popScoreB(c)-F.B.predMean)/F.B.predSD)/2;
+}
+/* 실제 당첨번호들의 z 1백분위. 이보다 낮은 z 에는 ₩ 주장을 하지 않는다(데이터가 없는 영역).
+   DB.rev 캐시 — 스크립트의 reset() 은 이 캐시를 모르므로 rev 로만 무효화한다. */
+let ZFLOOR=null, ZFLOOR_REV=-1;
+function zFloorOf(){
+  if(ZFLOOR_REV===DB.rev && ZFLOOR!=null) return ZFLOOR;
+  const zs=[]; for(const d of allRows()){ const z=zOf(d.n); if(z!=null && isFinite(z)) zs.push(z); }
+  zs.sort((a,b)=>a-b);
+  ZFLOOR = zs.length ? zs[Math.floor(0.01*(zs.length-1))] : -Infinity;
+  ZFLOOR_REV = DB.rev;
+  return ZFLOOR;
+}
+function carryOf(c, prevN){
+  if(!prevN) return 0;
+  const a = Array.isArray(c) ? c : c.c;
+  let k=0; for(const n of a) if(prevN.includes(n)) k++;
+  return k;
+}
+/* ₩ 기대값 계산 맥락. calib(보정 a,b)은 «표시 전용» — 선택에는 절대 쓰지 않는다.
+   우선순위: 인자 → 이 기기의 원장(ledCalib) → ./brief/validation.json → 없음(null → "—") */
+function lottoEVctx(calib){
+  const gs=rows(52).map(d=>d.s/TICKET).filter(v=>v>0).sort((a,b)=>a-b);
+  /* G = 최근 52회 판매 게임 수의 중앙값(짝수 개면 위쪽 값 — D1 의 121,085,706 과 같은 정의).
+     EV 에서 G 는 Π/λ 로 거의 상쇄돼 정의 차이의 영향은 0.01원 미만이다. */
+  const G = gs.length ? gs[gs.length>>1] : null;
+  let C = calib || null;
+  if(!C){ try{ const L=ledCalibCached(); if(L && L.ready) C={ a:L.a, b:L.b, r2:L.r2, n:L.n, src:'원장' }; }catch(e){} }
+  if(!C && VAL_CALIB) C=VAL_CALIB;
+  const last=DB.draws[DB.latest];
+  return { G, calib:C, zFloor:zFloorOf(), prevN:last?last.n:null };
+}
+/* 한 줄(1,000원)의 기대 수령액(₩). m = 인기 배수(1=평균).
+   Π(c)=G·(500−(F4+F5)·m), λ_k=G·WAYS[k]/C456·m (다른 당첨자 기대 수),
+   EV = F4 + F5 + Σ_{k=1..3} P_k·SHARE_k·Π·(1−e^{−λ_k})/λ_k   (≈ 500/m).
+   m = a + b·max(z, zFloor) — 4·5등 기울기를 1·2·3등에도 쓰므로 보수적이다(희귀 등수일수록 실측 기울기가 더 크다). */
+function lineEVofM_(m, G){
+  if(!(m>0) || !(G>0)) return null;
+  const F4=50000*WAYS[4]/C456, F5=5000*WAYS[5]/C456;
+  const Pi=G*(500-(F4+F5)*m);
+  let ev=F4+F5;
+  for(const k of [1,2,3]){
+    const lam=G*WAYS[k]/C456*m;
+    ev += (WAYS[k]/C456)*EV_SHARE[k]*Pi*(1-Math.exp(-lam))/lam;
+  }
+  return ev;
+}
+function lineEV(z, carry, ctx){
+  ctx = ctx || lottoEVctx();
+  const C = ctx.calib;
+  if(!C || !isFinite(C.a) || !isFinite(C.b) || z==null || !isFinite(z)) return null;
+  const zf = ctx.zFloor!=null ? ctx.zFloor : zFloorOf();
+  let m = C.a + C.b*Math.max(z, zf);
+  if(ctx.carry && C.gamma!=null && carry!=null) m += C.gamma*Math.min(carry,2);
+  const G = ctx.G!=null ? ctx.G : lottoEVctx(C).G;
+  return lineEVofM_(m, G);
+}
+/* 5게임 포트폴리오 선택 — D1 §4.
+   items: [{c, z}] (z 오름차순 권장이지만 안에서 (u, 원래 순서)로 다시 안정 정렬한다). 반환 picks 는 «같은 객체».
+   u(c) = max(z, zFloor) [+ κ·min(carry,2) — opts.carry 일 때만]. 낮을수록 좋다.
+   1단계: 상위 N개에서 «두 줄 겹침 ≤ maxOv» 를 지키며 u 순 탐욕 선택 + 1-교환 개선.
+          못 채우면 maxOv 를 1씩 풀고 degraded=true (조용히 무너지지 않는다).
+   2단계: 평균 u 가 cap=max(1단계 평균, uStar+dz) 를 넘지 않는 안에서 pAnyApprox 가
+          가장 크게 오르는 교환을 반복(≤100회). 동률 → 평균 u 낮은 쪽 → 앞 순번. 정수 비교라 결정적. */
+function portfolioPick(items, opts){
+  const o = Object.assign({}, PORTFOLIO, opts||{});
+  const n = Math.max(0, o.n|0), N = o.N>0 ? o.N : 1500;
+  const zf = o.zFloor!=null ? o.zFloor : zFloorOf();
+  const kap = o.kappa!=null ? o.kappa : CARRY_KAPPA;
+  const prevN = o.prevN || null;
+  const cOf = it => Array.isArray(it) ? it : it.c;
+  const dec = (items||[]).map((it,idx)=>{
+    const z = (it && it.z!=null && isFinite(it.z)) ? it.z : 9;
+    let u = Math.max(z, zf);
+    if(o.carry && prevN) u += kap*Math.min(carryOf(cOf(it), prevN), 2);
+    return { it, idx, u, m:null };
+  });
+  dec.sort((x,y)=> (x.u-y.u) || (x.idx-y.idx));
+  const C = dec.slice(0, N), K = C.length;
+  C.forEach(x=>{ x.m = lineMask(cOf(x.it)); });
+  if(!n || !K) return { picks:[], us:[], u:null, u1:null, uStar:null, cap:null, pAny:0,
+                        degraded:n>0, passes:0, maxOv:o.maxOv, pool:K };
+  const nn = Math.min(n, K);
+  let uStar=0; for(let i=0;i<nn;i++) uStar += C[i].u; uStar /= nn;
+
+  let maxOv = o.maxOv|0, degraded = false, S = [];
+  const inS = new Uint8Array(K);
+  const feas = (x, skip) => {
+    const mx=C[x].m;
+    for(let j=0;j<S.length;j++){ if(j===skip) continue; if(ovMask(C[S[j]].m, mx) > maxOv) return false; }
+    return true;
+  };
+  for(;;){
+    S = [];
+    for(let x=0; x<K && S.length<n; x++) if(feas(x,-1)) S.push(x);
+    if(S.length>=n || maxOv>=5) break;
+    maxOv++; degraded = true;
+  }
+  if(S.length<n) degraded = true;
+  S.forEach(x=>{ inS[x]=1; });
+
+  /* 1단계 개선: 슬롯 i 를 더 낮은 u 의 후보로 바꿔도 제약이 지켜지면 바꾸고 처음부터 */
+  let passes = 0;
+  for(let it=0; it<50; it++){
+    let done=false;
+    for(let i=0;i<S.length && !done;i++){
+      const ui = C[S[i]].u;
+      for(let x=0; x<K && C[x].u<ui; x++){
+        if(inS[x]) continue;
+        if(feas(x,i)){ inS[S[i]]=0; S[i]=x; inS[x]=1; done=true; passes++; break; }
+      }
+    }
+    if(!done) break;
+  }
+  const nS = S.length;
+  const sumOf = () => { let s=0; for(let i=0;i<nS;i++) s += C[S[i]].u; return s; };
+  const u1 = sumOf()/nS;
+  const cap = Math.max(u1, uStar + (o.dz==null ? 0 : o.dz));
+  const capSum = cap*nS + 1e-9;
+
+  /* 2단계: 커버리지 교환 (정수 PAIR_Q 합으로 비교) */
+  const cur = new Float64Array(nS), qx = new Int32Array(nS);
+  for(let it=0; it<100; it++){
+    cur.fill(0);
+    for(let i=0;i<nS;i++) for(let j=i+1;j<nS;j++){ const q=PAIR_Q[ovMask(C[S[i]].m, C[S[j]].m)]; cur[i]+=q; cur[j]+=q; }
+    const sumU = sumOf();
+    let bdq=0, bns=Infinity, bx=-1, bi=-1;
+    for(let x=0;x<K;x++){
+      if(inS[x]) continue;
+      const mx=C[x].m;
+      let tot=0, bad=0, badJ=-1;
+      for(let j=0;j<nS;j++){
+        const ov=ovMask(mx, C[S[j]].m), q=PAIR_Q[ov];
+        qx[j]=q; tot+=q;
+        if(ov>maxOv){ bad++; badJ=j; if(bad>1) break; }
+      }
+      if(bad>1) continue;
+      for(let i=0;i<nS;i++){
+        if(bad===1 && badJ!==i) continue;
+        const dq = cur[i] - (tot - qx[i]);
+        if(dq<=0) continue;
+        const ns = sumU - C[S[i]].u + C[x].u;
+        if(ns > capSum) continue;
+        if(dq>bdq || (dq===bdq && ns<bns)){ bdq=dq; bns=ns; bx=x; bi=i; }
+      }
+    }
+    if(bx<0) break;
+    inS[S[bi]]=0; S[bi]=bx; inS[bx]=1; passes++;
+  }
+  const P = S.slice().sort((a,b)=>a-b);                 // C 순번 = (u, 원래 순서) 순
+  return { picks:P.map(x=>C[x].it), us:P.map(x=>C[x].u), u:sumOf()/nS, u1, uStar, cap,
+           pAny:pAnyApprox(P.map(x=>C[x].m)), degraded, passes, maxOv, pool:K };
+}
+/* 옛 주간 규칙(1242회까지 A~J 를 고르던 3단계 다양성 규칙) — 원문 그대로 떼어냈다.
+   sorted: 점수 오름차순 후보(조합 배열 또는 {c} 객체), out: 이미 고른 것(이어서 채운다),
+   want: out 의 목표 길이. out 을 채워 그대로 돌려준다. */
+function diversifyLegacy(sorted, out, want){
+  out = out || []; if(want==null) want = 10;
+  const cOf = x => Array.isArray(x) ? x : x.c;
+  const useCnt = {};
+  out.forEach(o=>cOf(o).forEach(n=>useCnt[n]=(useCnt[n]||0)+1));
+  const fits=(c,ov,mx)=>out.every(o=>cOf(o).filter(n=>c.includes(n)).length<=ov)
+                     && c.every(n=>(useCnt[n]||0)<mx);
+  for(const [ov,mx] of [[2,2],[3,3],[4,4]]){
+    if(out.length>=want) break;
+    for(const x of sorted.slice(0,1500)){
+      if(out.length>=want) break;
+      const c=cOf(x);
+      if(out.some(o=>cOf(o).join()===c.join())) continue;
+      if(!fits(c,ov,mx)) continue;
+      out.push(x); c.forEach(n=>useCnt[n]=(useCnt[n]||0)+1);
+    }
+  }
+  for(let i=0;out.length<want && i<sorted.length;i++){
+    const x=sorted[i], c=cOf(x);
+    if(out.some(o=>cOf(o).join()===c.join())) continue;
+    out.push(x); c.forEach(n=>useCnt[n]=(useCnt[n]||0)+1);
+  }
+  return out;
+}
+/* 전주 번호 회피(carry) 진단 — DB 만으로 잰 in-sample 회귀 rA ~ 1 + z + carry.
+   fitPop().carry 로 노출(게터, 처음 읽을 때만 계산). 선택에는 쓰지 않는다. */
+let CARRYFIT=null, CARRYFIT_REV=-1;
+function carryFit(){
+  if(CARRYFIT_REV===DB.rev) return CARRYFIT;
+  let res=null;
+  try{
+    const F=fitPop();
+    if(F.A){
+      const all=allRows(), X=[], Y=[];
+      for(let i=1;i<all.length;i++){
+        const d=all[i], p=all[i-1];
+        if(p.r!==d.r-1 || !d.s || !d.w[3] || !d.w[4]) continue;
+        const g=d.s/TICKET, e4=g*WAYS[4]/C456, e5=g*WAYS[5]/C456;
+        if(e4<200) continue;
+        const z=zOf(d.n); if(z==null) continue;
+        X.push([1, z, carryOf(d.n, p.n)]); Y.push(0.5*(d.w[3]/e4)+0.5*(d.w[4]/e5));
+      }
+      if(X.length>=200){
+        const w=wls(X,Y);
+        if(w) res={ gamma:w.beta[2], se:w.se[2], t:w.t[2], b:w.beta[1],
+                    kappa:w.beta[1] ? w.beta[2]/w.beta[1] : null, n:w.n, inSample:true,
+                    kappaUsed:CARRY_KAPPA, active:!!PORTFOLIO.carry };
+      }
+    }
+  }catch(e){ res=null; }
+  CARRYFIT_REV=DB.rev;
+  return (CARRYFIT=res);
+}
+/* ./brief/validation.json 의 보정값 (₩ 표시 전용). 한 번만 시도하고, 받으면 onDone 을 부른다.
+   같은 fetch 로 lotto.per[…].payoutGain(«검증 보드 실측» — 300주 walk-forward, 모든 방문자가 보는
+   같은 값)도 같이 받아둔다. 이 기기의 원장(ledCalib)과는 다른 수치이므로 절대 섞어 쓰지 않는다. */
+let VAL_CALIB=null, VAL_CALIB_ST=0, VAL_PER=null, VAL_LOTTO_CURRENT=null;
+function loadValCalib(onDone){
+  if(VAL_CALIB_ST) return;
+  VAL_CALIB_ST=1;
+  try{
+    if(typeof fetch!=='function' || location.protocol==='file:'){ VAL_CALIB_ST=2; return; }
+    fetch('./brief/validation.json',{cache:'no-cache'})
+      .then(r=>r.ok?r.json():null)
+      .then(v=>{
+        const c=v&&v.lotto&&v.lotto.calib;
+        if(c && c.ready!==false && isFinite(c.a) && isFinite(c.b))
+          VAL_CALIB={ a:c.a, b:c.b, r2:c.r2, n:c.n, src:'검증' };
+        if(v && v.lotto && v.lotto.per && typeof v.lotto.per==='object'){
+          VAL_PER=v.lotto.per; VAL_LOTTO_CURRENT=v.lotto.current||null;
+        }
+      })
+      .catch(()=>{})
+      .finally(()=>{ VAL_CALIB_ST=2; if((VAL_CALIB || VAL_PER) && onDone) try{ onDone(); }catch(e){} });
+  }catch(e){ VAL_CALIB_ST=2; }
+}
+/* «검증 보드 실측» — validation.json 의 lotto.per[lotto.current || 'portfolio'].payoutGain.
+   전략 키가 아직 없으면(옛 validation.json, 또는 current 가 비어 있으면) portfolio → minshare 순으로
+   물러난다. 반환 { v:비율(0.069=+6.9%), key:실제로 쓴 전략 이름 } 또는 아직 못 받았으면 null.
+   이 수치는 «모든 방문자가 같은 값을 보는» 사이트 전체 계산이고, ledCalibCached() 의 이 기기 원장
+   실측과는 다른 정의이므로 화면에 같이 쓸 때는 항상 라벨로 구분한다. */
+function valPayoutGain(){
+  if(!VAL_PER) return null;
+  const want = VAL_LOTTO_CURRENT || 'portfolio';
+  const key = VAL_PER[want] ? want : (VAL_PER.portfolio ? 'portfolio' : (VAL_PER.minshare ? 'minshare' : null));
+  if(!key) return null;
+  const rec = VAL_PER[key];
+  return (rec && typeof rec.payoutGain==='number' && isFinite(rec.payoutGain)) ? { v:rec.payoutGain, key } : null;
+}
+/* 이번 주 5게임의 요약 수치 — 카드·브리핑이 같은 값을 쓰도록 한 곳에서 계산한다.
+   opt.exact 면 coverExact(수십 ms), 아니면 캐시가 있을 때만 정확값. opt.calib 로 보정값을 넘길 수 있다. */
+function weeklyStats(opt){
+  opt = opt || {};
+  const W = weeklyPicks(), buy = W.combos.slice(0,5);
+  const ctx = lottoEVctx(opt.calib);
+  const zs = buy.map(c=>zOf(c));
+  const evs = buy.map((c,i)=>lineEV(zs[i], carryOf(c, ctx.prevN), ctx));
+  const ev5 = (evs.length && evs.every(v=>v!=null)) ? evs.reduce((a,b)=>a+b,0) : null;
+  const ms = buy.map(c=>lineMask(c)), ov=[];
+  for(let i=0;i<ms.length;i++) for(let j=i+1;j<ms.length;j++) ov.push(ovMask(ms[i],ms[j]));
+  const ex = opt.exact ? coverExactCached(buy) : ((COVER && COVER_KEY===coverKey_(buy)) ? COVER : null);
+  return { round:W.round, rule:W.rule||'legacy', ev5, evs, evRandom:5*500,
+           calib: ctx.calib ? { a:ctx.calib.a, b:ctx.calib.b, r2:ctx.calib.r2, src:ctx.calib.src||null } : null,
+           G:ctx.G, zFloor:ctx.zFloor, z:zs, overlaps:ov,
+           pAnyApprox:pAnyApprox(ms), pAny: ex ? ex.pAny : null, pAny4: ex ? ex.pAny4 : null, exact:!!ex,
+           pAnyRandom:1-Math.pow(1-P_LINE,5), expectedWins:5*P_LINE, pFirst:5/C456,
+           degraded: !!(W.portfolio && W.portfolio.degraded) };
+}
+
 /* ═══ 이번주 추천 조합 ═══
    회차 번호를 시드로 고정 생성한다. 규칙:
      · 전략 = 최소 분배 (실증된 유일한 신호)
      · 필터 = 합계 100~175, 홀 2~4, 연속 2쌍 이하, 한 구간 3개 이하
      · 과거 1등 조합과 중복 제외
      · 후보 3,000개를 만든 뒤 분배지수 하위에서 선택
-   같은 회차면 몇 번을 새로고침해도 같은 조합이 나온다. */
+       - portfolioOptsFor(target) 이 opts 를 주는 회차부터: A~E = portfolioPick(그 회차의 opts, 두 줄 겹침 ≤maxOv), F~J = 옛 규칙 예비
+       - null 을 주는(= PORTFOLIO_RULES[0].from 이전) 회차: 옛 규칙(diversifyLegacy) 10줄 — 과거 추천을 바이트 단위로 재현한다
+   같은 회차면 몇 번을 새로고침해도 같은 조합이 나온다.
+   반환 {round, combos(10), tries, portfolio:{u,uStar,pAny,degraded,opts,…}|null, rule:'portfolio'|'legacy'}
+   force('portfolio'|'legacy') 는 진단·테스트용 — 캐시를 쓰지도 덮지도 않는다. */
 let WEEKLY=null, WEEKLY_R=0, WEEKLY_REV=-1;
-function weeklyPicks(){
+function weeklyPicks(force){
   const target=DB.latest+1;
-  if(WEEKLY && WEEKLY_R===target && WEEKLY_REV===DB.rev) return WEEKLY;
+  const useForce = force==='portfolio' || force==='legacy';
+  if(!useForce && WEEKLY && WEEKLY_R===target && WEEKLY_REV===DB.rev) return WEEKLY;
   const F={ lo:100, hi:175, cons:2, odd:'234', strat:'minshare' };
   const prevRNG=RNG;
   RNG=mulberry32(target*2654435761);
@@ -972,34 +1410,39 @@ function weeklyPicks(){
     const scored=pool.map(c=>({c, s:popScore(c) ?? 9}));
     scored.sort((x,y)=>x.s-y.s);
     for(let i=0;i<pool.length;i++) pool[i]=scored[i].c;
-    /* 최상위만 뽑으면 다섯 조합이 서로 너무 닮는다.
-       두 가지 다양성 규칙을 건다.
-         · 두 조합이 겹치는 번호는 2개 이하
-         · 한 번호가 다섯 조합 중 2번을 초과해 등장하지 않음
-       (규칙이 없으면 모델이 좋아하는 극단 번호가 다섯 줄 전부에 박힌다) */
-    /* 10줄로 늘리면 «겹침 2개 이하 + 한 번호 2회 이하»를 동시에 만족시키지 못할 수 있다
-       (45개 번호에 60칸을 배치해야 한다). 규칙을 단계적으로 풀어 항상 10줄을 채운다. */
-    const WANT=10, out=[], useCnt={};
-    const fits=(c,ov,mx)=>out.every(o=>o.filter(n=>c.includes(n)).length<=ov)
-                       && c.every(n=>(useCnt[n]||0)<mx);
-    for(const [ov,mx] of [[2,2],[3,3],[4,4]]){
-      if(out.length>=WANT) break;
-      for(const c of pool.slice(0,1500)){
-        if(out.length>=WANT) break;
-        if(out.some(o=>o.join()===c.join())) continue;
-        if(!fits(c,ov,mx)) continue;
-        out.push(c); c.forEach(n=>useCnt[n]=(useCnt[n]||0)+1);
-      }
-    }
-    for(let i=0;out.length<WANT && i<pool.length;i++){
-      const c=pool[i];
-      if(out.some(o=>o.join()===c.join())) continue;
-      out.push(c); c.forEach(n=>useCnt[n]=(useCnt[n]||0)+1);
+    /* [C1] 규칙은 회차별로 portfolioOptsFor(target) 에서 가져온다 — PORTFOLIO(최신 규칙) 를 직접
+       쓰지 않는 이유는, 다음에 PORTFOLIO_RULES 에 새 항목이 추가돼도 «지난 회차 재현»이
+       그때 규칙(과거 opts)으로 계속 되게 하기 위해서다. force 진단은 규칙 이력이 없는(=null)
+       과거 회차에서도 최신 규칙(PORTFOLIO)으로 시험해볼 수 있도록 그대로 둔다. */
+    const ropts = portfolioOptsFor(target);
+    const rule = useForce ? force : (ropts ? 'portfolio' : 'legacy');
+    let out, portfolio=null;
+    if(rule==='portfolio'){
+      /* A~E: 인기도(u)를 거의 잃지 않는 범위에서 두 줄 겹침 ≤maxOv 로 고른다 (D1 §4).
+         F~J: 옛 규칙으로 고른 예비 — A~E 와의 겹침·번호 사용 횟수까지 이어서 따진다. */
+      const opts = ropts || PORTFOLIO;   // ropts=null 은 force 진단으로 legacy 구간을 portfolio 로 시험하는 경우뿐
+      const prev=DB.draws[DB.latest], prevN=prev?prev.n:null;
+      const A=portfolioPick(scored.map(x=>({c:x.c, z:zOf(x.c)})), {...opts, prevN});
+      out=A.picks.map(x=>x.c);
+      diversifyLegacy(pool, out, 10);
+      portfolio={ u:A.u, u1:A.u1, uStar:A.uStar, cap:A.cap, pAny:A.pAny, degraded:A.degraded,
+                  maxOv:A.maxOv, passes:A.passes,
+                  carry: prevN ? A.picks.reduce((s,x)=>s+carryOf(x.c,prevN),0)/Math.max(1,A.picks.length) : null,
+                  opts:{...opts} };
+    } else {
+      /* 옛 규칙 — 최상위만 뽑으면 다섯 조합이 서로 너무 닮는다. 두 가지 다양성 규칙을 건다.
+           · 두 조합이 겹치는 번호는 2개 이하 · 한 번호가 2번을 초과해 등장하지 않음
+         10줄이 안 채워지면 ≤3/≤3, ≤4/≤4 로 단계적으로 푼다(diversifyLegacy 참고). */
+      out=diversifyLegacy(pool, [], 10);
     }
     if(pool.length<3000 && tries<200000)
       log('경고 · 후보 생성이 시간 예산에 걸렸습니다('+pool.length+'개). 다른 기기와 추천이 달라질 수 있습니다');
+    if(portfolio && portfolio.degraded)
+      log('경고 · '+target+'회 A~E 겹침 제한(≤'+portfolio.opts.maxOv+')을 지키지 못해 ≤'+portfolio.maxOv+' 로 완화했습니다');
+    const res={ round:target, combos:out, tries, portfolio, rule };
+    if(useForce) return res;
     WEEKLY_R=target; WEEKLY_REV=DB.rev;
-    return (WEEKLY={ round:target, combos:out, tries });
+    return (WEEKLY=res);
   } finally { RNG=prevRNG; }
 }
 function renderWeekly(){
@@ -1009,12 +1452,41 @@ function renderWeekly(){
   let W;
   try{ W=weeklyPicks(); }catch(e){ box.innerHTML='<span style="font-size:13px;color:var(--sig)">생성 실패: '+e.message+'</span>'; return; }
   const F=fitPop();
-  const nd=new Date(last.ymd.slice(0,4)+'-'+last.ymd.slice(4,6)+'-'+last.ymd.slice(6,8)+'T20:45:00+09:00');
+  const nd=new Date(last.ymd.slice(0,4)+'-'+last.ymd.slice(4,6)+'-'+last.ymd.slice(6,8)+'T'+DRAW_HM+':00+09:00');
   nd.setDate(nd.getDate()+7);
+  const PF = W.rule==='portfolio' ? W.portfolio : null;
+  const buy=W.combos.slice(0,5), spare=W.combos.slice(5);
+  /* ── 이번 주 5게임의 수치: ₩ 기대 수령(보정값이 있을 때만) · 한 장이라도 당첨(정확 계산) · 1등 확률 ──
+     새 확률 수치는 반드시 무작위 기준선과 나란히 보여준다. */
+  let st=null; try{ st=weeklyStats(); }catch(e){ st=null; }
+  /* 보정값(₩ 표시용)을 한 번 받아 오면 카드를 다시 그린다. 원장 계산 중(DB 가 잘린 상태)에는 건드리지 않는다. */
+  if(!VAL_CALIB_ST) loadValCalib(()=>{ if($('#weeklyCard') && !LED_BUSY) renderWeekly(); });
+  /* 한 줄 = 왼쪽(무엇·기준선) / 오른쪽(값). 폭에 상관없이 빈 칸 없이 쌓인다. */
+  const cell=(k,v,s,id,first)=>'<div class="wk-stat" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 12px;'+(first?'':'border-top:1px solid var(--ink-12);')+'">'+
+    '<div style="min-width:0"><div class="mono" style="font-size:10.5px;letter-spacing:.06em;color:var(--ink-60)">'+k+'</div>'+
+    '<div style="font-size:12px;color:var(--ink-60);padding-top:2px;line-height:1.4">'+s+'</div></div>'+
+    '<div'+(id?' id="'+id+'"':'')+' style="flex:none;font-family:\'Big Shoulders Display\',sans-serif;font-weight:900;font-size:24px;line-height:1.1;white-space:nowrap;text-align:right">'+v+'</div></div>';
+  const evTxt = st && st.ev5!=null ? nf(st.ev5)+'원' : '—';
+  const evSub = '무작위 자동 '+nf(st?st.evRandom:2500)+'원'+
+    (st && st.ev5!=null ? ' · 보수적 추정' : ' · 보정값 없음');
+  const anyTxt = st && st.pAny!=null ? pct(st.pAny,2) : (st ? '≈'+pct(st.pAnyApprox,2) : '—');
+  const anyBase = pct(st ? st.pAnyRandom : 1-Math.pow(1-P_LINE,5), 2);
+  const stats =
+    '<div class="wk-stats" style="background:var(--paper-2);border:1px solid var(--ink-12);margin:0 0 12px">'+
+      cell('5,000원당 기대 수령', evTxt, evSub, 'wkEV', true)+
+      cell('한 장이라도 당첨 (5등+)', anyTxt, '무작위 5게임 '+anyBase, 'wkAny')+
+      cell('1등 확률 (5게임)', '5 / 8,145,060', '모든 조합 동일')+
+    '</div>';
+  const flag = (PF && PF.degraded)
+    ? '<div class="verdict" style="border-color:var(--b-yellow);margin-top:0"><b>주의</b> — 이번 주 후보로는 «두 줄 겹침 '+PORTFOLIO.maxOv+'개 이하»를 다 지키지 못해 '+
+      PF.maxOv+'개까지 허용했습니다. 확률·기대값 계산은 실제 겹침 그대로 반영돼 있습니다.</div>' : '';
+  const ruleTag = W.rule==='portfolio'
+    ? '<span class="tag ok" title="PORTFOLIO_FROM='+PORTFOLIO_FROM+'">규칙 · 포트폴리오</span>'
+    : '<span class="tag noi">규칙 · 구 주간규칙</span>';
   box.innerHTML=
-    '<div class="mono" style="font-size:11px;color:var(--ink-60);padding-bottom:10px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">'+
+    '<div class="mono" style="font-size:11px;color:var(--ink-60);padding-bottom:10px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center">'+
       '<span>제 '+W.round+'회 대상 · '+nd.getFullYear()+'.'+String(nd.getMonth()+1).padStart(2,'0')+'.'+String(nd.getDate()).padStart(2,'0')+' 추첨</span>'+
-      '<span>1~'+DB.latest+'회 전체 반영</span></div>'+
+      '<span>1~'+DB.latest+'회 전체 반영 · '+ruleTag+'</span></div>'+
     (()=>{
       const line=(c,i)=>{
         const sm=c.reduce((a,b)=>a+b,0), o=c.filter(n=>n%2).length;
@@ -1022,19 +1494,42 @@ function renderWeekly(){
           '<div class="m">합계<em>'+sm+'</em>홀'+o+':짝'+(6-o)+'</div>'+
           '<div class="c">'+shareTag(c).replace(/^ · /,'')+'</div></div>';
       };
-      const buy=W.combos.slice(0,5), spare=W.combos.slice(5);
       return '<div class="sheet"><div class="hd"><span>이번 주 용지 · A~E 5게임</span><span>5,000원</span></div>'+
         buy.map(line).join('')+'</div>'+
+        stats+flag+
         (spare.length?'<div class="mono" style="font-size:10.5px;letter-spacing:.1em;color:var(--ink-60);padding:2px 0 4px">예비 F~J</div>'+
           spare.map((c,i)=>line(c,i+5)).join(''):'');
     })()+
     '<div class="verdict" style="margin-bottom:0"><b>이 조합이 나온 근거</b><br>'+
     '· 후보 '+nf(W.tries)+'개를 만들어 합계 100~175 / 홀짝 2~4 / 연속 2쌍 이하 / 한 구간 3개 이하 필터를 통과한 것만 남겼습니다<br>'+
     '· 과거 '+DB.latest+'회 1등 조합과 겹치는 것은 제외했습니다<br>'+
-    '· 그중 <b>분배 인원 모델 점수가 가장 낮은</b> 것들을, 서로 겹치는 번호가 적도록 <b>10줄</b> 골랐습니다<br>'+'· <b>A~E 다섯 줄이 실제로 살 용지</b>이고, F~J 는 예비입니다 — 앞이 마음에 안 들면 다음으로 넘어가세요<br>'+
-    (F.agree!=null?'<br>· 모델 교차검증 상관 '+F.agree.toFixed(3)+' (판매 기준 × 구매방식 기준)':'')+
-    '<br>· 회차 번호를 시드로 고정했습니다 — <b>새로고침해도 같은 조합</b>이고, 회차가 넘어가면 자동으로 새로 뽑힙니다<br>'+
-    '<span style="color:var(--ink-40)">1등 확률은 여전히 1/8,145,060 입니다. 바뀌는 건 당첨 시 나눠 갖는 인원뿐입니다.</span></div>';
+    (W.rule==='portfolio'
+      ? '· 그중 <b>분배 인원 모델 점수가 낮은</b> 상위 '+nf(PORTFOLIO.N)+'개에서, <b>두 줄끼리 겹치는 번호가 '+(PF?PF.maxOv:PORTFOLIO.maxOv)+'개 이하</b>가 되도록 A~E 를 골랐습니다. '+
+        '점수를 거의 잃지 않는 범위(평균 z +'+PORTFOLIO.dz+' 이내)에서 겹침을 더 줄였습니다<br>'+
+        '· <b>A~E 다섯 줄이 실제로 살 용지</b>이고, F~J 는 예비(옛 규칙으로 고른 대체 후보)입니다<br>'
+      : '· 그중 <b>분배 인원 모델 점수가 가장 낮은</b> 것들을, 서로 겹치는 번호가 적도록 <b>10줄</b> 골랐습니다<br>'+
+        '· <b>A~E 다섯 줄이 실제로 살 용지</b>이고, F~J 는 예비입니다 — 앞이 마음에 안 들면 다음으로 넘어가세요<br>')+
+    (st && st.ev5!=null
+      ? '· 기대 수령은 분배지수를 실측 하한(z '+st.zFloor.toFixed(2)+')에서 자르고 4·5등 기울기를 1·2·3등에도 쓴 <b>보수적 추정</b>입니다 '+
+        '(보정: '+(st.calib.src||'—')+(st.calib.r2!=null?' · R² '+st.calib.r2.toFixed(3):'')+'). 4·5등 정액은 누구나 같고, 달라지는 건 1·2·3등 분배금입니다<br>'
+      : '· 기대 수령(₩)은 보정값(검증 데이터 또는 원장)이 있어야 표시합니다<br>')+
+    (F.agree!=null?'· 모델 교차검증 상관 '+F.agree.toFixed(3)+' (판매 기준 × 구매방식 기준)<br>':'')+
+    '· 회차 번호를 시드로 고정했습니다 — <b>새로고침해도 같은 조합</b>이고, 회차가 넘어가면 자동으로 새로 뽑힙니다<br>'+
+    '<span style="color:var(--ink-40)">1등 확률은 여전히 줄마다 1/8,145,060 입니다. 바뀌는 건 당첨 시 나눠 갖는 인원, 그리고 다섯 줄이 덜 겹쳐 '+
+    '당첨이 한 주에 몰리지 않고 흩어지는 모양뿐입니다 — 기대 당첨 장수(주 '+(5*P_LINE).toFixed(3)+'장)는 어떤 5게임이든 같습니다.</span></div>';
+
+  /* 정확한 «한 장이라도» 확률은 8,145,060 가지를 세야 한다(수십 ms). 첫 화면을 막지 않도록 뒤로 미루고,
+     같은 조합이면 캐시를 쓴다. */
+  if(st && st.pAny==null){
+    const key=coverKey_(buy);
+    setTimeout(()=>{
+      try{
+        if(LED_BUSY || coverKey_(weeklyPicks().combos.slice(0,5))!==key) return;
+        const r=coverExactCached(buy), el=document.getElementById('wkAny');
+        if(r && el) el.textContent=pct(r.pAny,2);
+      }catch(e){}
+    }, 60);
+  }
 }
 
 function renderPinned(){
@@ -1048,6 +1543,28 @@ function renderPinned(){
       return '<div class="tkrow"><div>'+tkHTML(GLET[i],c,{sz:'sm'})+'</div>'+
         '<div class="m">합계<em>'+sm+'</em>홀'+o+':짝'+(6-o)+'</div></div>';
     }).join('');
+}
+
+/* 직전(추첨 완료) 회차에 실제로 산 번호를 채점 — lottolab.my.v1 은 site.js SITE.markBought 와 공유하는 저장소.
+   여기서는 표시·채점만 한다(저장 형식·판정 기준은 그대로: rankOf). */
+function renderLastMine(){
+  const box=$('#lastMineCard'); if(!box) return;
+  const d=DB.draws[DB.latest];
+  if(!d){ box.innerHTML='<span style="font-size:13px;color:var(--ink-60)">불러오는 중…</span>'; return; }
+  const my=myLoad().filter(t=>t && t.round===DB.latest && Array.isArray(t.nums) && t.nums.length===6);
+  if(!my.length){
+    box.innerHTML='<span style="font-size:13px;color:var(--ink-60)">기록 없음 · <a href="./brief.html" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ink-30)">이번 주</a> 페이지에서 «샀어요»를 누르면 여기 쌓입니다.</span>';
+    return;
+  }
+  box.innerHTML='<div class="mono" style="font-size:10px;color:var(--ink-60);padding-bottom:8px">제 '+DB.latest+'회 · '+ymd2disp(d.ymd)+' 추첨</div>'+
+    my.map(t=>{
+      const r=rankOf(t.nums,d), amt=r?(d.a[r-1]||0):0;
+      return '<div class="tkrow"><div>'+tkHTML(null, t.nums, { sz:'sm', dim:true,
+          hi: t.nums.filter(n=>d.n.includes(n)||d.b===n),
+          bonus: t.nums.includes(d.b) ? d.b : undefined })+'</div>'+
+        '<div class="m">'+(r?'등수<em>'+r+'등 · '+won(amt)+'</em>':'등수<em>미당첨</em>')+'</div></div>';
+    }).join('')+
+    '<div class="mono" style="font-size:10.5px;color:var(--ink-60);padding-top:8px">연금과 합친 기록은 <a href="./record.html" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ink-30)">기록</a> 페이지에서.</div>';
 }
 
 function renderStat(){
@@ -1322,7 +1839,10 @@ function fitPop(){
     }
   }
   POPFIT_N=DB.rev;
-  return (POPFIT={ ok:!!A, A, B, agree, manualBase, bounds });
+  POPFIT={ ok:!!A, A, B, agree, manualBase, bounds };
+  /* .carry = 전주 번호 회피 진단 {gamma,se,t,kappa,…} — 읽을 때만 계산(게터), 직렬화에서 빠진다 */
+  Object.defineProperty(POPFIT, 'carry', { get:carryFit, enumerable:false, configurable:true });
+  return POPFIT;
 }
 /* 학습 구간으로 잘라낸 특징 (외삽 방지) */
 function popFeatClamped(n){
@@ -1357,12 +1877,7 @@ function ledCalibCached(){
   return (LED_CALIB = C.ready ? C : null);
 }
 /* 조합의 결합 z (분배지수의 표준화 값). 낮을수록 나눠 갖는 사람이 적다. */
-function shareZ(c){
-  const F=fitPop(); if(!F.A) return null;
-  const za=(popScoreA(c)-F.A.predMean)/F.A.predSD;
-  if(!F.B) return za;
-  return (za + (popScoreB(c)-F.B.predMean)/F.B.predSD)/2;
-}
+function shareZ(c){ return zOf(c); }             // 정본은 zOf (포트폴리오 블록)
 function shareTag(c){
   const F=fitPop(); if(!F.ok) return '';
   const z=popScore(c), a=popScoreA(c), b=popScoreB(c), zz=shareZ(c);
@@ -1387,6 +1902,9 @@ function shareTag(c){
 
 function renderPopModel(){
   const F=fitPop(), box=$('#popModel'); if(!box) return;
+  /* «검증 보드 실측» 은 validation.json 을 받아야 나온다 — 아직이면 요청해 두고, 받으면 이 탭이
+     열려 있을 때만 다시 그린다(다른 탭을 보고 있으면 건드리지 않는다). */
+  if(!VAL_CALIB_ST) loadValCalib(()=>{ const gb=$('#tabs button[data-t="gen"]'); if($('#popModel') && gb && gb.classList.contains('on')) renderPopModel(); });
   if(!F.ok){ box.innerHTML='<span style="font-size:13px;color:var(--ink-60)">데이터가 부족해 모델을 학습하지 못했습니다.</span>'; return; }
   const tp=t=>{ const p=2*normSF(Math.abs(t)); return p<0.001?'&lt;0.001':p.toFixed(3); };
   const dir=(b,t)=>Math.abs(t)<2 ? '<span style="color:var(--ink-40)">유의하지 않음</span>'
@@ -1441,18 +1959,21 @@ function renderPopModel(){
   html += '<div class="verdict sig"><b>결론</b> — 이것이 이 도구 전체에서 <b>유일하게 실증되는 신호</b>입니다. '+
     '빈도·미출현·동반쌍·추첨순서는 전부 잡음이었지만 이건 다릅니다. '+
     '확률을 바꾸는 게 아니라 <b>분배 인원</b>을 바꾸기 때문입니다.<br>'+
-    /* [2026-09-03] «±10~15%» 는 재보정 전 계수로 계산한 과대평가였다.
-       원장(walk-forward 300주)으로 기울기를 다시 재니 추천 상위 5게임의 실측 이득은 약 +7% 다.
-       원장이 아직 없으면 그 사실만 밝히고 숫자를 단정하지 않는다. */
+    /* [2026-09] 효과 수치는 정의가 다른 두 개를 나란히 보여준다 — 섞어 부르지 않는다.
+       ① 검증 보드 실측 = validation.json(walk-forward 300주). 모든 방문자가 같은 값을 본다.
+       ② 이 기기 원장 실측 = 이 브라우저의 ledCalib() 재보정 기울기로 «이번 주 A~E»만 잰 값.
+       옛 "약 +7%"는 재보정 전 계수로 계산한 과대평가였다 — 이제 정의를 밝힌 실측치로 대체한다. */
+    (()=>{ const VG=valPayoutGain();
+      return '<b>검증 보드 실측 '+(VG?((VG.v>=0?'+':'')+pct(VG.v,1)):'—')+'</b> — 300주 walk-forward'+(VG?'(전략 «'+VG.key+'»)':'')+
+        ', 모든 방문자가 같은 값을 봅니다 → <a href="./validate.html" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ink-30)">검증</a><br>'; })()+
     (()=>{ const C=ledCalibCached();
-      if(!C) return '효과 크기는 「원장」 탭에서 walk-forward 로 실측합니다 — 원장을 한 번 돌려 주세요. '+
-        '재보정 전 계수로 어림한 값은 과대평가라는 것이 확인됐습니다.</div>';
+      if(!C) return '이 기기 원장 실측은 아직 없습니다 — 「원장」 탭에서 walk-forward 를 한 번 돌리면 이번 주 A~E 기준으로 여기 표시됩니다.</div>';
       const zs=(()=>{ try{ const F=fitPop(), W=weeklyPicks();
         return W.combos.slice(0,5).map(c=>shareZ(c)); }catch(e){ return null; } })();
-      if(!zs) return '효과 크기는 「원장」 탭을 참고하세요.</div>';
+      if(!zs) return '이 기기 원장 실측은 「원장」 탭을 참고하세요.</div>';
       const zb=zs.reduce((a,b)=>a+b,0)/zs.length;
       const eff=-zb*C.b;
-      return '효과 크기는 원장 '+C.n+'주로 실측해 <b>약 '+pct(eff,1)+'</b> 입니다 — '+
+      return '<b>이번 주 A~E 기대 수령액 대비 무작위 '+(eff>=0?'+':'')+pct(eff,1)+'</b> — 이 기기 원장('+C.n+'주 재보정)으로 이번 주 추천 5게임만 따로 잰 값입니다. '+
         '1등 당첨금이 20억이라면 '+won(2e9*eff)+' 남짓 차이입니다. 그 이상은 아닙니다.</div>'; })();
   box.innerHTML=html;
 }
@@ -1577,9 +2098,14 @@ function generate(){
     if(everWon(c)){ rejected++; continue; }
     seen.add(key); out.push(c);
   }
+  /* 최소 분배: 주간 추천과 같은 portfolioPick 으로 n=요청 개수를 고른다
+     (예전에는 점수 상위를 그대로 잘라 다섯 줄이 거의 같은 번호일 수 있었다). */
+  let PF=null;
   if(CUR_STRAT==='minshare'){
-    out.sort((a,b)=>(popScore(a)??9)-(popScore(b)??9));
-    out.length=Math.min(out.length,cnt);
+    const prev=DB.draws[DB.latest];
+    PF=portfolioPick(out.map(c=>({c, z:zOf(c)})), {...PORTFOLIO, n:cnt, prevN:prev?prev.n:null});
+    const picked=PF.picks.map(x=>x.c);
+    out.length=0; picked.forEach(c=>out.push(c));
   }
   GEN_RESULT=out;
   const box=$('#genOut');
@@ -1587,14 +2113,17 @@ function generate(){
   box.innerHTML=out.map((c,i)=>{
     const s=c.reduce((a,b)=>a+b,0), o=c.filter(n=>n%2).length;
     const bands=[0,0,0,0,0]; c.forEach(n=>bands[Math.min(4,Math.floor((n-1)/10))]++);
+    const buyTag = i<5 ? '<span class="tag ok" style="margin-right:6px">용지(5,000원)</span>' : '<span class="tag noi" style="margin-right:6px">추가분</span>';
     return '<div class="combo"><div class="k">'+'ABCDEFGHIJKLMNOPQRST'[i]+'</div>'+
       '<div class="balls">'+c.map(n=>ballHTML(n)).join('')+'</div>'+
       '<div class="m">합계<em>'+s+'</em>홀'+o+':짝'+(6-o)+'</div>'+
-      '<div class="c">구간 '+bands.join('-')+' · 연속 '+consCount(c)+'쌍 · 31이하 '+c.filter(n=>n<=31).length+'개'+
+      '<div class="c">'+buyTag+'구간 '+bands.join('-')+' · 연속 '+consCount(c)+'쌍 · 31이하 '+c.filter(n=>n<=31).length+'개'+
       shareTag(c)+'</div></div>';
   }).join('');
   $('#genAudit').innerHTML='<div class="verdict"><b>생성 근거</b> — 전략 «'+STRATS.find(s=>s.k===CUR_STRAT).n+'», '+
     '시도 '+nf(tries)+'회 중 필터 탈락 '+nf(rejected)+'회. 과거 1등 조합과 중복되는 것은 자동 제외했습니다.<br>'+
+    (PF ? '최소 분배 — 분배지수 하위 '+nf(PF.pool)+'개 후보에서, 두 줄끼리 겹치는 번호가 <b>'+PF.maxOv+'개 이하</b>가 되도록 골랐습니다(주간 추천과 같은 규칙).'+
+      (PF.degraded ? ' <b style="color:var(--sig)">고정수·조건 때문에 겹침 제한을 '+PF.maxOv+'개로 완화했습니다.</b>' : '')+'<br>' : '')+
     '<b>중요</b> — 어떤 전략을 쓰든 이 조합들의 1등 확률은 자동선택과 정확히 같은 <b>1/8,145,060</b>입니다. '+
     '전략이 실제로 바꾸는 것은 확률이 아니라 <b>당첨 시 몇 명과 나눠 갖는가</b>뿐입니다.</div>';
 }
@@ -1734,11 +2263,17 @@ function runBacktest(){
 /* ════════════════ 내 기록 ════════════════ */
 function myLoad(){ try{ return JSON.parse(localStorage.getItem(LSMY)||'[]'); }catch(e){ return []; } }
 function mySave(a){ localStorage.setItem(LSMY, JSON.stringify(a)); }
+/* nums 가 «6개 정수 배열»이 아닌 기록(수동 import·이전 버전 데이터 등)이 섞여 있어도
+   renderMine 이 죽지 않게 미리 걸러낸다 — 잘못된 행은 던지지 않고 «형식 오류» 행으로만 보여준다. */
+function validMyNums_(n){
+  return Array.isArray(n) && n.length===6 && n.every(x=>typeof x==='number' && Number.isFinite(x));
+}
 function renderMine(){
   const my=myLoad();
   let cost=0, gain=0; const cnt={0:0,1:0,2:0,3:0,4:0,5:0}, pend=[];
   const list=my.map(t=>{
-    cost+=t.cost||TICKET;
+    cost+=(t&&t.cost)||TICKET;
+    if(!t || !validMyNums_(t.nums)){ pend.push(t); return {...t, rank:null, bad:true}; }
     const d=DB.draws[t.round];
     if(!d){ pend.push(t); return {...t, rank:null}; }
     const r=rankOf(t.nums,d), amt=r?(d.a[r-1]||0):0;
@@ -1756,6 +2291,11 @@ function renderMine(){
   $('#myTbl').innerHTML='<tr><th>회차</th><th>내 번호</th><th>당첨번호</th><th>결과</th><th class="num">당첨금</th><th></th></tr>'+
     (list.length?list.slice().reverse().map((t,i)=>{
       const idx=list.length-1-i;
+      if(t.bad) return '<tr><td class="mono"><b>'+(t.round==null?'—':t.round)+'</b></td>'+
+        '<td><span style="font-size:11px;color:var(--sig)">형식 오류 · 번호 6개가 아닙니다</span></td>'+
+        '<td><span style="font-size:11px;color:var(--ink-40)">—</span></td>'+
+        '<td><span class="tag noi">오류</span></td><td class="num">—</td>'+
+        '<td><button class="btn ghost" style="padding:3px 7px;font-size:10px" onclick="myDel('+idx+')">삭제</button></td></tr>';
       const hit=t.d?t.nums.filter(n=>t.d.n.includes(n)):[];
       return '<tr><td class="mono"><b>'+t.round+'</b></td>'+
         '<td>'+tkHTML(null, t.nums, { sz:'xs', dim:!!t.d,
@@ -2019,6 +2559,7 @@ function renderLedger(){
     +'<td><span class="mono" style="font-size:10.5px">게임당 '+(matched/games).toFixed(3)+' / 우연 0.800</span></td></tr>';
 
   /* ── 모델 검증 + 재보정 ── */
+  if(!VAL_CALIB_ST) loadValCalib(()=>{ const lb=$('#tabs button[data-t="ledger"]'); if($('#ledModel') && lb && lb.classList.contains('on')) renderLedger(); });
   const C=ledCalib(recs);
   if(!C.ready){
     $('#ledModel').innerHTML='<p style="font-size:13px;color:var(--ink-60)">검증 표본이 '+C.n+'회차입니다. 60회차 이상 쌓이면 표시합니다.</p>';
@@ -2031,6 +2572,7 @@ function renderLedger(){
       const zz=W.combos.slice(0,5).map(c=>((popScoreA(c)-F.A.predMean)/F.A.predSD+(popScoreB(c)-F.B.predMean)/F.B.predSD)/2);
       return zz.reduce((a,b)=>a+b,0)/zz.length; }catch(e){ return null; } })();
     const edge = (pickZ!=null && C.b) ? (zMean-pickZ)*C.b : null;
+    const VG = valPayoutGain();
     $('#ledModel').innerHTML=
       '<div class="scroll"><table>'
       +'<tr><th>지표</th><th class="num">값</th><th>뜻</th></tr>'
@@ -2041,14 +2583,17 @@ function renderLedger(){
         +(gain!=null?pct(gain,1):'—')+' 개선</b></td></tr>'
       +'<tr><td>평균오차 (순진 예측)</td><td class="num">'+C.maeNaive.toFixed(4)+'</td></tr>'
       +'<tr><td>재보정 기울기</td><td class="num">'+C.b.toFixed(4)+'</td><td>분배지수 1σ당 당첨자수 배수 변화</td></tr>'
-      +(edge!=null?'<tr style="border-top:2px solid var(--ink)"><td><b>이번 주 추천의 실측 이득</b></td>'
-        +'<td class="num"><b>'+pct(edge,1)+'</b></td><td>1등 시 나눠 갖는 인원이 이만큼 적을 것으로 <b>측정</b>됨</td></tr>':'')
+      +'<tr style="border-top:2px solid var(--ink)"><td><b>검증 보드 실측</b></td>'
+        +'<td class="num"><b>'+(VG?((VG.v>=0?'+':'')+pct(VG.v,1)):'—')+'</b></td>'
+        +'<td>validation.json · 300주 walk-forward'+(VG?'(전략 «'+VG.key+'»)':'')+' · <b>모든 방문자가 같은 값</b>을 본다 → <a href="./validate.html" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ink-30)">검증</a></td></tr>'
+      +(edge!=null?'<tr><td><b>이 기기 원장 실측 · 이번 주 A~E</b></td>'
+        +'<td class="num"><b>'+(edge>=0?'+':'')+pct(edge,1)+'</b></td><td>이 브라우저에 쌓인 원장('+C.n+'주)의 재보정 기울기로 <b>이번 주 추천 5게임만</b> 따로 잰 값 — 위 검증 보드 값과는 다른 수치다</td></tr>':'')
       +'</table></div>'
       +'<div class="verdict" style="margin-bottom:0"><b>솔직하게 — 원래 숫자는 틀렸습니다</b><br>'
       +'· 재보정 <b>전</b> 예측은 out-of-sample R² 가 <b>음수</b>였습니다. 방향은 맞는데 폭이 과했다는 뜻입니다<br>'
       +'· 그래서 쌓인 기록으로 기울기를 다시 재 «분배지수»를 재보정했습니다. 선형 변환이라 <b>순서는 바뀌지 않습니다</b> — 추천 조합은 그대로고, 표시되는 숫자만 정직해집니다<br>'
       +'· 두 모델(판매 기준 · 구매방식 기준)에 서로 다른 가중을 줘 봤지만 지금의 «평균 결합»보다 나아지지 않았습니다. 그래서 <b>건드리지 않았습니다</b><br>'
-      +'<span style="color:var(--ink-40)">1등 확률은 여전히 1/8,145,060 입니다. 바뀌는 건 당첨됐을 때 나눠 갖는 인원뿐이고, 그 크기가 위의 실측 이득입니다.</span></div>';
+      +'<span style="color:var(--ink-40)">1등 확률은 여전히 1/8,145,060 입니다. 바뀌는 건 당첨됐을 때 나눠 갖는 인원뿐이고, 그 크기가 위의 두 실측치입니다(정의가 다르니 섞어 읽지 마세요).</span></div>';
   }
 
   /* ── 회차별 ── */
@@ -2173,6 +2718,7 @@ function switchTab(t){
   $$('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.t===t));
   $$('section.panel').forEach(p=>p.classList.toggle('on', p.id==='p-'+t));
   window.scrollTo({top:0,behavior:'instant'});
+  try{ history.replaceState(null,'','#'+t); }catch(e){}
   try{
     if(t==='dash') renderDash();
     if(t==='stat') renderStat();
@@ -2186,6 +2732,7 @@ function switchTab(t){
 }
 function wire(){
   $$('#tabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.t));
+  try{ if(window.SITE && SITE.theme && SITE.theme.mount) SITE.theme.mount('#themeBtn'); }catch(e){}
 
   /* ── 원장 ── */
   $('#ledRun').onclick = async ()=>{
@@ -2233,12 +2780,20 @@ function wire(){
     alert('대시보드에 고정했습니다.'); renderPinned();
   };
   $('#sheetBtn').onclick=openSheet;
+  /* 실제 용지 한 장 = A~E 5게임. 예비 F~J 는 인쇄·기록하지 않는다. */
   $('#weeklySheet').onclick=()=>{ const W=weeklyPicks(); const keep=GEN_RESULT;
-    GEN_RESULT=W.combos; try{ openSheet(); } finally { GEN_RESULT=keep; } };
+    GEN_RESULT=W.combos.slice(0,5); try{ openSheet(); } finally { GEN_RESULT=keep; } };
   $('#weeklyToMine').onclick=()=>{
-    const W=weeklyPicks(); const a=myLoad();
-    W.combos.forEach(c=>a.push({round:W.round,nums:c,cost:TICKET,at:Date.now()}));
-    mySave(a); alert(W.combos.length+'게임을 '+W.round+'회에 담았습니다.');
+    const W=weeklyPicks(), a=myLoad(), buy=W.combos.slice(0,5);
+    const has=new Set(a.filter(t=>t&&t.round===W.round&&Array.isArray(t.nums))
+                       .map(t=>t.nums.slice().sort((x,y)=>x-y).join(',')));
+    let added=0; const now=Date.now();
+    buy.forEach(c=>{ const nums=c.slice().sort((x,y)=>x-y), k=nums.join(',');
+      if(has.has(k)) return; has.add(k); a.push({round:W.round,nums,cost:TICKET,at:now}); added++; });
+    if(!added){ alert(W.round+'회 A~E 5게임은 이미 내 기록에 담겨 있습니다.'); return; }
+    mySave(a);
+    alert(added===buy.length ? added+'게임('+nf(added*TICKET)+'원)을 '+W.round+'회에 담았습니다.'
+                             : added+'게임('+nf(added*TICKET)+'원)을 '+W.round+'회에 담았습니다. 이미 담긴 '+(buy.length-added)+'게임은 건너뛰었습니다.');
   };
 
   $('#simBtn').onclick=()=>{ $('#simOut').innerHTML='<span class="spin"></span>'; setTimeout(()=>{ try{runSim();}catch(e){$('#simOut').innerHTML='오류: '+e.message;} renderFirstHit(); },30); };
@@ -2299,6 +2854,20 @@ function refreshAll(){
   switchTab(on?on.dataset.t:'dash');
   $('#myRound').value=DB.latest?DB.latest+1:'';
 }
+/* 딥링크(D2 A9): #탭이면 그 탭으로, #sheet 면 대시보드로 가서 마크시트를 바로 연다.
+   데이터 로드가 끝난 뒤(초기화 마지막)에만 한 번 적용 — 도중 refreshAll() 들은 건드리지 않는다. */
+function applyHash(){
+  try{
+    const h=(INITIAL_HASH||'').replace(/^#/,'');
+    if(!h) return;
+    if(h==='sheet'){
+      switchTab('dash');
+      const b=$('#weeklySheet'); if(b) b.click();
+      return;
+    }
+    if($$('#tabs button').some(b=>b.dataset.t===h)) switchTab(h);
+  }catch(e){}
+}
 (async function init(){
   wire(); renderPickBoard();
   const cached=loadDB();
@@ -2321,6 +2890,7 @@ function refreshAll(){
     log('file:// 로 열면 브라우저가 외부 요청을 막습니다. [모바일서버-켜기.bat] 으로 실행하세요.');
   }
   refreshAll();
+  applyHash();
 })();
 </script>
 </body>

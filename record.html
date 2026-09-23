@@ -1,0 +1,514 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script>try{var t=localStorage.getItem('lottolab.theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
+<title>기록 · 내 복권 구매 기록</title>
+<meta name="description" content="로또·연금복권 내 실제 구매 기록을 한 곳에서 — 투입/수령/손익과 추천 원장 비교">
+<meta name="theme-color" content="#16302B">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="stylesheet" href="./site.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--f-body);font-size:15px;line-height:1.68;letter-spacing:-.01em}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:18px 0 0}
+.mono{font-family:var(--f-mono)}
+header{border-bottom:1.5px solid var(--ink);padding-bottom:12px;margin-bottom:20px}
+.eyebrow{font-family:ui-monospace,monospace;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-60);
+ display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+h1{font-size:clamp(28px,7vw,42px);line-height:1.08;font-weight:800;padding:10px 0 4px;letter-spacing:-.02em}
+h1 small{display:block;font-size:.36em;font-weight:600;color:var(--ink-60);padding-top:6px;letter-spacing:.02em}
+.linkrow{font-size:12.5px;padding-top:2px}
+.linkrow a{color:var(--ink);font-weight:700;text-decoration:none;border-bottom:1px solid var(--ink-30)}
+h2{font-family:ui-monospace,monospace;font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+ padding:0 0 12px;display:flex;align-items:center;gap:10px;margin-top:30px}
+h2::after{content:"";flex:1;height:1px;background:var(--ink-12)}
+p.note{font-size:13.5px;color:var(--ink-60);padding-bottom:10px;line-height:1.7}
+p.note b{color:var(--ink)}
+.card{background:var(--paper-2);border:1.5px solid var(--ink);padding:16px 15px;margin-bottom:14px}
+.card.flat{border-width:1px;border-color:var(--ink-12)}
+.card.empty{text-align:center;padding:28px 16px}
+.card.empty p{padding-bottom:8px}
+.card.empty a{color:var(--ink);font-weight:700}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(124px,1fr));gap:1px;background:var(--ink-12);
+ border:1.5px solid var(--ink);margin-bottom:14px}
+.kpi>div{background:var(--paper-2);padding:12px 11px}
+.kpi .k{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-60)}
+.kpi .v{font-size:24px;font-weight:800;line-height:1.12;padding-top:3px;letter-spacing:-.02em}
+.kpi .s{font-size:11.5px;color:var(--ink-60)}
+.chart{width:100%;height:auto;display:block;margin-bottom:8px}
+.ln{fill:none;stroke-width:2.4;stroke-linejoin:round;stroke-linecap:round}
+.ln.mine{stroke:var(--ink)}
+.ln.ledger{stroke:var(--ink-40);stroke-dasharray:6 4}
+.axis0{stroke:var(--ink-12);stroke-width:1}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--ink-60);flex-wrap:wrap}
+.legend .lg{display:flex;align-items:center;gap:6px}
+.legend .sw{width:16px;height:0;border-top:2.4px solid var(--ink)}
+.legend .sw.ledger{border-top-style:dashed;border-color:var(--ink-40)}
+.ball{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+ font-family:var(--f-mono);font-weight:700;font-size:10.5px;color:#16302B;flex:none}
+.ball.off{opacity:.32}
+.balls{display:flex;gap:3px;flex-wrap:wrap;align-items:center}
+.dg{width:20px;height:25px;border:1px solid var(--ink-40);display:inline-flex;align-items:center;justify-content:center;
+ font-family:var(--f-mono);font-weight:700;font-size:11.5px;background:var(--paper-2);flex:none}
+.dg.hi{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tk{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap}
+.bnd{font-weight:800;font-size:14px;border:1.5px solid var(--ink);padding:1px 6px;line-height:1.3;flex:none}
+.tkrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 0}
+.tag{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;padding:2px 6px;border:1px solid currentColor;white-space:nowrap;flex:none}
+.tag.sig{color:var(--sig)}.tag.noi{color:var(--ink-40)}.tag.ok{color:var(--ok)}
+.wk{font-family:var(--f-mono);font-weight:700;white-space:nowrap}
+.wksub{font-size:10.5px;color:var(--ink-60)}
+/* 주별 기록: 375px 표에 4열을 욱여넣으면 볼·숫자칸이 세로로 깨진다 — 표 대신 주 단위 카드로 쌓는다 */
+.weeklist{display:flex;flex-direction:column;gap:10px}
+.weekcard{background:var(--paper-2);border:1px solid var(--ink-12);padding:12px 13px}
+.weekcard .whead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+ padding-bottom:8px;border-bottom:1px solid var(--ink-12);margin-bottom:8px}
+.weekcard .whead .net{font-family:var(--f-mono);font-weight:800;font-size:15px;white-space:nowrap}
+.weeksec{padding-top:8px}
+.weeksec:first-of-type{padding-top:0}
+.weeklabel{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60);padding-bottom:4px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;padding-top:4px}
+.btn{font:700 12.5px var(--f-body);color:var(--ink);background:var(--paper-2);border:1.5px solid var(--ink);
+ padding:9px 14px;cursor:pointer;border-radius:2px;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--ink);color:var(--paper)}
+.foot{font-size:12px;color:var(--ink-40);border-top:1px solid var(--ink-12);margin-top:26px;padding-top:14px;line-height:1.8}
+.foot a{color:var(--ink-60)}
+@media(min-width:720px){.wrap{padding-top:24px}}
+</style>
+</head><body>
+<nav class="gnav" aria-label="사이트">
+<a href="./brief.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="5" width="17.6" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.2 9.6h17.6"/></svg><span>이번 주</span></a>
+<a href="./index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><path d="M8.6 8.9a2.4 2.4 0 0 1 2.4-2.3"/></svg><span>로또</span></a>
+<a href="./pension.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2.1a2 2 0 0 0 0 3.8v2.1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2.1a2 2 0 0 0 0-3.8V8.2Z"/><path d="M9.3 6.4v11.3" stroke-dasharray="2.1 2.1"/></svg><span>연금</span></a>
+<a href="./validate.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 19 6v6c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6l7-2.8Z"/><path d="M8.7 12.2 11 14.5l4.3-4.3"/></svg><span>검증</span></a>
+<a href="./record.html" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.2" y="3" width="15.6" height="18" rx="1.4"/><path d="M7.6 8h8.8M7.6 12h8.8M7.6 16h5.6"/></svg><span>기록</span></a>
+</nav>
+<div class="wrap">
+<header>
+  <div class="eyebrow"><span>일확천금 · 기록</span><button id="themeBtn" class="theme-btn" type="button">시스템</button></div>
+  <h1>내 기록<small>로또·연금 실제 구매를 한 곳에서 — 이번 주 「샀어요」가 여기 쌓입니다</small></h1>
+  <p class="linkrow"><a href="./index.html#mine">로또 내 기록 →</a> &nbsp;·&nbsp; <a href="./pension.html#mine">연금 내 기록 →</a></p>
+</header>
+
+<div id="emptyState" class="card empty" hidden>
+  <p><b>아직 기록이 없습니다.</b></p>
+  <p class="note" style="padding-bottom:0">이번 주에 실제로 샀다면 <a href="./brief.html">이번 주</a> 페이지의 <b>「샀어요」</b> 버튼을 눌러 기록하세요 — 그러면 이 페이지에 자동으로 쌓입니다. 아래 「추천 원장」은 참고용으로 계속 보입니다.</p>
+</div>
+
+<div id="pensionDegradedNote" class="card flat" hidden>
+  <p class="note" style="padding-bottom:0"><b>연금 결과 파일이 아직 없습니다.</b> <span class="mono">brief/pension-history.json</span>이 생성되기 전이라 <b>「내 기록」의 연금</b> 당첨 확인은 전부 <b>「추첨 대기」</b>로 표시됩니다(로또는 정상 채점). 「추천 원장」의 연금은 원장에 이미 채점된 결과를 쓰므로 영향 없습니다.</p>
+</div>
+
+<h2>내 기록</h2>
+<div class="kpi" id="kpiMine"></div>
+<p class="note" id="pendingMineNote" hidden></p>
+
+<h2>누적 손익</h2>
+<div class="card flat">
+  <div id="chartWrap"><p class="note">기록이 쌓이면 여기 누적 그래프가 나타납니다.</p></div>
+</div>
+
+<h2>주별 기록</h2>
+<div id="weekTbl" class="weeklist"><p class="note">불러오는 중…</p></div>
+
+<h2>추천 원장 <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-40)">(추천대로 샀다면)</span></h2>
+<div class="card flat">
+  <p class="note">아래는 이 사이트가 매주 추천하는 5+5(로또 5게임 + 연금 5장)를 <b>그대로 샀다고 가정</b>했을 때의 누적 수치입니다. CI가 계산한 가정이며, <b>내 실제 구매(위 「내 기록」)와는 절대 합산하지 않습니다</b> — 누적 손익 그래프의 점선이 이 원장입니다.</p>
+  <div class="kpi" id="kpiLedger"></div>
+  <p class="note" id="pendingLedgerNote" hidden></p>
+</div>
+
+<h2>내보내기 · 가져오기</h2>
+<div class="card flat">
+  <p class="note">로또(<span class="mono">lottolab.my.v1</span>) + 연금(<span class="mono">pensionlab.my.v1</span>) 기록을 파일 하나로 내보내거나, 다른 기기에서 내보낸 파일을 가져와 병합합니다. 가져오기는 <b>겹치는 항목을 건너뛰고 새 항목만 합칩니다</b>(기존 기록을 지우지 않음) — 적용 전 확인 창이 뜹니다.</p>
+  <div class="btnrow">
+    <button class="btn" id="exportBtn" type="button">내보내기</button>
+    <button class="btn" id="importBtn" type="button">가져오기</button>
+    <input type="file" id="importFile" accept="application/json" hidden>
+  </div>
+</div>
+
+<p class="foot">회수율은 1등 꼬리가 지배 — 실력 지표가 아닙니다 → <a href="./validate.html">검증</a><br>
+복권 구매는 감당할 수 있는 범위 안에서. 만 19세 미만은 구매할 수 없습니다.</p>
+</div>
+<script src="./site.js" defer></script>
+<script>
+"use strict";
+/* ══════════════════ 상수 ══════════════════ */
+// 로또 회차 − 연금 회차(같은 주) = 909. PLAN §1.1: 로또 PORTFOLIO_FROM=1243 · 연금 PENSION_PORTFOLIO_FROM=334 는
+// 정확히 "이번 주" 한 쌍을 가리키므로(1243-334=909), 두 복권이 매주 나란히 한 회차씩 전진한다는 가정 하의 상수다.
+// 실제 draw 데이터(lotto-history.json/brief/pension-history.json)로 매긴 게 아니라 브리핑 파이프라인의 설계값이라
+// 둘 중 하나가 결번(휴번)되면 어긋날 수 있음 — 알려진 한계로 최종 보고에 남긴다.
+var ROUND_OFFSET = 1243 - 334;
+var MY_LOTTO_KEY = 'lottolab.my.v1';       // [{round, nums:[6 오름차순], cost, at}] — site.js SITE.markBought 계약
+var MY_PENSION_KEY = 'pensionlab.my.v1';   // [{band, num, ep}] — pension.html 의 LSMY 와 동일 저장소·모양
+
+/* ══════════════════ 채점기 (다른 파일에서 그대로 복사 — 로직 변경 금지) ══════════════════ */
+/* copied from index.html rankOf() — keep in sync */
+function rankOf(combo, d){
+  var m = combo.filter(function(n){ return d.n.includes(n); }).length;
+  if(m===6) return 1;
+  if(m===5) return combo.includes(d.b) ? 2 : 3;
+  if(m===4) return 4;
+  if(m===3) return 5;
+  return 0;
+}
+/* copied from pension.html gradeOf() — keep in sync */
+function gradeOf(band,num,round){
+  if(!round) return null;
+  var wn=round.num, bn=round.bonus;
+  if(num===wn) return band===round.band ? 1 : 2;
+  if(num===bn) return 8;
+  for(var n=5;n>=1;n--) if(num.slice(6-n)===wn.slice(6-n)) return 8-n;
+  return 0;
+}
+/* prize amounts copied from pension.html RANKS — keep in sync */
+var PENSION_AMT  = {1:1680000000,2:120000000,8:120000000,3:1000000,4:100000,5:50000,6:5000,7:1000};
+var PENSION_NAME = {0:'미당첨',1:'1등',2:'2등',3:'3등',4:'4등',5:'5등',6:'6등',7:'7등',8:'보너스'};
+var LOTTO_NAME   = {0:'미당첨',1:'1등',2:'2등',3:'3등',4:'4등',5:'5등'};
+
+/* ══════════════════ 유틸 ══════════════════ */
+var nf = function(n){ return (n==null||isNaN(n)) ? '—' : Math.round(n).toLocaleString('ko-KR'); };
+var won = function(n){
+  n = Number(n)||0;
+  var sg = n<0?'-':'', a = Math.abs(n);
+  if(a>=1e8) return sg+(a/1e8).toFixed(a>=1e9?1:2).replace(/\.0+$/,'')+'억';
+  if(a>=1e4) return sg+Math.round(a/1e4).toLocaleString('ko-KR')+'만';
+  return nf(n)+'원';
+};
+var pct = function(x,d){ d=d==null?1:d; return (x*100).toFixed(d)+'%'; };
+// 큰 당첨금 1건이 작은 총 투입액을 나누면 "1115620.3%" 처럼 자릿수가 폭주한다 — 그럴 때는 배율로 표시.
+var recoveryLabel = function(gain, spend){
+  if(!spend) return '—';
+  var r = gain/spend;
+  if(r>=10) return r.toLocaleString('ko-KR',{maximumFractionDigits:1})+'배';
+  return pct(r,1);
+};
+var ballColor = function(n){ return n<=10?'var(--b-yellow)':n<=20?'var(--b-blue)':n<=30?'var(--b-red)':n<=40?'var(--b-grey)':'var(--b-green)'; };
+
+function storeGet(key){ try{ var v=JSON.parse(localStorage.getItem(key)||'[]'); return Array.isArray(v)?v:[]; }catch(e){ return []; } }
+function storeSet(key,val){ try{ localStorage.setItem(key, JSON.stringify(val)); return true; }catch(e){ return false; } }
+
+function ballHTML(n,dim){ return '<span class="ball'+(dim?' off':'')+'" style="background:'+ballColor(n)+'">'+n+'</span>'; }
+function lottoTicketHTML(nums, hit){
+  return '<span class="balls">'+nums.map(function(n){ return ballHTML(n, hit!=null && !hit.includes(n)); }).join('')+'</span>';
+}
+function pensionTicketHTML(band, num, hiCount){
+  var digits = String(num).padStart(6,'0').split('');
+  var n = digits.length, hiFrom = hiCount>0 ? n-hiCount : -1;
+  var dg = digits.map(function(c,i){ return '<span class="dg'+(hiCount>0 && i>=hiFrom?' hi':'')+'">'+c+'</span>'; }).join('');
+  return '<span class="tk"><span class="bnd">'+band+'</span>'+dg+'</span>';
+}
+function hiCountForGrade(g){
+  if(g==null || g===0) return 0;
+  if(g===1||g===2||g===8) return 6;
+  return 8-g; // 3..7 → 뒤 5..1자리
+}
+
+/* ══════════════════ 데이터 로딩 ══════════════════ */
+function fetchJSON(url){
+  return fetch(url,{cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+}
+function loadLottoMap(){
+  return fetchJSON('./lotto-history.json').then(function(o){
+    if(!o || !Array.isArray(o.draws)) return null;
+    var map={};
+    o.draws.forEach(function(d){
+      map[d.round] = { n:d.numbers, b:d.bonus,
+        a:[d.prize.first,d.prize.second,d.prize.third,d.prize.fourth,d.prize.fifth] };
+    });
+    return map;
+  });
+}
+function loadPensionMap(){
+  return fetchJSON('./brief/pension-history.json').then(function(o){
+    if(!o) return null; // 파일이 없으면(아직 생성 전) 전부 "추첨 대기"로 저하
+    var rows = Array.isArray(o) ? o : (Array.isArray(o.rounds) ? o.rounds : (Array.isArray(o.pension) ? o.pension : null));
+    if(!rows) return null;
+    var map={};
+    rows.forEach(function(x){
+      if(x && x.ep!=null) map[x.ep] = { num:String(x.num).padStart(6,'0'), bonus:String(x.bonus).padStart(6,'0'), band:Number(x.band) };
+    });
+    return map;
+  });
+}
+function loadLedgerRows(){
+  return fetchJSON('./brief/purchases.json').then(function(o){
+    return (o && Array.isArray(o.rounds)) ? o.rounds : [];
+  });
+}
+function parseLottoPick(s){ return String(s).split(',').map(Number).filter(function(n){ return !isNaN(n); }); }
+function parsePensionPick(s){
+  var m = /^(\d+)\s*조\s*(\d{6})$/.exec(String(s).trim());
+  return m ? {band:Number(m[1]), num:m[2]} : null;
+}
+function gradeLottoEntry(nums, lottoMap, round){
+  var d = lottoMap ? lottoMap[round] : null;
+  if(!d) return {grade:null, amt:0, d:null};
+  var g = rankOf(nums, d);
+  return {grade:g, amt: g ? (d.a[g-1]||0) : 0, d:d};
+}
+function gradePensionEntry(band, num, pensionMap, ep){
+  var rd = pensionMap ? pensionMap[ep] : null;
+  if(!rd) return {grade:null, amt:0, rd:null};
+  var g = gradeOf(band, num, rd);
+  return {grade:g, amt: g ? (PENSION_AMT[g]||0) : 0, rd:rd};
+}
+
+/* ══════════════════ 렌더링 ══════════════════ */
+function renderKPI(sel, items){
+  document.querySelector(sel).innerHTML = items.map(function(it){
+    return '<div><div class="k">'+it[0]+'</div><div class="v">'+it[1]+'</div><div class="s">'+it[2]+'</div></div>';
+  }).join('');
+}
+function buildChart(list){
+  if(!list.length) return '<p class="note">기록이 쌓이면 여기 누적 그래프가 나타납니다.</p>';
+  var n=list.length, W=680, H=190, padL=48, padR=10, padT=12, padB=10;
+  var xs = function(i){ return n<=1 ? (padL+(W-padL-padR)/2) : padL+(W-padL-padR)*i/(n-1); };
+  var vals=[0];
+  list.forEach(function(w){ vals.push(w.cumMine, w.cumLedger); });
+  var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals);
+  if(lo===hi){ lo-=1000; hi+=1000; }
+  var span=hi-lo;
+  var ys = function(v){ return padT+(H-padT-padB)*(1-(v-lo)/span); };
+  var path = function(key){
+    return list.map(function(w,i){ return (i===0?'M':'L')+xs(i).toFixed(1)+','+ys(w[key]).toFixed(1); }).join(' ');
+  };
+  var zeroY = ys(0).toFixed(1);
+  var last = list[list.length-1];
+  return '<svg viewBox="0 0 '+W+' '+H+'" class="chart" role="img" aria-label="누적 손익: 내 기록 대 추천 원장">'+
+    '<line x1="'+padL+'" y1="'+zeroY+'" x2="'+(W-padR)+'" y2="'+zeroY+'" class="axis0"/>'+
+    '<path d="'+path('cumLedger')+'" class="ln ledger"/>'+
+    '<path d="'+path('cumMine')+'" class="ln mine"/>'+
+  '</svg>'+
+  '<div class="legend">'+
+    '<span class="lg"><span class="sw"></span>내 기록 누적 손익 '+won(last.cumMine)+'</span>'+
+    '<span class="lg"><span class="sw ledger"></span>추천 원장 누적 손익 '+won(last.cumLedger)+'</span>'+
+  '</div>';
+}
+function ticketRowLotto(t){
+  var badge = t.grade==null ? '<span class="tag noi">추첨 대기</span>' :
+    (t.grade===0 ? '<span class="tag noi">미당첨</span>' : '<span class="tag sig">'+LOTTO_NAME[t.grade]+'</span>');
+  var hit = t.d ? t.nums.filter(function(n){ return t.d.n.includes(n) || t.d.b===n; }) : null;
+  return '<div class="tkrow">'+lottoTicketHTML(t.nums, hit)+badge+
+    (t.amt ? '<span class="mono num" style="margin-left:auto">'+won(t.amt)+'</span>' : '')+'</div>';
+}
+function ticketRowPension(t){
+  var badge = t.grade==null ? '<span class="tag noi">추첨 대기</span>' :
+    (t.grade===0 ? '<span class="tag noi">미당첨</span>' : '<span class="tag sig">'+PENSION_NAME[t.grade]+'</span>');
+  return '<div class="tkrow">'+pensionTicketHTML(t.band, t.num, hiCountForGrade(t.grade))+badge+
+    (t.amt ? '<span class="mono num" style="margin-left:auto">'+won(t.amt)+'</span>' : '')+'</div>';
+}
+function buildWeekTable(mineWeeksDesc){
+  if(!mineWeeksDesc.length) return '<p class="note">기록이 없습니다.</p>';
+  return mineWeeksDesc.map(function(w){
+    return '<div class="weekcard">'+
+      '<div class="whead"><div><div class="wk">로또 '+w.lottoRound+'회</div><div class="wksub">연금 '+w.pensionRound+'회</div></div>'+
+        '<div class="net mono">'+won(w.mineNet)+'</div></div>'+
+      '<div class="weeksec"><div class="weeklabel">로또</div>'+
+        (w.mineLottoGraded.length ? w.mineLottoGraded.map(ticketRowLotto).join('') : '<span class="wksub">이번 주 로또 기록 없음</span>')+
+      '</div>'+
+      '<div class="weeksec"><div class="weeklabel">연금</div>'+
+        (w.minePensionGraded.length ? w.minePensionGraded.map(ticketRowPension).join('') : '<span class="wksub">이번 주 연금 기록 없음</span>')+
+      '</div></div>';
+  }).join('');
+}
+
+/* ══════════════════ 내보내기 · 가져오기 ══════════════════ */
+function wireExportImport(){
+  var expBtn=document.getElementById('exportBtn'), impBtn=document.getElementById('importBtn'), impFile=document.getElementById('importFile');
+  if(expBtn) expBtn.onclick=function(){
+    var data={v:1, lotto:storeGet(MY_LOTTO_KEY), pension:storeGet(MY_PENSION_KEY)};
+    var blob=new Blob([JSON.stringify(data,null,1)], {type:'application/json'});
+    var url=URL.createObjectURL(blob), a=document.createElement('a');
+    var ymd=new Date().toISOString().slice(0,10).replace(/-/g,'');
+    a.href=url; a.download='일확천금-기록-'+ymd+'.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+  };
+  if(impBtn) impBtn.onclick=function(){ impFile.click(); };
+  if(impFile) impFile.onchange=function(){
+    var f = impFile.files && impFile.files[0];
+    if(!f) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      var data;
+      try{ data=JSON.parse(String(reader.result)); }
+      catch(e){ alert('JSON 파일을 읽을 수 없습니다.'); impFile.value=''; return; }
+      if(!data || data.v!==1 || !Array.isArray(data.lotto) || !Array.isArray(data.pension)){
+        alert('올바른 기록 파일이 아닙니다 ({v:1, lotto:[…], pension:[…]} 형식이어야 합니다).');
+        impFile.value=''; return;
+      }
+      var curLotto=storeGet(MY_LOTTO_KEY), curPension=storeGet(MY_PENSION_KEY);
+      var seenL={};
+      curLotto.forEach(function(t){ if(t && t.round!=null && Array.isArray(t.nums)) seenL[t.round+':'+t.nums.slice().sort(function(a,b){return a-b;}).join(',')]=true; });
+      var addL=0, mergedLotto=curLotto.slice();
+      data.lotto.forEach(function(t){
+        if(!t || t.round==null || !Array.isArray(t.nums)) return;
+        var s=t.nums.slice().sort(function(a,b){return a-b;}), key=t.round+':'+s.join(',');
+        if(seenL[key]) return; seenL[key]=true;
+        mergedLotto.push({round:t.round, nums:s, cost:t.cost||1000, at:t.at||Date.now()});
+        addL++;
+      });
+      var seenP={};
+      curPension.forEach(function(t){ if(t && t.ep!=null) seenP[t.ep+':'+t.band+':'+t.num]=true; });
+      var addP=0, mergedPension=curPension.slice();
+      data.pension.forEach(function(t){
+        if(!t || t.ep==null || t.num==null) return;
+        var key=t.ep+':'+t.band+':'+t.num;
+        if(seenP[key]) return; seenP[key]=true;
+        mergedPension.push({band:t.band, num:t.num, ep:t.ep});
+        addP++;
+      });
+      if(addL===0 && addP===0){ alert('새로 추가할 항목이 없습니다 (이미 모두 있음).'); impFile.value=''; return; }
+      var ok = confirm('로또 '+addL+'건, 연금 '+addP+'건을 내 기록에 추가합니다.\n기존 기록은 지워지지 않고 합쳐집니다. 계속할까요?');
+      impFile.value='';
+      if(!ok) return;
+      storeSet(MY_LOTTO_KEY, mergedLotto);
+      storeSet(MY_PENSION_KEY, mergedPension);
+      location.reload();
+    };
+    reader.readAsText(f);
+  };
+}
+
+/* ══════════════════ 메인 ══════════════════ */
+function main(){
+  try{ if(window.SITE && SITE.theme && SITE.theme.mount) SITE.theme.mount('#themeBtn'); }catch(e){}
+
+  var myLotto = storeGet(MY_LOTTO_KEY);
+  var myPension = storeGet(MY_PENSION_KEY);
+  var emptyEl = document.getElementById('emptyState');
+  if(emptyEl) emptyEl.hidden = !(myLotto.length===0 && myPension.length===0);
+
+  Promise.all([loadLottoMap(), loadPensionMap(), loadLedgerRows()]).then(function(res){
+    var lottoMap=res[0], pensionMap=res[1], ledgerRows=res[2];
+    var degradedEl = document.getElementById('pensionDegradedNote');
+    if(degradedEl) degradedEl.hidden = !!pensionMap;
+
+    var weeks = new Map();
+    function wk(lottoRound){
+      if(!weeks.has(lottoRound)) weeks.set(lottoRound, {
+        lottoRound:lottoRound, pensionRound:lottoRound-ROUND_OFFSET,
+        mineLotto:[], minePension:[], ledgerLottoRow:null, ledgerPensionRow:null
+      });
+      return weeks.get(lottoRound);
+    }
+    myLotto.forEach(function(t){ if(t && t.round!=null && Array.isArray(t.nums)) wk(t.round).mineLotto.push(t); });
+    myPension.forEach(function(t){ if(t && t.ep!=null && t.num!=null) wk(t.ep+ROUND_OFFSET).minePension.push(t); });
+    // 추천 원장은 원장(brief/purchases.json) 행을 통째로 붙잡아 둔다 — status/result/spend/return 을
+    // 그대로 쓰기 위함(재채점하지 않음). lotto-history/pension-history 는 표시용(볼 하이라이트)에만 쓴다.
+    ledgerRows.forEach(function(row){
+      if(!row || !Array.isArray(row.picks)) return;
+      if(row.kind==='lotto') wk(row.round).ledgerLottoRow = row;
+      else if(row.kind==='pension') wk(row.round+ROUND_OFFSET).ledgerPensionRow = row;
+    });
+
+    var list = Array.from(weeks.values()).sort(function(a,b){ return a.lottoRound-b.lottoRound; });
+
+    // 결과가 알려진(당첨 확정 — 미당첨 포함) 행만 KPI·누적 그래프에 합산한다. grade==null 은
+    // 아직 추첨/집계 전(purchases.json 의 status:'pending' 과 같은 뜻) — «추첨 대기»로 따로 센다.
+    // 추천 원장 쪽은 이렇게 해야 validate.html 의 "추천 원장 누적/회수"(done 행만 합산)와 값이 맞는다.
+    var cumMine=0, cumLedger=0;
+    list.forEach(function(w){
+      var mineSpend=0, mineGain=0, minePending=0;
+      w.mineLottoGraded = w.mineLotto.map(function(t){
+        var g = gradeLottoEntry(t.nums, lottoMap, t.round);
+        if(g.grade==null) minePending++; else { mineSpend += t.cost||1000; mineGain += g.amt; }
+        return Object.assign({}, t, g);
+      });
+      w.minePensionGraded = w.minePension.map(function(t){
+        var g = gradePensionEntry(t.band, t.num, pensionMap, t.ep);
+        if(g.grade==null) minePending++; else { mineSpend += 1000; mineGain += g.amt; }
+        return Object.assign({}, t, g);
+      });
+      w.mineSpend=mineSpend; w.mineGain=mineGain; w.mineNet=mineGain-mineSpend; w.minePending=minePending;
+      cumMine += w.mineNet; w.cumMine=cumMine;
+
+      // 추천 원장: purchases.json 행의 status/result/spend/return 을 그대로 쓴다(재채점 없음) —
+      // validate.mjs 의 done 행 합산(led.rounds.filter(status==='done'))과 바이트 단위로 같아야 한다.
+      var ledgerSpend=0, ledgerGain=0, ledgerPending=0;
+      var lr = w.ledgerLottoRow, lrKnown = !!lr && lr.status==='done';
+      w.ledgerLottoGraded = lr ? lr.picks.map(function(s,i){
+        var nums = parseLottoPick(s);
+        var res = lrKnown && Array.isArray(lr.result) ? lr.result[i] : null;
+        var grade = res ? res.grade : null;
+        var d = lottoMap ? lottoMap[w.lottoRound] : null; // 볼 하이라이트 표시용만(집계에는 안 씀)
+        var amt = (lrKnown && grade) ? ((d && d.a[grade-1]) || 0) : 0;
+        return {nums:nums, grade: lrKnown ? grade : null, amt:amt, d: lrKnown ? d : null};
+      }) : [];
+      if(lr){ if(lrKnown){ ledgerSpend += lr.spend||0; ledgerGain += lr.return||0; } else { ledgerPending += lr.picks.length; } }
+
+      var pr = w.ledgerPensionRow, prKnown = !!pr && pr.status==='done';
+      w.ledgerPensionGraded = pr ? pr.picks.map(function(s,i){
+        var p = parsePensionPick(s);
+        var res = prKnown && Array.isArray(pr.result) ? pr.result[i] : null;
+        var grade = res ? res.grade : null;
+        return {band: p?p.band:null, num: p?p.num:null, grade: prKnown ? grade : null,
+          amt: (prKnown && grade) ? (PENSION_AMT[grade]||0) : 0};
+      }) : [];
+      if(pr){ if(prKnown){ ledgerSpend += pr.spend||0; ledgerGain += pr.return||0; } else { ledgerPending += pr.picks.length; } }
+
+      w.ledgerSpend=ledgerSpend; w.ledgerGain=ledgerGain; w.ledgerNet=ledgerGain-ledgerSpend; w.ledgerPending=ledgerPending;
+      cumLedger += w.ledgerNet; w.cumLedger=cumLedger;
+    });
+
+    var mineWeeks = list.filter(function(w){ return w.mineLotto.length>0 || w.minePension.length>0; });
+    // KPI 의 «주»·게임·장 은 결과가 알려진(known) 행만 센다 — 옆 「투입」의 "결과 확정분만"과 숫자가 맞아야 한다.
+    var mineWeeksKnown = mineWeeks.filter(function(w){
+      return w.mineLottoGraded.some(function(t){ return t.grade!=null; }) ||
+             w.minePensionGraded.some(function(t){ return t.grade!=null; });
+    });
+    var totalMineSpend = mineWeeks.reduce(function(s,w){ return s+w.mineSpend; },0);
+    var totalMineGain  = mineWeeks.reduce(function(s,w){ return s+w.mineGain; },0);
+    var totalMinePending = mineWeeks.reduce(function(s,w){ return s+w.minePending; },0);
+    var mineL = mineWeeks.reduce(function(s,w){ return s+w.mineLottoGraded.filter(function(t){ return t.grade!=null; }).length; },0);
+    var mineP = mineWeeks.reduce(function(s,w){ return s+w.minePensionGraded.filter(function(t){ return t.grade!=null; }).length; },0);
+    renderKPI('#kpiMine',[
+      ['주', mineWeeksKnown.length+'주', mineL+'게임 · '+mineP+'장 (확정분)'],
+      ['투입', won(totalMineSpend), '결과 확정분만'],
+      ['수령', won(totalMineGain), '회수율 '+recoveryLabel(totalMineGain,totalMineSpend)],
+      ['손익', won(totalMineGain-totalMineSpend), (totalMineGain-totalMineSpend>=0?'수익':'손실')]
+    ]);
+    var pendingMineEl=document.getElementById('pendingMineNote');
+    if(pendingMineEl){
+      pendingMineEl.hidden = totalMinePending<=0;
+      pendingMineEl.textContent = '추첨 대기 '+totalMinePending+'장 ('+nf(totalMinePending*1000)+'원) — 위 집계에서 빠져 있습니다(결과가 나오면 자동으로 반영)';
+    }
+
+    var ledgerWeeksAny = list.filter(function(w){ return w.ledgerLottoRow || w.ledgerPensionRow; });
+    var ledgerWeeksKnown = ledgerWeeksAny.filter(function(w){
+      return (w.ledgerLottoRow && w.ledgerLottoRow.status==='done') || (w.ledgerPensionRow && w.ledgerPensionRow.status==='done');
+    });
+    var totalLedgerSpend = ledgerWeeksAny.reduce(function(s,w){ return s+w.ledgerSpend; },0);
+    var totalLedgerGain  = ledgerWeeksAny.reduce(function(s,w){ return s+w.ledgerGain; },0);
+    var totalLedgerPending = ledgerWeeksAny.reduce(function(s,w){ return s+w.ledgerPending; },0);
+    var ledgerL = ledgerWeeksAny.reduce(function(s,w){ return s + (w.ledgerLottoRow && w.ledgerLottoRow.status==='done' ? w.ledgerLottoRow.picks.length : 0); },0);
+    var ledgerP = ledgerWeeksAny.reduce(function(s,w){ return s + (w.ledgerPensionRow && w.ledgerPensionRow.status==='done' ? w.ledgerPensionRow.picks.length : 0); },0);
+    renderKPI('#kpiLedger',[
+      ['주', ledgerWeeksKnown.length+'주', ledgerL+'게임 · '+ledgerP+'장 (확정분)'],
+      ['투입', won(totalLedgerSpend), '결과 확정분만'],
+      ['수령', won(totalLedgerGain), '회수율 '+recoveryLabel(totalLedgerGain,totalLedgerSpend)],
+      ['손익', won(totalLedgerGain-totalLedgerSpend), (totalLedgerGain-totalLedgerSpend>=0?'수익':'손실')]
+    ]);
+    var pendingLedgerEl=document.getElementById('pendingLedgerNote');
+    if(pendingLedgerEl){
+      pendingLedgerEl.hidden = totalLedgerPending<=0;
+      pendingLedgerEl.textContent = '추첨 대기 '+totalLedgerPending+'장 ('+nf(totalLedgerPending*1000)+'원) — 위 집계에서 빠져 있습니다(결과가 나오면 자동으로 반영)';
+    }
+
+    var chartEl=document.getElementById('chartWrap');
+    if(chartEl) chartEl.innerHTML = buildChart(list);
+    var tblEl=document.getElementById('weekTbl');
+    if(tblEl) tblEl.innerHTML = buildWeekTable(mineWeeks.slice().reverse());
+  }).catch(function(e){
+    var tblEl=document.getElementById('weekTbl');
+    if(tblEl) tblEl.innerHTML = '<p class="note" style="color:var(--sig)">데이터를 불러오지 못했습니다: '+(e&&e.message||e)+'</p>';
+  });
+
+  wireExportImport();
+}
+document.addEventListener('DOMContentLoaded', main);
+</script>
+</body></html>

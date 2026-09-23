@@ -4,9 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>PENSION LAB · 연금복권720+ 통계 실험실</title>
+<meta name="theme-color" content="#16302B">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<script>try{var t=localStorage.getItem('lottolab.theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./site.css">
+<script src="./site.js" defer></script>
 <style>
 :root{
   --paper:#EEF0EB; --paper-2:#F7F8F5; --paper-3:#E4E7E0;
@@ -32,7 +39,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
 body{background:var(--paper);color:var(--ink);font-family:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo","Noto Sans KR",system-ui,-apple-system,sans-serif;
-  font-weight:400;line-height:1.68;font-size:15px;letter-spacing:-0.01em;padding:0 0 90px;-webkit-font-smoothing:antialiased}
+  font-weight:400;line-height:1.68;font-size:15px;letter-spacing:-0.01em;-webkit-font-smoothing:antialiased}
 .wrap{max-width:940px;margin:0 auto;padding:16px 14px 0}
 .mono{font-family:"Space Mono",monospace}
 
@@ -41,7 +48,7 @@ header{border-bottom:1.5px solid var(--ink);padding-bottom:10px;margin-bottom:18
   color:var(--ink-60);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
 .eyebrow a{color:var(--ink-60);text-decoration:none;border-bottom:1px solid var(--ink-30)}
 .eyebrow a:hover{color:var(--ink);border-color:var(--ink)}
-h1{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:clamp(46px,11.5vw,88px);
+h1{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:clamp(32px,8.5vw,56px);
   line-height:.84;letter-spacing:-.01em;padding:10px 0 0}
 h1 span{display:block;font-size:.24em;font-weight:700;letter-spacing:.16em;color:var(--ink-60);padding-top:10px}
 .status{font-family:"Space Mono",monospace;font-size:12.5px;color:var(--ink-60);padding-top:10px;
@@ -147,6 +154,37 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 .combo .m{text-align:right;font-family:"Space Mono",monospace;font-size:10.5px;color:var(--ink-60);line-height:1.5;white-space:nowrap}
 .combo .m em{display:block;font-style:normal;color:var(--ink);font-size:13.5px;font-weight:700}
 
+/* ── #dashPick/#dashAlt(«이번 주 5장»·대체) 전용 — 375px에서 6자리가 한 줄에 들어가도록 축소 ── */
+@media(max-width:400px){
+  #dashPick .combo, #dashAlt .combo{
+    grid-template-columns:19px 1fr;
+    column-gap:6px; row-gap:2px;
+    padding:9px 2px;
+  }
+  #dashPick .combo .k, #dashAlt .combo .k{
+    grid-column:1; grid-row:1;
+    font-size:17px!important;
+  }
+  #dashPick .combo>div:nth-child(2), #dashAlt .combo>div:nth-child(2){
+    grid-column:2; grid-row:1; min-width:0;
+  }
+  #dashPick .combo .m, #dashAlt .combo .m{
+    grid-column:1/-1; grid-row:2;
+    display:flex; justify-content:flex-end; align-items:baseline;
+    gap:5px; white-space:nowrap; font-size:9.5px; line-height:1.3;
+  }
+  #dashPick .combo .m em, #dashAlt .combo .m em{
+    display:inline; font-size:11.5px;
+  }
+  #dashPick .tk, #dashAlt .tk{ gap:4px; flex-wrap:nowrap; }
+  #dashPick .tk .bnd, #dashAlt .tk .bnd{
+    font-size:15px!important; padding:1px 4px!important; min-width:22px;
+  }
+  #dashPick .tk .bndlabel, #dashAlt .tk .bndlabel{ font-size:8.5px; }
+  #dashPick .tk .sep, #dashAlt .tk .sep{ width:3px; }
+  #dashPick .dg.sm, #dashAlt .dg.sm{ width:21px; height:25px; font-size:11.5px; }
+}
+
 .bignum{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:clamp(43px,9.5vw,70px);line-height:1}
 .disclaimer{font-size:13px;color:var(--ink-60);padding:18px 0 0;line-height:1.75;border-top:1px solid var(--ink-12);margin-top:26px}
 .spin{display:inline-block;width:11px;height:11px;border:2px solid var(--ink-30);border-top-color:var(--ink);
@@ -163,11 +201,18 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 </style>
 </head>
 <body>
+<nav class="gnav" aria-label="사이트">
+  <a href="./brief.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="5" width="17.6" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.2 9.6h17.6"/></svg><span>이번 주</span></a>
+  <a href="./index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><path d="M8.6 8.9a2.4 2.4 0 0 1 2.4-2.3"/></svg><span>로또</span></a>
+  <a href="./pension.html" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2.1a2 2 0 0 0 0 3.8v2.1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2.1a2 2 0 0 0 0-3.8V8.2Z"/><path d="M9.3 6.4v11.3" stroke-dasharray="2.1 2.1"/></svg><span>연금</span></a>
+  <a href="./validate.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 19 6v6c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6l7-2.8Z"/><path d="M8.7 12.2 11 14.5l4.3-4.3"/></svg><span>검증</span></a>
+  <a href="./record.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.2" y="3" width="15.6" height="18" rx="1.4"/><path d="M7.6 8h8.8M7.6 12h8.8M7.6 16h5.6"/></svg><span>기록</span></a>
+</nav>
 <div class="wrap">
 <header>
   <div class="eyebrow">
     <span>Pension 720+ · Statistical Lab</span>
-    <span><a href="./validate.html">검증 보드</a> · <a href="./brief.html">주간 브리핑</a> · <a href="./index.html">→ LOTTO LAB</a></span>
+    <button class="theme-btn" id="themeBtn" type="button">시스템</button>
   </div>
   <h1>PENSION<br>LAB<span>일확천금 프로젝트</span></h1>
   <div class="status" id="status"><span class="dot"></span><span id="statusTxt">초기화 중…</span></div>
@@ -189,6 +234,22 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 
 <!-- ══════════ 대시보드 ══════════ -->
 <section class="panel on" id="p-dash">
+  <h2>이번 주 5장</h2>
+  <p class="note">연금복권은 번호를 골라도 <b>당첨 확률도 당첨금도 그대로</b>입니다 — 5장이 <b>어떻게 흩어지는지</b>만 고를 수 있습니다.
+    <b>분산</b>은 5장의 끝자리를 서로 다르게 맞춰 «1장 이상 당첨» 확률을 넓히고, <b>세트</b>는 같은 번호를 1~5조 모두 사서 번호가 맞으면 한 번에 크게 받습니다.
+    기대값은 두 방식이 <b>정확히 같습니다</b>. 실물은 (조,번호) 조합당 <b>판매점 1장 + 인터넷 1장</b>뿐이라 매진일 수 있어 대체 번호를 함께 냅니다.</p>
+  <div class="row" id="buyModeRow" role="radiogroup" aria-label="구매 방식">
+    <span class="chip" data-mode="spread" role="radio" tabindex="0">분산 5장</span>
+    <span class="chip" data-mode="set" role="radio" tabindex="0">세트 1세트</span>
+  </div>
+  <div class="card" id="dashPick"><span class="spin"></span></div>
+  <details>
+    <summary style="cursor:pointer;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.08em;color:var(--ink-60);padding:8px 2px;text-transform:uppercase">품절 시 대체 6~10</summary>
+    <div class="card flat" id="dashAlt"></div>
+  </details>
+  <h3 style="padding-top:16px">분산 vs 세트 vs 무작위 — 결과가 어떻게 흩어지는가</h3>
+  <div class="card flat" id="distStrip"></div>
+
   <div class="kpi" id="kpiDash"></div>
 
   <h2>최근 회차</h2>
@@ -215,10 +276,6 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 
   <h2>1등 당첨금의 실제 가치</h2>
   <div class="card flat" id="pvCard"></div>
-
-  <h2>이번 회차 집중 번호</h2>
-  <p class="note">공식 안내에 따르면 <b>복권 번호는 한 회차당 1개 번호만 인쇄</b>되고, 같은 번호를 인터넷에서도 판매합니다. 즉 (조, 6자리) 조합 하나에 실물은 <b>판매점 1장 + 인터넷 1장</b>뿐이라 원하는 번호가 <b>이미 팔렸을 수 있습니다</b>. 그래서 1순위부터 10순위까지 대안을 함께 냅니다 — 앞 번호를 못 사면 다음으로 내려가세요. 조를 고르는 게 번거로우면 <b>세트(같은 번호 1~5조 5장)</b>로 사는 방법도 있습니다. 아래 «낱장과 세트» 표를 보세요. 설정은 <b>예상 번호</b> 탭에서 바꿉니다. 백테스트 적중률을 반드시 함께 보세요.</p>
-  <div class="card" id="dashPick"><span class="spin"></span></div>
 </section>
 
 <!-- ══════════ 예상 번호 ══════════ -->
@@ -636,6 +693,169 @@ function gradeOf(band,num,round){
 }
 const rankInfo=k=>RANKS.find(r=>r.k===k);
 
+/* ══════════════════ 포트폴리오(5장) — D1 §6, EV 불변 · 분포만 다름 ══════════════════
+   로또와 달리 연금복권은 당첨금이 고정(당첨자 수 무관)이라 «인기 없는 번호로 나눠갖기 인원 줄이기»가
+   원천적으로 무의미하다(§renderFair 결론 카드와 동일 입장). 5장으로 조작 가능한 건 오직
+   당첨 이벤트의 상관구조(=분포 모양)뿐이고, 기대값은 항상 3,750원으로 같다. */
+/* PENSION_RULES — 회차별 규칙 이력표(하위호환용 설정 이력). 설정을 바꿀 땐 이 배열에 새 항목을 APPEND 만
+   한다 — 과거 항목은 절대 수정하지 않는다. 그래야 나중에 설정이 바뀌어도(예: 세트 기본으로 전환)
+   지난 회차 재현·purchases.json 연속성이 깨지지 않는다(PLAN §1.1). */
+const PENSION_RULES = [{from:334, mode:'spread'}];
+/* pensionModeFor(ep) — ep 회차에 적용할 mode: from<=ep 인 마지막 규칙의 mode. ep 가 첫 규칙보다 이르면
+   null(=legacy, 옛 generate() 그대로 재현). */
+function pensionModeFor(ep){
+  let mode=null;
+  for(const r of PENSION_RULES) if(r.from<=ep) mode=r.mode;
+  return mode;
+}
+const PENSION_MODE = PENSION_RULES[PENSION_RULES.length-1].mode;  // 하위호환 별칭 — 현재(마지막 규칙) mode
+const PENSION_PORTFOLIO_FROM = PENSION_RULES[0].from;              // 하위호환 별칭 — 최초 규칙 시작 회차
+const PENSION_ANY_P = RANKS.reduce((a,r)=>a+r.p,0);   // 1장당 «뭐라도 당첨» 확률(무작위 기준선용) ≈ 0.100001
+
+/* pensionDist(tickets) — tickets:[{band,num}](개수 무관)의 정확한 당첨금 분포.
+   실행 공간은 번호(10^6)×조(5)×보너스(10^6) = 5,000,000,000,000가지지만, 메인 추첨(번호×조, 500만가지)과
+   독립인 보너스 추첨(100만가지)을 각각 «값의 가짓수가 적은 압축표»로 만든 뒤 합성곱하므로
+   실제로 도는 루프는 메인 1,000,000줄뿐이다 — <300ms(§7 acceptance). */
+function pensionDist(tickets){
+  const list=(tickets||[]).filter(t=>t&&t.num!=null&&t.band!=null);
+  const n=list.length;
+  const nums=list.map(t=>+t.num), bands=list.map(t=>+t.band);
+  const POW=[1,10,100,1000,10000,100000];
+  const suffixAmt=[0, rankInfo(7).amt, rankInfo(6).amt, rankInfo(5).amt, rankInfo(4).amt, rankInfo(3).amt]; // [L] L=뒤 몇 자리 일치(1..5)
+  const AMT1=rankInfo(1).amt, AMT2=rankInfo(2).amt, AMTB=rankInfo(8).amt;
+  const numMod=nums.map(v=>[1,2,3,4,5].map(L=>v%POW[L]));
+
+  const mainHist=Object.create(null);
+  const exactRows=Object.create(null);   // v(=W) → [band_win 1..5 별 메인 합계 5개] (보너스 중복보정용)
+  let firstCount=0;
+  for(let W=0;W<=999999;W++){
+    const Wm=[0, W%10, W%100, W%1000, W%10000, W%100000];
+    let fixedSum=0, exact=null;
+    for(let i=0;i<n;i++){
+      if(W===nums[i]){ (exact||(exact=[])).push(i); continue; }
+      const nm=numMod[i]; let L=0;
+      if(Wm[5]===nm[4]) L=5; else if(Wm[4]===nm[3]) L=4; else if(Wm[3]===nm[2]) L=3;
+      else if(Wm[2]===nm[1]) L=2; else if(Wm[1]===nm[0]) L=1;
+      if(L>0) fixedSum+=suffixAmt[L];
+    }
+    if(!exact){
+      mainHist[fixedSum]=(mainHist[fixedSum]||0)+5;      // band_win 5가지 모두 같은 값이므로 가중치 5
+    } else {
+      const rows=new Array(5);
+      for(let bw=1;bw<=5;bw++){
+        let s=fixedSum, hitFirst=false;
+        for(const i of exact){ if(bands[i]===bw){ s+=AMT1; hitFirst=true; } else s+=AMT2; }
+        mainHist[s]=(mainHist[s]||0)+1; rows[bw-1]=s;
+        if(hitFirst) firstCount++;
+      }
+      exactRows[W]=rows;
+    }
+  }
+
+  // 보너스(독립, 100만가지) — 티켓 번호값별로 묶는다(같은 번호를 여러 장 사면 동시에 맞는다: 세트).
+  const byNum=new Map();
+  nums.forEach(v=>byNum.set(v,(byNum.get(v)||0)+1));
+  const bonusHist=Object.create(null);
+  let bonusMatched=0;
+  byNum.forEach(mult=>{ const amt=mult*AMTB; bonusHist[amt]=(bonusHist[amt]||0)+1; bonusMatched++; });
+  bonusHist[0]=(bonusHist[0]||0)+(1000000-bonusMatched);
+
+  const TOTAL=5000000*1000000;
+  const table=Object.create(null);
+  Object.keys(mainHist).forEach(a=>{ const av=+a, ac=mainHist[a];
+    Object.keys(bonusHist).forEach(b=>{ const bv=+b, bc=bonusHist[b];
+      const v=av+bv; table[v]=(table[v]||0)+ac*bc; }); });
+
+  /* 보정: 메인 당첨번호와 보너스번호가 우연히 같은 값(v)이면, 이 파일의 gradeOf(변경 금지 목록)는
+     num===wn 에서 조기 반환해 그 티켓을 메인 등수로만 매기고 보너스는 보지 않는다. 위 합성곱은 두 추첨을
+     독립으로 곱했으니 (W=v, 보너스=v) 조합에서 보너스를 중복으로 더한 셈이다 — 그 결합만큼 되돌린다.
+     확률질량은 10^-12 스케일이라 EV·SD·pAny 는 사실상 그대로이고 표의 최댓값만 정확해진다. */
+  byNum.forEach((mult,v)=>{
+    const rows=exactRows[v]; if(!rows) return;
+    const wrongAdd=mult*AMTB;
+    rows.forEach(s=>{
+      const from=s+wrongAdd;
+      table[from]=(table[from]||0)-1; if(table[from]<=0) delete table[from];
+      table[s]=(table[s]||0)+1;
+    });
+  });
+
+  const entries=Object.keys(table).map(k=>({won:+k,cnt:table[k]})).sort((a,b)=>a.won-b.won);
+  let EV=0; entries.forEach(e=>{ EV+=e.won*(e.cnt/TOTAL); });
+  let varSum=0; entries.forEach(e=>{ const d=e.won-EV; varSum+=d*d*(e.cnt/TOTAL); });
+  const SD=Math.sqrt(varSum);
+  const p0=(table[0]||0)/TOTAL, pAny=1-p0;
+  const geCnt=th=>entries.filter(e=>e.won>=th).reduce((a,e)=>a+e.cnt,0);
+  const pGE={5000:geCnt(5000)/TOTAL, 10000:geCnt(10000)/TOTAL, 50000:geCnt(50000)/TOTAL, 1e6:geCnt(1e6)/TOTAL, 1e8:geCnt(1e8)/TOTAL};
+  const max=entries.length?entries[entries.length-1].won:0;
+  const pFirst=firstCount/5000000;
+  return {EV,SD,p0,pAny,pGE,pFirst,max,table:entries.map(e=>[e.won,e.cnt/TOTAL])};
+}
+
+/* pensionPortfolio(mode,S,seed,opts) — D1 §6 구성 규칙(결정적, DB+회차만의 함수). 실시간 재고 조회 API 가
+   없어 «대체»는 추정 순번일 뿐 매진 여부를 실제로 확인한 결과가 아니다(§renderIssue 와 같은 입장).
+   opts.noDist=true 면 pensionDist 계산을 건너뛰고 dist:null 을 돌려준다(분포가 필요 없는 호출 경로용). */
+function pensionPortfolio(mode, S, seed, opts){
+  opts = opts || {};
+  S = S || predSettings();
+  seed = seed==null ? nextDraw().ep*7919 : seed;
+  const cand = generate(S.model,S.K,S.J,50,seed);
+  const pickCand=(i)=> cand[i] || (cand.length ? cand[i%cand.length] : {band:1,num:'000000'});
+  const scores = currentScores(S.model,seed);
+  const lastRank = topIdx(scores.pos[5],10);              // «일» 자리 상위 10개 숫자(점수순, 서로 다른 값)
+  const bandRank = topIdx(scores.band,5).map(i=>i+1);      // 조 5개 전부, 점수순 순열
+
+  let buy=[], alts=[], fallback=[];
+  if(mode==='set'){
+    const n1=pickCand(0).num;
+    const otherCand=cand.find(c=>c.num!==n1);
+    const n2=otherCand?otherCand.num:(cand[1]?cand[1].num:n1);
+    buy = [1,2,3,4,5].map(b=>({band:b,num:n1}));
+    alts = [1,2,3,4,5].map(b=>({band:b,num:n2}));
+    // 세트는 «n2 세트를 통째로»가 유일한 대안이라(부분 세트는 분포 자체가 달라짐, D1 §6) 슬롯별 3단계
+    // 후보를 만들 근거가 없다 — 같은 대체를 반복해 다른 모드와 [5][3] 모양만 맞춘다.
+    fallback = alts.map(a=>[a,a,a]);
+  } else {
+    for(let i=0;i<5;i++){
+      const d = lastRank[i];
+      const c = pickCand(i);
+      buy.push({band:c.band, num:c.num.slice(0,5)+d});
+    }
+    for(let i=0;i<5;i++){
+      const d = lastRank[i];
+      const myBand = buy[i].band;
+      const others = bandRank.filter(b=>b!==myBand);
+      const nextBand = others.length ? others[0] : (myBand%5)+1;
+      const thirdBand = others.length>1 ? others[1] : ((myBand+1)%5)+1;
+      const spare = pickCand(5+i);
+      fallback.push([
+        {band:nextBand, num:buy[i].num},                          // (1) 같은 번호, 다음 조
+        {band:thirdBand, num:buy[i].num},                          // (2) 같은 번호, 세 번째 조
+        {band:spare.band, num:spare.num.slice(0,5)+d}              // (3) 다음 후보 조합의 앞 5자리 + dᵢ
+      ]);
+    }
+    alts = fallback.map(f=>f[0]);   // alts[i] = link(1) — D1 §6, dᵢ 유지
+  }
+
+  const dist = opts.noDist ? null : pensionDist(buy);
+  const picks = buy.concat(alts);
+  return {mode, seed, buy, alts, fallback, picks, dist, rule:'portfolio'};
+}
+
+/* pensionWeekly() — 원장·브리핑이 «오늘의 5장»으로 부르는 단일 진입점.
+   PLAN §1.1: 게이팅 회차 이전은 재현성 보존을 위해 옛 규칙(generate 상위 10개) 그대로 쓴다.
+   어느 규칙이 적용되는지는 PENSION_RULES 이력표(pensionModeFor)가 정한다. */
+function pensionWeekly(){
+  const nx=nextDraw(); if(!nx) return null;
+  const mode=pensionModeFor(nx.ep);
+  if(mode==null){
+    const S=predSettings();
+    const picks=generate(S.model,S.K,S.J,10,nx.ep*7919);
+    return {picks, rule:'legacy'};
+  }
+  return pensionPortfolio(mode, predSettings(), nx.ep*7919);
+}
+
 /* 판매율 추정 — 4경로 */
 function sellEstimates(r){
   const c=r.cnt; if(!c) return null;
@@ -693,12 +913,13 @@ function renderDash(){
   const last=rows[rows.length-1], nx=nextDraw();
   const withCnt=rows.filter(r=>r.cnt);
   const sold=withCnt.length? sellEstimates(withCnt[withCnt.length-1]) : null;
+  const anyEV=RANKS.reduce((a,r)=>a+r.p*r.amt,0);   // 환급률의 단일 출처 — KPI 와 아래 확률표가 같은 값을 쓴다(RANKS 를 고치면 둘 다 같이 바뀐다)
 
   $('#kpiDash').innerHTML=[
     ['수집 회차', rows.length, `1회 ~ ${last.ep}회`],
     ['최신 추첨', last.ep+'회', dstr(last.date)],
     ['1등 확률', '1/500만', '조 + 6자리 일치'],
-    ['환급률', '75.0%', '1,000원당 기대 750원'],
+    ['환급률', (anyEV/TICKET*100).toFixed(1)+'%', fmt(TICKET)+'원당 기대 '+fmt(Math.round(anyEV))+'원'],
     ['1등 미판매', ((rows.filter(r=>r.cnt&&r.cnt[1]===0).length/Math.max(1,withCnt.length))*100).toFixed(0)+'%',
       `${rows.filter(r=>r.cnt&&r.cnt[1]===0).length}회 / ${withCnt.length}회`],
     ['추정 판매율', sold&&sold.s7!=null? (sold.s7*100).toFixed(0)+'%' : '—', '발행 1,000만매 대비'],
@@ -722,14 +943,13 @@ function renderDash(){
 
   // 확률표
   let t='<tr><th>등위</th><th>조건</th><th class="num">확률</th><th class="num">명목 당첨금</th><th class="num">기대값 기여</th></tr>';
-  let ev=0;
-  RANKS.forEach(r=>{ ev+=r.p*r.amt;
+  RANKS.forEach(r=>{
     t+=`<tr><td><b>${r.name}</b></td><td style="font-size:12.5px;color:var(--ink-60)">${r.cond}</td>`
       +`<td class="num">1/${fmt(Math.round(1/r.p))}</td><td class="num">${fmt(r.amt)}원</td>`
       +`<td class="num">${(r.p*r.amt).toFixed(1)}원</td></tr>`; });
-  const anyP=RANKS.reduce((a,r)=>a+r.p,0);
+  const anyP=PENSION_ANY_P;
   t+=`<tr class="hi"><td colspan="2"><b>합계</b></td><td class="num">${pct(anyP,4)}<br><span style="font-size:11px;color:var(--ink-60)">약 ${(1/anyP).toFixed(1)}장당 1회</span></td>`
-    +`<td class="num">—</td><td class="num"><b>${ev.toFixed(1)}원</b><br><span style="font-size:11px;color:var(--ink-60)">환급률 ${(ev/TICKET*100).toFixed(1)}%</span></td></tr>`;
+    +`<td class="num">—</td><td class="num"><b>${anyEV.toFixed(1)}원</b><br><span style="font-size:11px;color:var(--ink-60)">환급률 ${(anyEV/TICKET*100).toFixed(1)}%</span></td></tr>`;
   $('#oddsTbl').innerHTML=t;
 
   renderSet();
@@ -846,26 +1066,91 @@ function renderPred(){
     좁히기는 «어디를 살지»를 정할 뿐 «맞을 확률»을 바꾸지 않습니다.`;
   renderDashPick();
 }
+/* ── 구매 방식 토글(분산/세트) — 표시 전용. 원장·브리핑이 기록하는 건 PENSION_MODE(D2 §3.B) ── */
+const BUYMODE_KEY='pensionlab.buymode.v1';
+function getBuyMode(){
+  try{ const m=localStorage.getItem(BUYMODE_KEY); if(m==='spread'||m==='set') return m; }catch(e){}
+  return PENSION_MODE;
+}
+function setBuyMode(m){ try{ localStorage.setItem(BUYMODE_KEY,m); }catch(e){} }
+
 function renderDashPick(){
   const rows=R(); if(rows.length<50) return;
-  const {model,K,J}=predSettings();
-  const nx=nextDraw();
-  const g=generate(model,K,J,10,(nx?nx.ep:1)*7919);
-  const start=Math.min(100, Math.floor(rows.length*0.3));
-  const bt=backtest(model,K,J,start);
-  $('#dashPick').innerHTML=g.map((c,i)=>
+  const nx=nextDraw(); if(!nx) return;
+  const mode=getBuyMode();
+  $$('#buyModeRow .chip').forEach(c=>{
+    const on=c.dataset.mode===mode;
+    c.classList.toggle('on',on); c.setAttribute('aria-checked', on?'true':'false');
+  });
+
+  const W=pensionWeekly();
+  if(!W) return;
+  let buy,alts,dist,note='';
+  if(W.rule==='legacy'){
+    // 게이팅 회차(PENSION_PORTFOLIO_FROM) 이전 재현 — 분산/세트로 나누기 전의 옛 방식(모델 상위 5장) 그대로
+    buy=W.picks.slice(0,5); alts=W.picks.slice(5,10);
+    dist=pensionDist(buy);
+    note=`${nx.ep}회는 새 포트폴리오 규칙(${PENSION_PORTFOLIO_FROM}회부터) 이전이라 이전 방식(모델 상위 5장) 그대로 재현했습니다 — 분산/세트 토글은 이 회차엔 적용되지 않습니다.`;
+  } else {
+    const P = (W.mode===mode) ? W : pensionPortfolio(mode, predSettings(), W.seed);
+    buy=P.buy; alts=P.alts; dist=P.dist;
+  }
+  const hi = (mode==='spread' && W.rule!=='legacy') ? [5] : [];   // 분산일 때만 끝자리(마지막 칸)를 강조
+
+  $('#dashPick').innerHTML = buy.map((c,i)=>
     `<div class="combo"><div class="k" style="font-size:24px">${i+1}</div>
-      <div>${ticketHTML(c.band,c.num,{sm:true})}</div>
-      <div class="m"><em>${i===0?'1순위':(i+1)+'순위'}</em>${MODELNAME[model]} 상위 ${K}</div></div>`).join('')
-    +(bt?`<p class="note" style="padding:12px 0 0">이 설정의 백테스트 적중률 <b>${pct(bt.rateD)}</b> · 우연 기준선 ${pct(bt.baseD,0)} · ${pTag(bt.pD).replace(/<[^>]+>/g,'')}</p>`:'');
+      <div>${ticketHTML(c.band,c.num,{sm:true,hi})}</div>
+      <div class="m"><em>${fmt(TICKET)}원</em>${nx.ep}회 구매분</div></div>`).join('')
+    + (note?`<p class="note" style="padding:10px 0 0">${note}</p>`:'');
+
+  $('#dashAlt').innerHTML = alts.map((c,i)=>
+    `<div class="combo"><div class="k" style="font-size:20px">${i+1}′</div>
+      <div>${ticketHTML(c.band,c.num,{sm:true,hi})}</div>
+      <div class="m"><em>대체</em>${i+1}번 매진 시</div></div>`).join('')
+    +'<p class="note" style="padding:10px 0 0">실시간 재고 조회는 불가 — 매진이면 대체 번호로. 1순위부터 시도하고 안 되면 다음으로 내려가세요.</p>';
+
+  renderDistStrip(mode, W.rule==='legacy'?dist:null);
 }
+
+/* 분산·세트·무작위 기준선을 나란히 — 새 확률 수치는 반드시 무작위 기준선과 함께(PLAN §0) */
+function renderDistStrip(mode, legacyDist){
+  const randomP = 1-Math.pow(1-PENSION_ANY_P,5);          // 5장이 서로 독립이라 가정한 이론 기준선
+  const perTicketEV = RANKS.reduce((a,r)=>a+r.p*r.amt,0);  // ≈750원
+  const randomEV = 5*perTicketEV;                          // = 3,750원, 구조와 무관하게 항상 같음을 보여주는 대조값
+  if(legacyDist){
+    $('#distStrip').innerHTML=`
+      <div class="scroll"><table>
+        <tr><th></th><th class="num">실제 구매(이번 회차)</th><th class="num">무작위 5장(이론 기준선)</th></tr>
+        <tr><td>1장 이상 당첨</td><td class="num"><b>${pct(legacyDist.pAny,2)}</b></td><td class="num">${pct(randomP,2)}</td></tr>
+        <tr><td>기대값</td><td class="num">${fmt(Math.round(legacyDist.EV))}원</td><td class="num">${fmt(Math.round(randomEV))}원</td></tr>
+      </table></div>
+      <p class="note" style="padding:10px 0 0">번호 선택은 확률도 당첨금도 바꾸지 못합니다 — 5장의 결과가 어떻게 흩어지는지만 고릅니다.</p>`;
+    return;
+  }
+  const S=predSettings(), nx=nextDraw(); if(!nx) return;
+  const seed=nx.ep*7919;
+  const sp=pensionPortfolio('spread',S,seed).dist;
+  const st=pensionPortfolio('set',S,seed).dist;
+  $('#distStrip').innerHTML=`
+    <div class="scroll"><table>
+      <tr><th></th><th class="num">분산 5장</th><th class="num">세트 1세트</th><th class="num">무작위 5장(이론 기준선)</th></tr>
+      <tr><td>1장 이상 당첨</td><td class="num"><b>${pct(sp.pAny,2)}</b></td><td class="num"><b>${pct(st.pAny,2)}</b></td><td class="num">${pct(randomP,2)}</td></tr>
+      <tr><td>최대</td><td class="num">${fmt(sp.max)}원</td><td class="num">${fmt(st.max)}원</td><td class="num">—</td></tr>
+      <tr><td>1등 확률</td><td class="num">${pct(sp.pFirst,4)}</td><td class="num">${pct(st.pFirst,4)}</td><td class="num">—</td></tr>
+      <tr class="hi"><td><b>기대값</b></td><td class="num"><b>${fmt(Math.round(sp.EV))}원</b></td><td class="num"><b>${fmt(Math.round(st.EV))}원</b> (같음)</td><td class="num">${fmt(Math.round(randomEV))}원</td></tr>
+    </table></div>
+    <p class="note" style="padding:10px 0 0">번호 선택은 확률도 당첨금도 바꾸지 못합니다 — 5장의 결과가 어떻게 흩어지는지만 고릅니다.
+      «무작위 5장»은 각 장이 서로 독립이라 가정했을 때의 이론값입니다.</p>`;
+}
+
 function renderGen(){
   const {model,K,J,N}=predSettings();
   lastGen=generate(model,K,J,N,Date.now()%1e9);
   $('#genCard').innerHTML=lastGen.map((c,i)=>
     `<div class="combo"><div class="k" style="font-size:24px">${i+1}</div><div>${ticketHTML(c.band,c.num,{sm:true})}</div>
       <div class="m"><em>${c.band}조 ${c.num}</em>${i+1}순위 · ${MODELNAME[model]} K=${K}</div></div>`).join('')
-    +'<p class="note" style="padding:12px 0 0">위에서부터 순서대로 시도하세요. 품절이면 다음 순위로 내려가면 됩니다.</p>';
+    +'<p class="note" style="padding:12px 0 0">위에서부터 순서대로 시도하세요. 품절이면 다음 순위로 내려가면 됩니다.'
+    +'<br><span style="color:var(--ink-40)">연습용 — 누를 때마다 달라집니다. 실제 구매 번호는 대시보드/이번 주에서 확인하세요.</span></p>';
 }
 
 /* ══════════════════ 자리 통계 ══════════════════ */
@@ -1161,9 +1446,42 @@ async function sync(full){
       renderAll();
     }
   }catch(e){
-    setStatus('불러오기 실패 — '+e.message+(DB.rounds.length?' (저장된 데이터 사용)':''), DB.rounds.length?'warn':'err');
-    if(DB.rounds.length) renderAll();
+    if(DB.rounds.length){
+      setStatus('불러오기 실패 — '+e.message+' (저장된 데이터 사용)', 'warn');
+      renderAll();
+    } else {
+      setStatus('공식 API 실패 · 로컬 백업 확인 중…','warn');
+      const ok=await loadLocalPensionJSON();
+      if(ok){ setStatus(`${DB.rounds.length}회 · 로컬 백업(brief/pension-history.json) 사용`,'warn'); renderAll(); }
+      else setStatus('불러오기 실패 — '+e.message, 'err');
+    }
   }finally{ syncing=false; setProg(1,0); }
+}
+
+/* 백업 경로: weekly-brief.mjs 가 만드는 brief/pension-history.json(공식 API 를 브라우저에서 직접 못 부를 때만) —
+   index.html 의 loadLocalJSON 과 같은 패턴(D2 §3.B-7). */
+async function loadLocalPensionJSON(){
+  try{
+    const r=await fetch('./brief/pension-history.json',{cache:'no-store'});
+    if(!r.ok) return false;
+    const o=await r.json();
+    const rows=Array.isArray(o) ? o : (o&&Array.isArray(o.rounds) ? o.rounds : null);
+    if(!rows||!rows.length) return false;
+    const valid=rows.filter(r=>r&&r.ep!=null&&r.num!=null&&r.band!=null&&r.bonus!=null);
+    if(!valid.length) return false;
+    const old={}; DB.rounds.forEach(r=>old[r.ep]=r);
+    DB.rounds=valid.map(r=>{
+      const o2=old[r.ep];
+      const row={ep:+r.ep, date:String(r.date), band:+r.band, num:String(r.num).padStart(6,'0'), bonus:String(r.bonus).padStart(6,'0')};
+      // 당첨매수(cnt/net)는 백업 파일 자체에 실려 있으면 그걸 우선 쓴다(공식 API 실패 시엔 old 가 늘 비어 있으므로,
+      // 파일 값을 버리면 판매율 추정이 통째로 사라진다) — 없을 때만 이미 불러온 old 값으로 보충한다.
+      if(r.cnt) Object.assign(row,{cnt:r.cnt,net:r.net});
+      else if(o2&&o2.cnt) Object.assign(row,{cnt:o2.cnt,net:o2.net});
+      return row;
+    }).sort((a,b)=>a.ep-b.ep);
+    DB.updated=Date.now(); saveDB();
+    return true;
+  }catch(e){ return false; }
 }
 
 /* ══════════════════ 렌더 총괄 ══════════════════ */
@@ -1189,17 +1507,39 @@ $$('nav.tabs button').forEach(b=>b.onclick=()=>{
   $$('nav.tabs button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
   $$('section.panel').forEach(p=>p.classList.remove('on'));
   $('#p-'+b.dataset.t).classList.add('on');
+  try{ history.replaceState(null,'','#'+b.dataset.t); }catch(e){}
   window.scrollTo({top:0,behavior:'instant'});
+});
+(function honorHash(){       // 딥링크: pension.html#fair 처럼 열리면 해당 탭을 연다(D2 §1)
+  try{
+    const h=location.hash.replace('#','');
+    if(!h) return;
+    const b=$('nav.tabs button[data-t="'+h+'"]');
+    if(b) b.click();
+  }catch(e){}
+})();
+$$('#buyModeRow .chip').forEach(c=>c.onclick=()=>{
+  setBuyMode(c.dataset.mode);
+  try{ renderDashPick(); }catch(e){ console.error(e); }
+});
+$$('#buyModeRow .chip').forEach(c=>c.onkeydown=(ev)=>{
+  if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); c.click(); }
 });
 ['mdlSel','kSel','jSel'].forEach(id=>$('#'+id).onchange=()=>{ try{renderPred();}catch(e){console.error(e);} });
 $('#genBtn').onclick=renderGen;
 $('#genSave').onclick=()=>{
   if(!lastGen.length){ alert('먼저 조합을 생성해 주세요.'); return; }
+  if(lastGen.length>5 && !confirm(lastGen.length+'장('+fmt(lastGen.length*TICKET)+'원)을 담을까요? 주간 예산은 5장(5,000원)입니다.')) return;
   const nx=nextDraw(); if(!nx) return;
   lastGen.forEach(c=>MY.push({band:c.band,num:c.num,ep:nx.ep}));
   saveMY(); renderMine();
   alert(lastGen.length+'개 조합을 «내 번호»에 담았습니다.');
 };
+try{
+  document.addEventListener('DOMContentLoaded', function(){
+    try{ if(window.SITE) SITE.theme.mount('#themeBtn'); }catch(e){}
+  });
+}catch(e){}
 $('#alphaRng').oninput=()=>{ try{renderStat();}catch(e){} };
 $$('#p-stat .chip').forEach(c=>c.onclick=()=>{
   $$('#p-stat .chip').forEach(x=>x.classList.remove('on')); c.classList.add('on');

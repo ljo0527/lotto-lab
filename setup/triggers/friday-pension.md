@@ -1,71 +1,70 @@
-매주 금요일 아침에 도는 작업이다. 목요일 연금복권 추첨(19:05)이 끝난 다음 날이라, **연금 채점 + 구매 직전 추천 재생성 + 검증 보드 갱신**이 목적이다. `C:\workstation\일확천금` (GitHub 저장소 lotto-lab 루트)를 갱신한다. 사용자에게 되묻지 말고 끝까지 진행하라. 출력은 한국어, 결론 먼저, 서론 없이.
+**2026-09 개편: 이 작업은 더 이상 파일을 만들지 않는다.** 연금·로또 계산·커밋·배포는 이제
+`.github/workflows/weekly.yml`(GitHub Actions)이 목 21:30·금 09:00 KST 스케줄로 자동으로 한다. 이 작업은
+그 결과가 이번 주에도 제대로 나왔는지 **읽고 확인해서 한국어로 보고만** 한다. 소유자가 이 예약 작업을
+꺼 두었다면(권장) 이 프롬프트는 실행되지 않는다 — 계속 켜 둔 경우에만 아래를 따른다.
+사용자에게 되묻지 말고 끝까지 진행하라. 출력은 한국어, 결론 먼저, 서론 없이.
 
 ## 0) 전제
 
 - 사용자는 **매주 추천 상위 5줄(로또 A~E) + 연금 상위 5장**을 실제로 산다. 주 10,000원.
-- 「그 회차 추천 = 그 주에 산 것」으로 **자동 기록**된다(`brief/purchases.json`). 안 샀다고 말한 주만 예외 처리한다.
-- 연금복권 판매시간: 금~수 24시간, 목(추첨일) 00:00~17:00 및 22:00~24:00. **금요일 아침이 구매 적기다.**
-- 연금은 (조, 6자리) 조합 하나에 실물이 판매점 1장 + 인터넷 1장뿐이라 **품절될 수 있다.** 그래서 10순위까지 낸다.
+- 「그 회차 추천 = 그 주에 산 것」으로 **자동 기록**된다(`brief/purchases.json`, GitHub Actions 가 씀).
+  안 샀다고 말한 주만 예외로 알려준다.
+- 연금복권 판매시간: 금~수 24시간, 목(추첨일) 00:00~17:00 및 22:00~24:00.
 
-## 1) 파일 가져오기
+## 1) 절대 하지 않을 것 (금지)
 
-`device_stage_files` 로 아래를 가져온다. staged 경로는 `/mnt/user-data/uploads/일확천금/...` 이다.
+- `index.html`, `pension.html`, `scripts/*.mjs` 를 가져오거나 실행하지 않는다.
+- `weekly-brief.mjs`/`validate.mjs`/`fetch-history.mjs` 를 돌리지 않는다.
+- 다음 파일을 쓰거나 깃허브에 올리지 않는다: `brief.html`, `brief/*.html`, `brief/index.html`,
+  `brief/latest-summary.json`, `brief/purchases.json`, `brief/validation.json`, `validate.html`,
+  `lotto-history.json`. `device_commit_files` 를 호출하지 않는다.
+- 이 작업의 결과물은 **채팅 보고 하나뿐**이다. 파일을 만들지도, 저장하지도, 올리지도 않는다.
 
-- `index.html`, `pension.html`
-- `scripts/weekly-brief.mjs`, `scripts/validate.mjs`
-- `brief/purchases.json`
-- `brief/` 안의 `YYYY-MM-DD.html` 최근 12개 (없으면 건너뛴다)
+## 2) 읽기
 
-**`index.html` 과 `pension.html` 은 반드시 같은 폴더에 있어야 한다.** `/tmp/lab` 으로 복사하고,
-ESM 이 NODE_PATH 를 무시하므로 **`ln -sfn /home/claude/.npm-global/lib/node_modules /tmp/lab/node_modules`** 를 걸어 둔다.
-`playwright install` 은 절대 돌리지 마라 — 크로미움은 이미 있다.
+`device_stage_files` 로 아래만 **읽기 전용**으로 가져온다(전부 GitHub Actions 가 이미 생성·커밋해 둔
+파일이다). staged 경로는 `/mnt/user-data/uploads/일확천금/...` 이다.
 
-## 2) 실행
+- `brief/latest-summary.json` — 이번 주 요약(연금 last/next/hits/hitDetail/picks/backtest, 로또도 동일)
+- `brief/purchases.json` — 실구매 원장(누적 투입/회수)
+- `brief/validation.json` — 검증 보드 수치(calib, per-strategy z이득·p·보정p, ledger 합계)
 
-```
-mkdir -p /tmp/lab /tmp/out /tmp/seed
-node /tmp/lab/scripts/weekly-brief.mjs --root /tmp/lab --out /tmp/out --seed-archive /tmp/seed
-node /tmp/lab/scripts/validate.mjs   --root /tmp/lab --out /tmp/out --window 300 \
-     --purchases /tmp/seed/purchases.json
-```
+가능하면 GitHub Actions 실행 이력(Actions 탭 또는 `gh run list` 상당)도 확인해, 목 21:30·금 09:00 KST
+스케줄이 이번 주에 성공(초록)했는지 본다.
 
-두 스크립트 모두 동행복권 공식 API 에서 직접 데이터를 받고, 헤드리스 크로미움으로 `index.html`·`pension.html` 을
-실제로 띄워 그 안의 함수를 불러 값을 꺼낸다. 각각 40~120초. **타임아웃 600000ms.** stdout 으로 JSON 요약이 나온다.
-`--purchases` 에는 **가져온 기존 `purchases.json` 경로**를 준다. 빠뜨리면 원장이 매주 초기화된다.
+## 3) 신선도 확인
 
-## 3) 저장
+- `brief/latest-summary.json` 의 `date`/`pension.next` 가 **이번 주 목요일 추첨 다음**에 해당하는 회차와
+  맞는지 확인한다. 안 맞으면(며칠 이상 뒤처졌으면) **GitHub Actions 가 실패했거나 아직 안 돌았을 가능성**이
+  크다 — 이 경우 **로컬에서 대신 계산하지 않는다.** 「Actions 가 아직 반영되지 않은 것으로 보인다, Actions
+  탭을 확인해 달라」고만 보고하고 끝낸다.
+- 신선하면 4)로 진행한다.
 
-SendUserFile 로 `/tmp/out/brief.html` 과 `/tmp/out/validate.html` 을 보내고, `device_commit_files`(force: true) 로 저장한다.
+## 4) 보고 (한국어) — 전부 위에서 읽은 파일의 값을 그대로 옮긴다. 계산하지 않는다.
 
-- `/tmp/out/brief.html` → `C:\workstation\일확천금\brief.html`
-- `/tmp/out/brief/<오늘 KST 날짜>.html` → `C:\workstation\일확천금\brief\<같은 이름>.html`
-- `/tmp/out/brief/index.html` → `C:\workstation\일확천금\brief\index.html`
-- `/tmp/out/brief/latest-summary.json` → 같은 이름으로
-- `/tmp/out/validate.html` → `C:\workstation\일확천금\validate.html`
-- `/tmp/out/brief/purchases.json` → 같은 이름으로
-- `/tmp/out/brief/validation.json` → 같은 이름으로
-
-## 4) 보고 (한국어)
-
-1. **연금 지난 회차 결과** — 당첨 조·번호·보너스, 1등/2등/보너스 당첨매수. 1등 0매면 「아무도 그 조합을 사지 않았다」고 적는다
-2. **지난주 산 5장 채점** — 등수와 회수금. 없으면 「전부 미당첨」이라고 그대로 쓴다
-3. **로또 지난 회차 결과와 채점** (토요일 추첨분이므로 6일 전 회차다)
-4. **실구매 원장 누적** — 투입/회수/회수율, 그리고 **중앙값**. 주수가 적으면 «성능 지표가 아니라 가계부» 라고 명시
-5. **검증 보드 요약** — 모델 R², 현행 규칙 z 이득과 무작위 대비 p 및 **보정 p**, 환산 효과(%), 양성 대조군(분배 최대)이 반대로 갈렸는지
-6. **이번 주에 살 것**
-   - 로또 A~E 5줄 (예비 F~J 는 아래에)
-   - 연금 1~5순위 5장 (`조 + 6자리`). **품절이면 6~10순위로 내려가라**고 한 줄 덧붙인다
-7. 마지막 한 줄: 「`깃허브-올리기.bat` 을 실행하면 배포됩니다」
+1. **연금 지난 회차 결과** — `latest-summary.json.pension.last`: 당첨 조·번호·보너스, 1등/2등/보너스
+   당첨매수. 1등 0매면 「아무도 그 조합을 사지 않았다」고 적는다
+2. **지난주 산 5장 채점** — `pension.hits`/`pension.hitDetail`. 없으면 「전부 미당첨」이라고 그대로 쓴다
+3. **로또 지난 회차 결과와 채점** — `latest-summary.json.lotto` 에서 같은 방식으로
+4. **실구매 원장 누적** — `purchases.json` 또는 `validation.json.ledger` 의 투입/회수/회수율과 **중앙값**.
+   주수가 적으면 «성능 지표가 아니라 가계부» 라고 명시
+5. **검증 보드 요약** — `validation.json` 의 모델 R², 현행 규칙(portfolio) z이득과 무작위 대비 p 및
+   **보정 p**, 환산 효과(%), 양성 대조군(분배 최대)이 반대로 갈렸는지
+6. **이번 주 추천** — `latest-summary.json.pension.next.picks`(1~5순위 5장, `조 + 6자리`)와
+   `lotto.next.picks`(A~E 5줄 + 예비 F~J). **이미 계산된 값을 그대로 읽어 전달**한다 — 새로 뽑지 않는다.
+7. GitHub Actions 실행이 실패했었다면 그 사실을 같이 보고한다.
+8. 마지막 한 줄: 「파일은 만들지 않았다 — 위는 이미 GitHub Actions 가 계산·배포한 결과를 읽은 보고다.」
 
 ## 원칙
 
 - **확률은 바뀌지 않는다.** 로또 1등은 1/8,145,060, 연금 1등은 1/5,000,000 고정이다.
-  로또에서 바뀌는 건 «나눠 갖는 인원»뿐이고 실측 효과는 walk-forward 300주로 **약 +7%**.
-  **연금은 당첨금이 고정액이라 바꿀 수 있는 것이 아예 없다** — 10개 목록은 품절 대비 대안일 뿐이다.
+  로또에서 바뀌는 건 «나눠 갖는 인원»뿐이고, 연금에서 바뀌는 건 «5장이 흩어지는 분포»뿐이다 —
+  둘 다 확률도 기대값도 바꾸지 않는다.
 - "확률을 높인다", "다음에 나올 것 같다" 류를 절대 쓰지 마라. **예상이 아니라 규칙에 따른 선택**이다.
 - 회수율에는 **반드시 중앙값을 같이 적는다.** 평균은 1등 꼬리가 만들어 거의 아무도 겪지 않는 값이다.
-- **한 주 실적으로 규칙을 판단하지 마라.** 회수금으로 +7% 를 판별하려면 약 1,700만 년이 걸린다(검증 보드 3층).
-  판단은 1·2층(모델 R², z 이득)으로 한다. 낱개 p 가 0.05 미만이어도 **보정 p** 를 같이 본다.
-- 스크립트가 실패하면 **번호를 지어내지 마라.** 오류를 그대로 보고하고 끝낸다.
-- 컴퓨터가 꺼져 있어 파일을 못 가져오면 그 사실만 알리고 끝낸다.
-- 파일 생성까지만 한다. 깃허브 푸시는 사용자가 직접 한다.
+- **한 주 실적으로 규칙을 판단하지 마라.** 판단은 검증 보드 1·2층(모델 R², z 이득)으로 한다.
+  낱개 p 가 0.05 미만이어도 **보정 p** 를 같이 본다.
+- **번호를 새로 짓거나 다시 계산하지 마라.** 이 작업은 계산기가 아니라 리포터다. 읽은 값만 보고한다.
+- 읽을 파일이 없거나 컴퓨터가 꺼져 있어 못 가져오면 그 사실만 알리고 끝낸다.
+- **어떤 파일도 만들거나 저장하거나 깃허브에 올리지 않는다.** 생성·커밋·배포는 GitHub Actions 몫이고,
+  그 외의 깃허브 작업(설정 변경 등)은 사용자가 직접 한다.
