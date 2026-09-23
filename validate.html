@@ -1,71 +1,133 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<script>try{var t=localStorage.getItem('lottolab.theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>로직 검증 보드 · 2026-09-23</title><style>
-:root{--paper:#EEF0EB;--paper-2:#F7F8F5;--ink:#16302B;--ink-60:rgba(22,48,43,.6);--ink-40:rgba(22,48,43,.4);
---ink-12:rgba(22,48,43,.12);--ink-06:rgba(22,48,43,.06);--sig:#B0281A;--ok:#1F6F4A}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#12181A;--paper-2:#182022;--ink:#E6EDE9;
---ink-60:rgba(230,237,233,.62);--ink-40:rgba(230,237,233,.4);--ink-12:rgba(230,237,233,.14);
---ink-06:rgba(230,237,233,.06);--sig:#FF8A78;--ok:#7FD8A8}}
-:root[data-theme="dark"]{--paper:#12181A;--paper-2:#182022;--ink:#E6EDE9;--ink-60:rgba(230,237,233,.62);
---ink-40:rgba(230,237,233,.4);--ink-12:rgba(230,237,233,.14);--ink-06:rgba(230,237,233,.06);--sig:#FF8A78;--ok:#7FD8A8}
+<meta name="theme-color" content="#16302B">
+<title>로직 검증 보드 · 2026-09-23</title>
+<link rel="icon" href="./icon.svg" type="image/svg+xml"><link rel="manifest" href="./manifest.webmanifest">
+<style>/* site.css — 일확천금 공유 디자인 토큰 + 전역 내비(gnav)
+   손으로 쓴 페이지: <link rel="stylesheet" href="./site.css"> 를 자기 <style> 앞에.
+   생성 페이지(brief/validate/…): scripts/site-shared.mjs 의 siteCSS() 로 이 파일을 그대로 인라인.
+   D2 §5 계약을 그대로 따른다 — 여기 바꾸면 모든 페이지가 바뀐다. */
+:root{--paper:#EEF0EB;--paper-2:#F7F8F5;--paper-3:#E4E7E0;--ink:#16302B;
+ --ink-60:rgba(22,48,43,.60);--ink-40:rgba(22,48,43,.40);--ink-30:rgba(22,48,43,.30);
+ --ink-12:rgba(22,48,43,.12);--ink-06:rgba(22,48,43,.06);
+ --b-yellow:#FBC400;--b-blue:#69C8F2;--b-red:#FF7272;--b-grey:#A0A6A2;--b-green:#B0D840;
+ --sig:#B0281A;--ok:#1F6F4A;--gutter:16px;--nav-h:58px;--maxw:940px;
+ --f-mono:"Space Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+ --f-body:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#12181A;--paper-2:#182022;--paper-3:#1F2A2C;
+ --ink:#E6EDE9;--ink-60:rgba(230,237,233,.62);--ink-40:rgba(230,237,233,.40);--ink-30:rgba(230,237,233,.28);
+ --ink-12:rgba(230,237,233,.14);--ink-06:rgba(230,237,233,.06);--sig:#FF8A78;--ok:#7FD8A8;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#12181A;--paper-2:#182022;--paper-3:#1F2A2C;--ink:#E6EDE9;
+ --ink-60:rgba(230,237,233,.62);--ink-40:rgba(230,237,233,.40);--ink-30:rgba(230,237,233,.28);
+ --ink-12:rgba(230,237,233,.14);--ink-06:rgba(230,237,233,.06);--sig:#FF8A78;--ok:#7FD8A8;color-scheme:dark}
+html,body{overflow-x:clip}
+body{background:var(--paper);color:var(--ink);padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 24px)}
+.wrap{padding-left:var(--gutter)!important;padding-right:var(--gutter)!important}
+.gnav{position:fixed;inset:auto 0 0 0;z-index:50;display:grid;grid-template-columns:repeat(5,1fr);
+ height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);
+ background:var(--paper-2);border-top:1.5px solid var(--ink)}
+.gnav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;
+ font:700 12px/1.2 var(--f-body);color:var(--ink-60);text-decoration:none}
+.gnav svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8}
+.gnav a[aria-current="page"]{color:var(--ink);box-shadow:inset 0 3px 0 var(--ink)}
+:is(.gnav a,button,.btn):focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.theme-btn{font:700 11px var(--f-mono);letter-spacing:.04em;color:var(--ink-60);background:none;
+ border:1px solid var(--ink-30);padding:4px 9px;cursor:pointer;border-radius:2px}
+.theme-btn:hover{color:var(--ink);border-color:var(--ink)}
+@media(min-width:720px){body{padding-bottom:70px}
+ .gnav{position:static;display:flex;justify-content:flex-end;gap:2px;height:auto;max-width:var(--maxw);margin:0 auto;
+  padding:6px var(--gutter);background:none;border:0;border-bottom:1px solid var(--ink-12)}
+ .gnav a{flex-direction:row;gap:6px;padding:6px 10px;min-height:36px}
+ .gnav a[aria-current="page"]{box-shadow:inset 0 -3px 0 var(--ink)}}
+@media print{.gnav,.no-print{display:none!important}body{padding-bottom:0}}
+
+
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--paper);color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
-font-size:15px;line-height:1.68;letter-spacing:-.01em;padding:0 0 70px}
-.wrap{max-width:1000px;margin:0 auto;padding:18px 14px 0}
+body{font-family:var(--f-body);font-size:15px;line-height:1.68;letter-spacing:-.01em}
+.wrap{max-width:var(--maxw);margin:0 auto;padding-top:18px}
 header{border-bottom:1.5px solid var(--ink);padding-bottom:12px;margin-bottom:20px}
-.eb{font-family:ui-monospace,monospace;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-60);
-display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.eb{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-60);
+display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .eb a{color:var(--ink-60)}
 h1{font-size:clamp(28px,6.5vw,42px);line-height:1.08;font-weight:800;padding:12px 0 4px;letter-spacing:-.02em}
 h1 small{display:block;font-size:.34em;font-weight:600;color:var(--ink-60);padding-top:8px;letter-spacing:.02em}
-h2{font-family:ui-monospace,monospace;font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+h2{font-family:var(--f-mono);font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
 padding:0 0 12px;display:flex;align-items:center;gap:10px;margin-top:36px}
 h2::after{content:"";flex:1;height:1px;background:var(--ink-12)}
 h3{font-size:14px;font-weight:700;padding:16px 0 8px;color:var(--ink-60)}
 p.note{font-size:13.5px;color:var(--ink-60);padding-bottom:12px;line-height:1.72}
 p.note b{color:var(--ink)}
+p.note a,.vd a{color:var(--ink);text-underline-offset:2px}
 .card{background:var(--paper-2);border:1.5px solid var(--ink);padding:16px 15px;margin-bottom:12px}
-.card.flat{border-width:1px;border-color:var(--ink-12)}
 .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--ink-12);
 border:1.5px solid var(--ink);margin-bottom:16px}
-.kpi>div{background:var(--paper-2);padding:12px 11px}
-.kpi .k{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-60)}
-.kpi .v{font-size:26px;font-weight:800;line-height:1.14;padding-top:3px;letter-spacing:-.02em}
+.kpi>div{background:var(--paper-2);padding:12px 11px;min-width:0}
+.kpi .k{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-60)}
+.kpi .v{font-size:26px;font-weight:800;line-height:1.14;padding-top:3px;letter-spacing:-.02em;overflow-wrap:anywhere}
 .kpi .s{font-size:12px;color:var(--ink-60)}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 th,td{padding:8px 6px;text-align:left;border-bottom:1px solid var(--ink-12);vertical-align:middle}
-th{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60)}
-td.num,th.num{text-align:right;font-family:ui-monospace,monospace}
+th{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60)}
+td.num,th.num{text-align:right;font-family:var(--f-mono);white-space:nowrap}
 tr.me td{background:var(--ink-06);font-weight:600}
 tr.ctl td{color:var(--ink-60)}
-.scroll{overflow-x:auto}
-.tg{font-family:ui-monospace,monospace;font-size:10px;padding:2px 6px;border:1px solid currentColor;white-space:nowrap}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.wide{min-width:600px}
+table.wide td:first-child,table.wide th:first-child{min-width:128px}
+table.led{min-width:540px}
+table.led td:first-child,table.led th:first-child{min-width:0}
+@media(max-width:480px){.kpi>div:last-child:nth-child(odd){grid-column:1/-1}}
+.tg{font-family:var(--f-mono);font-size:10px;padding:2px 6px;border:1px solid currentColor;white-space:nowrap}
 .tg.s{color:var(--sig)}.tg.n{color:var(--ink-40)}.tg.o{color:var(--ok)}
 .vd{border-left:3px solid var(--ink);padding:10px 0 10px 12px;margin:12px 0;font-size:13.5px;color:var(--ink-60)}
 .vd b{color:var(--ink)}.vd.ok{border-color:var(--ok)}.vd.sig{border-color:var(--sig)}
-.bar{height:9px;background:var(--ink-12);position:relative;overflow:hidden;min-width:60px}
-.bar i{display:block;height:100%;background:var(--ink)}
+.cum{margin:6px 0 4px}
+.cum .legend{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-60);padding:0 0 10px}
+.cum .legend b{color:var(--ink)}
+.cum .legend i{display:inline-block;width:20px;height:0;vertical-align:middle;margin-right:6px}
+.cum .legend i.rt{border-top:2px solid var(--ink)}
+.cum .legend i.sp{border-top:2px dashed var(--ink-40)}
+.cum .plot{position:relative;height:170px;margin-left:56px}
+.cum svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.cum .gl{stroke:var(--ink-12);stroke-width:1}
+.cum .sp{fill:none;stroke:var(--ink-40);stroke-width:2;stroke-dasharray:5 4}
+.cum .rt{fill:none;stroke:var(--ink);stroke-width:2}
+.cum .hit{fill:transparent}
+.cum .hit:hover{fill:var(--ink-06)}
+.cum .yl{position:absolute;left:-56px;width:50px;text-align:right;transform:translateY(-50%);
+font:11px/1 var(--f-mono);color:var(--ink-60)}
+.cum .xl{display:flex;justify-content:space-between;margin-left:56px;padding-top:6px;font:11px var(--f-mono);color:var(--ink-60)}
+.cum figcaption{font-size:12px;color:var(--ink-40);padding-top:8px}
+.cks{margin-top:10px;font-size:13px}
+.cks summary{cursor:pointer;color:var(--ink-60);font-weight:700;padding:6px 0;min-height:32px}
+.cks summary b{color:var(--sig)}
+.cks td.ck{font-size:12px;color:var(--ink-60);min-width:180px}
+.cks td.ck small{color:var(--ink-40)}
+td small{font-size:11px;color:var(--ink-40)}
 .foot{font-size:12px;color:var(--ink-40);border-top:1px solid var(--ink-12);margin-top:32px;padding-top:14px;line-height:1.8}
-@media print{body{background:#fff;padding:0}.card{break-inside:avoid}}</style></head><body><div class="wrap">
-<header><div class="eb"><span>Logic Validation Board</span>
-<span><a href="./index.html">LOTTO LAB</a> · <a href="./pension.html">PENSION LAB</a> · <a href="./brief.html">주간 브리핑</a></span></div>
+@media print{body{background:#fff;padding:0}.card{break-inside:avoid}}</style></head><body>
+<nav class="gnav" aria-label="사이트"><a href="./brief.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="5" width="17.6" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.2 9.6h17.6"/></svg><span>이번 주</span></a><a href="./index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><path d="M8.6 8.9a2.4 2.4 0 0 1 2.4-2.3"/></svg><span>로또</span></a><a href="./pension.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2.1a2 2 0 0 0 0 3.8v2.1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2.1a2 2 0 0 0 0-3.8V8.2Z"/><path d="M9.3 6.4v11.3" stroke-dasharray="2.1 2.1"/></svg><span>연금</span></a><a href="./validate.html" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 19 6v6c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6l7-2.8Z"/><path d="M8.7 12.2 11 14.5l4.3-4.3"/></svg><span>검증</span></a><a href="./record.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.2" y="3" width="15.6" height="18" rx="1.4"/><path d="M7.6 8h8.8M7.6 12h8.8M7.6 16h5.6"/></svg><span>기록</span></a></nav>
+<div class="wrap">
+<header><div class="eb"><span>검증 · Logic Validation Board</span>
+<button class="theme-btn" id="themeBtn" type="button">테마</button></div>
 <h1>로직 검증 보드<small>2026-09-23 자동 갱신 · 로또 943~1242회 300주 · 연금 100~333회</small></h1></header>
 
 <div class="vd"><b>이 보드가 답하는 질문 하나.</b> 「우리가 쓰는 규칙이 우연과 구별되는가」.
 당첨 결과로는 영원히 답할 수 없어서(1등 1/8,145,060) <b>세 층으로 나눠</b> 잽니다 —
 모델이 맞는가 / 우리가 고른 조합이 실제로 덜 인기있는가 / 그래서 돈이 됐는가.
-앞의 둘은 매주 표본이 쌓이고, 마지막은 쌓이지 않습니다.</div>
+앞의 둘은 매주 표본이 쌓이고, 마지막은 쌓이지 않습니다. <b>어떤 규칙도 당첨 확률을 바꾸지 않습니다.</b></div>
 
 <div class="kpi">
-  <div><div class="k">실구매 누적</div><div class="v">4<span style="font-size:15px;color:var(--ink-60)">건</span></div>
-    <div class="s">투입 20,000원</div></div>
-  <div><div class="k">실구매 회수</div><div class="v">5,000<span style="font-size:15px">원</span></div>
-    <div class="s">25.0%</div></div>
+  <div><div class="k">추천 원장 누적</div><div class="v">4<span style="font-size:15px;color:var(--ink-60)">건</span></div>
+    <div class="s">추천 5+5를 매주 샀다면 · 투입 20,000원</div></div>
+  <div><div class="k">추천 원장 회수</div><div class="v">5,000<span style="font-size:15px">원</span></div>
+    <div class="s">추천 5+5를 매주 샀다면 · 25.0%</div></div>
   <div><div class="k">모델 설명력 R²</div><div class="v">0.368</div>
     <div class="s">순진예측 대비 오차 22% 감소</div></div>
-  <div><div class="k">현행 규칙 효과</div><div class="v">+6.9%</div>
-    <div class="s">기대 수령액 기준</div></div>
-  <div><div class="k">돈으로 판별하려면</div><div class="v" style="font-size:20px">1682만 년</div>
+  <div><div class="k">현행 규칙 효과</div><div class="v">+6.1%</div>
+    <div class="s">포트폴리오 (신규 기본) · 기대 수령액 기준</div></div>
+  <div><div class="k">돈으로 판별하려면</div><div class="v" style="font-size:20px">2139만 년</div>
     <div class="s">z 이득으로는 1주</div></div>
 </div>
 
@@ -79,92 +141,286 @@ tr.ctl td{color:var(--ink-60)}
 <tr><td>평균오차 (모델 / 순진)</td><td class="num">0.0295 / 0.0380</td><td>낮을수록 좋음</td></tr>
 <tr><td>재보정 기울기</td><td class="num">0.0331</td><td>z 1σ 당 초과배수 변화. 효과 크기의 환산 계수</td></tr>
 </table></div>
-<div class="vd ok">R²가 0보다 큽니다 — 이 모델은 «항상 평균값을 말하는 것»보다 낫습니다. 다만 설명력은 36.8%뿐이고, 나머지는 설명되지 않습니다.</div></div>
+<div class="vd ok">R²가 0보다 큽니다 — 이 모델은 «항상 평균값을 말하는 것»보다 낫습니다. 다만 설명력은 36.8%뿐이고, 나머지는 설명되지 않습니다.</div>
+<h3>등위별 기울기 — 1~3등도 같은 방향인가</h3>
+<p class="note">회차별 «실제 당첨자 수 ÷ 무작위라면 기대 인원»을 당첨 조합의 z 에 회귀했습니다. 기울기가 양수면 인기 있는 조합일수록
+그 등위를 나눠 갖는 사람이 많다는 뜻입니다. ₩ 모형은 4·5등 기울기를 모든 등위에 쓰므로, 1~3등 기울기가 더 크면 그 모형은 <b>보수적</b>입니다.
+1·2등은 회차당 당첨자가 적어(무작위 기대 약 15명·90명) 회차별 OOS R² 가 0 근처인 것이 정상입니다.</p>
+<div class="scroll"><table>
+<tr><th>등위</th><th class="num">기울기</th><th class="num">표준오차</th><th class="num">t</th><th class="num">OOS R²</th></tr>
+<tr><td>1등</td><td class="num">+0.085</td><td class="num">0.026</td>
+  <td class="num">3.3</td><td class="num">-0.007</td></tr><tr><td>2등</td><td class="num">+0.060</td><td class="num">0.028</td>
+  <td class="num">2.2</td><td class="num">-0.003</td></tr><tr><td>3등</td><td class="num">+0.051</td><td class="num">0.008</td>
+  <td class="num">6.7</td><td class="num">0.101</td></tr><tr><td>4·5등 (모형 기준)</td><td class="num">+0.033</td><td class="num">0.002</td>
+  <td class="num">13.8</td><td class="num">0.368</td></tr>
+</table></div>
+<h3>전주 번호 겹침 — 그림자 규칙</h3>
+<p class="note">직전 회차 당첨번호와 겹치는 개수(전주 겹침)를 모델에 더해 보았습니다. 계수 γ 가 음수면 <b>사람들이 직전 번호를 피한다</b> —
+직전 번호가 섞인 조합은 당첨 시 <b>나눠 갖는 인원이 조금 적다</b>는 뜻입니다. 당첨 확률과는 무관합니다.
+사이트의 추천은 아직 이 규칙을 쓰지 않고(포트폴리오+전주회피 행으로만 잽니다), 아래 게이트가 계속 통과하면 운영자가 켤지 정합니다.</p>
+<div class="scroll"><table>
+<tr><th>지표</th><th class="num">값</th><th>읽는 법</th></tr>
+<tr><td>γ (전주 번호 1개당)</td><td class="num">-0.0127</td><td>초과배수 변화. z 로 환산 κ = -0.38</td></tr>
+<tr><td>t · p (Bonferroni ×3)</td><td class="num">-4.4 · &lt;0.001</td><td>후보 특징 3개를 시험한 것에 대한 보정</td></tr>
+<tr><td>OOS R² (z만 → z+전주)</td><td class="num">0.368 → 0.394</td><td>ΔR² +0.0261</td></tr>
+</table></div>
+<div class="vd ok">채택 게이트(t &lt; −3 이고 walk-forward ΔR² &gt; 0): <b>통과</b>.
+통과해도 자동으로 켜지지 않습니다 — 5줄이 같은 직전 번호를 나눠 가져 «1게임 이상 당첨» 비율이 조금 줄어드는 대가가 있습니다.</div>
+</div>
 
 <h2>2층 · 우리가 고른 조합이 실제로 덜 인기있는가</h2>
-<p class="note">같은 회차, <b>같은 후보 풀</b>에서 선택 규칙만 갈아끼워 비교합니다. 회차별 공통 변동이 상쇄되도록
+<p class="note">같은 회차, <b>같은 후보 풀</b>(이번 주 추천과 같은 3,000개)에서 선택 규칙만 갈아끼워 비교합니다. 회차별 공통 변동이 상쇄되도록
 <b>대응표본</b>으로 검정했습니다. <b>양성 대조군(분배 최대)</b>이 반대 방향으로 뚜렷하게 갈리지 않으면 모델은 잡음입니다.</p>
-<div class="card"><div class="scroll"><table>
+<div class="card"><div class="scroll"><table class="wide">
 <tr><th>선택 규칙</th><th class="num">z 이득</th><th class="num">무작위 대비</th><th class="num">95% 신뢰구간</th><th class="num">p</th><th class="num">보정 p</th><th class="num">환산 효과</th><th class="num">게임당 일치</th></tr>
 <tr class="me">
-    <td>분배 최소 (현행)</td>
-    <td class="num">+2.081</td>
-    <td class="num">+2.078</td>
-    <td class="num">[2.041, 2.116]</td>
+    <td>포트폴리오 (신규 기본)</td>
+    <td class="num">+1.845</td>
+    <td class="num">+1.855</td>
+    <td class="num">[1.814, 1.897]</td>
     <td class="num"><span class="tg s">p&lt;0.001</span></td>
     <td class="num">0.000</td>
-    <td class="num">+6.9%</td>
-    <td class="num">0.817</td>
+    <td class="num">+6.1%</td>
+    <td class="num">0.815</td>
+  </tr><tr class="">
+    <td>포트폴리오+전주회피 (그림자)</td>
+    <td class="num">+1.775</td>
+    <td class="num">+1.785</td>
+    <td class="num">[1.744, 1.827]</td>
+    <td class="num"><span class="tg s">p&lt;0.001</span></td>
+    <td class="num">0.000</td>
+    <td class="num">+5.9%</td>
+    <td class="num">0.768</td>
+  </tr><tr class="ctl">
+    <td>완전분산 (커버리지 대조군)</td>
+    <td class="num">+1.536</td>
+    <td class="num">+1.546</td>
+    <td class="num">[1.503, 1.589]</td>
+    <td class="num"><span class="tg s">p&lt;0.001</span></td>
+    <td class="num">0.000</td>
+    <td class="num">+5.1%</td>
+    <td class="num">0.809</td>
+  </tr><tr class="">
+    <td>구 주간규칙</td>
+    <td class="num">+2.072</td>
+    <td class="num">+2.082</td>
+    <td class="num">[2.040, 2.123]</td>
+    <td class="num"><span class="tg s">p&lt;0.001</span></td>
+    <td class="num">0.000</td>
+    <td class="num">+6.8%</td>
+    <td class="num">0.785</td>
+  </tr><tr class="">
+    <td>분배 최소 5줄 (겹침 무시)</td>
+    <td class="num">+2.147</td>
+    <td class="num">+2.157</td>
+    <td class="num">[2.115, 2.200]</td>
+    <td class="num"><span class="tg s">p&lt;0.001</span></td>
+    <td class="num">0.000</td>
+    <td class="num">+7.1%</td>
+    <td class="num">0.793</td>
   </tr><tr class="ctl">
     <td>분배 최대 (양성 대조군)</td>
-    <td class="num">-2.140</td>
-    <td class="num">-2.143</td>
-    <td class="num">[-2.180, -2.106]</td>
+    <td class="num">-2.200</td>
+    <td class="num">-2.190</td>
+    <td class="num">[-2.232, -2.149]</td>
     <td class="num"><span class="tg s">p&lt;0.001</span></td>
     <td class="num">0.000</td>
-    <td class="num">-7.1%</td>
-    <td class="num">0.789</td>
+    <td class="num">-7.3%</td>
+    <td class="num">0.796</td>
   </tr><tr class="ctl">
     <td>무작위 (음성 대조군)</td>
-    <td class="num">+0.003</td>
+    <td class="num">-0.010</td>
     <td class="num">기준</td>
     <td class="num">—</td>
     <td class="num">—</td>
     <td class="num">—</td>
-    <td class="num">+0.0%</td>
-    <td class="num">0.833</td>
+    <td class="num">-0.0%</td>
+    <td class="num">0.817</td>
   </tr><tr class="">
     <td>최근 빈출</td>
-    <td class="num">-0.005</td>
-    <td class="num">-0.007</td>
-    <td class="num">[-0.067, 0.052]</td>
-    <td class="num"><span class="tg n">p=0.808</span></td>
+    <td class="num">-0.014</td>
+    <td class="num">-0.004</td>
+    <td class="num">[-0.066, 0.058]</td>
+    <td class="num"><span class="tg n">p=0.904</span></td>
     <td class="num">1.000</td>
     <td class="num">-0.0%</td>
-    <td class="num">0.760</td>
+    <td class="num">0.748</td>
   </tr><tr class="">
     <td>오래 미출현</td>
-    <td class="num">-0.079</td>
-    <td class="num">-0.081</td>
-    <td class="num">[-0.144, -0.019]</td>
-    <td class="num"><span class="tg s">p=0.011</span></td>
-    <td class="num">0.044</td>
+    <td class="num">-0.077</td>
+    <td class="num">-0.067</td>
+    <td class="num">[-0.134, 0.000]</td>
+    <td class="num"><span class="tg n">p=0.052</span></td>
+    <td class="num">0.412</td>
     <td class="num">-0.3%</td>
-    <td class="num">0.809</td>
+    <td class="num">0.789</td>
   </tr>
 </table></div>
 <p class="note" style="padding:10px 0 0">「z 이득」은 후보 풀 평균보다 얼마나 덜 인기있는 쪽을 골랐는가(클수록 좋음).
 「환산 효과」는 1층의 재보정 기울기를 곱한 값 — 기대 수령액이 몇 % 늘어나는가.
 「게임당 일치」의 우연 기준선은 <b>0.800개</b>이고, 어떤 규칙도 이걸 바꾸지 못합니다(당연합니다).<br>
-「보정 p」는 규칙 4개를 동시에 검정한 것에 대한 Bonferroni 보정입니다. <b>보정 p 가 0.05 를 넘으면 유의하지 않습니다</b> —
+「보정 p」는 규칙 8개를 동시에 검정한 것에 대한 Bonferroni 보정입니다. <b>보정 p 가 0.05 를 넘으면 유의하지 않습니다</b> —
 낱개 p 만 보면 여러 규칙을 훑는 것만으로 «유의한» 규칙이 만들어집니다.</p>
 <div class="vd ok">
-<b>양성 대조군이 작동합니다.</b> 일부러 인기 조합을 고르는 규칙은 -2.143, 현행 규칙은 +2.078 로 반대 방향으로 갈립니다. 모델이 실제로 무언가를 잡고 있다는 뜻입니다.</div></div>
+<b>양성 대조군이 작동합니다.</b> 일부러 인기 조합을 고르는 규칙은 -2.190, 현행 규칙은 +1.855 로 반대 방향으로 갈립니다. 모델이 실제로 무언가를 잡고 있다는 뜻입니다.</div></div>
+
+<h2>2층 보강 · 5게임을 어떻게 나눠 담는가</h2>
+<p class="note">5게임의 <b>1등 확률은 어떤 규칙이든 5/8,145,060</b>으로 같습니다. 줄끼리 번호를 덜 공유하면 «그 주에 1게임 이상 당첨(5등 이상)»
+확률이 조금 커지지만(이론 상한 11.92%), <b>기대 수령액은 바뀌지 않습니다</b> — 당첨 주가 조금 잦아지는 대신 한 주에 여러 줄이 함께 맞는 일이 줄 뿐입니다.
+기대 수령액을 바꾸는 것은 인기도(나눠 갖는 인원)뿐입니다. 「EV/5,000원」은 1층 재보정을 4·5등 기울기 그대로 1~3등에도 적용한
+<b>보수적 모형값</b>이며 실제 수령이 아닙니다(완전 무작위 5게임 = 2,500원).</p>
+<div class="card"><div class="scroll"><table class="wide">
+<tr><th>선택 규칙</th><th class="num">P(1게임↑) 이론</th><th class="num">실측 당첨 주 [95%]</th><th class="num">무작위 대비</th><th class="num">판별에 필요</th><th class="num">EV/5,000원</th><th class="num">무작위 대비</th><th class="num">전주 겹침</th></tr>
+<tr class="me">
+    <td>포트폴리오 (신규 기본)</td>
+    <td class="num">11.76%</td>
+    <td class="num">12.3% <small>[9.1%, 16.5%]</small></td>
+    <td class="num"><span class="tg n">p=0.285</span></td>
+    <td class="num">1,762년</td>
+    <td class="num">2,662원</td>
+    <td class="num">+6.1%</td>
+    <td class="num">0.80</td>
+  </tr><tr class="">
+    <td>포트폴리오+전주회피 (그림자)</td>
+    <td class="num">11.61%</td>
+    <td class="num">9.0% <small>[6.3%, 12.8%]</small></td>
+    <td class="num"><span class="tg n">p=0.782</span></td>
+    <td class="num">4,429년</td>
+    <td class="num">2,659원</td>
+    <td class="num">+6.0%</td>
+    <td class="num">1.73</td>
+  </tr><tr class="ctl">
+    <td>완전분산 (커버리지 대조군)</td>
+    <td class="num">11.87%</td>
+    <td class="num">13.3% <small>[9.9%, 17.6%]</small></td>
+    <td class="num"><span class="tg n">p=0.165</span></td>
+    <td class="num">1,120년</td>
+    <td class="num">2,633원</td>
+    <td class="num">+4.9%</td>
+    <td class="num">0.81</td>
+  </tr><tr class="">
+    <td>구 주간규칙</td>
+    <td class="num">11.35%</td>
+    <td class="num">12.3% <small>[9.1%, 16.5%]</small></td>
+    <td class="num"><span class="tg n">p=0.285</span></td>
+    <td class="num">210만 년</td>
+    <td class="num">2,671원</td>
+    <td class="num">+6.5%</td>
+    <td class="num">0.79</td>
+  </tr><tr class="">
+    <td>분배 최소 5줄 (겹침 무시)</td>
+    <td class="num">10.53%</td>
+    <td class="num">10.0% <small>[7.1%, 13.9%]</small></td>
+    <td class="num"><span class="tg n">p=0.889</span></td>
+    <td class="num">—</td>
+    <td class="num">2,673원</td>
+    <td class="num">+6.5%</td>
+    <td class="num">0.81</td>
+  </tr><tr class="ctl">
+    <td>분배 최대 (양성 대조군)</td>
+    <td class="num">10.42%</td>
+    <td class="num">9.0% <small>[6.3%, 12.8%]</small></td>
+    <td class="num"><span class="tg n">p=0.786</span></td>
+    <td class="num">—</td>
+    <td class="num">2,338원</td>
+    <td class="num">-6.8%</td>
+    <td class="num">0.79</td>
+  </tr><tr class="ctl">
+    <td>무작위 (음성 대조군)</td>
+    <td class="num">11.34%</td>
+    <td class="num">9.7% <small>[6.8%, 13.5%]</small></td>
+    <td class="num">기준</td>
+    <td class="num">—</td>
+    <td class="num">2,509원</td>
+    <td class="num">기준</td>
+    <td class="num">0.84</td>
+  </tr><tr class="">
+    <td>최근 빈출</td>
+    <td class="num">9.24%</td>
+    <td class="num">9.0% <small>[6.3%, 12.8%]</small></td>
+    <td class="num"><span class="tg n">p=0.782</span></td>
+    <td class="num">—</td>
+    <td class="num">2,509원</td>
+    <td class="num">-0.0%</td>
+    <td class="num">1.13</td>
+  </tr><tr class="">
+    <td>오래 미출현</td>
+    <td class="num">8.82%</td>
+    <td class="num">12.7% <small>[9.4%, 16.9%]</small></td>
+    <td class="num"><span class="tg n">p=0.264</span></td>
+    <td class="num">—</td>
+    <td class="num">2,504원</td>
+    <td class="num">-0.2%</td>
+    <td class="num">0.13</td>
+  </tr>
+</table></div>
+<div class="vd">커버리지 차이를 «당첨 주 비율»로 실측 판별하려면 1,762년이 필요합니다 — 그래서 이 칸은 <b>이론값(정확 계산)</b>으로 봅니다.
+실측 당첨 주 비율이 이론값의 95% 구간 안에 있으면 구현이 맞다는 뜻일 뿐, 실력의 증거가 아닙니다. 같은 풀의 무작위 5줄은 이론 11.34%.
+ 참고: 전주 겹침 모형(그림자)으로 계산하면 포트폴리오+전주회피 (그림자)의 EV/5,000원은 2,691원, 현행은 2,661원입니다.</div>
+<details class="cks"><summary>자동 점검 — 통과 13 / 14</summary>
+<p class="note" style="padding-top:8px">설계 문서(D1 §7)의 수용 기준을 매주 다시 확인합니다. «참고»는 설계상 경계에 걸릴 수 있어 경고하지 않는 기준입니다.</p>
+<div class="scroll"><table><tr><th>기준</th><th class="num">결과</th><th>값</th></tr><tr><td>A~E 쌍별 겹침 · 완화 없음</td>
+  <td class="num"><span class="tg o">통과</span></td>
+  <td class="ck">300/300<br><small>기준 모든 회차 A~E 쌍별 겹침 ≤1 · degraded 없음</small></td></tr><tr><td>EV 예산 (평균 u ≤ 상한)</td>
+  <td class="num"><span class="tg o">통과</span></td>
+  <td class="ck">300/300<br><small>기준 mean u ≤ max(u_stage1, u*+dz)</small></td></tr><tr><td>P(1게임↑) > 분배 최소 5줄</td>
+  <td class="num"><span class="tg o">통과</span></td>
+  <td class="ck">100.0% 회차<br><small>기준 ≥ 95% 회차</small></td></tr><tr><td>원 z 이득 손실 (참고)</td>
+  <td class="num"><span class="tg n">참고</span></td>
+  <td class="ck">-0.302<br><small>기준 ≥ −0.30 (vs minshare)</small></td></tr><tr><td>EV/5,000원 ÷ 분배 최소 5줄</td>
+  <td class="num"><span class="tg o">통과</span></td>
+  <td class="ck">0.9957<br><small>기준 중앙값 ≥ 0.993</small></td></tr><tr><td>게임당 일치 = 0.8</td>
+  <td class="num"><span class="tg o">통과</span></td>
+  <td class="ck">포트폴리오 0.815 (t 0.9) · 포트폴리오+전주회피 0.768 (t -1.7) · 완전분산 0.809 (t 0.7) · 구 주간규칙 0.785 (t -0.7) · 분배 최소 5줄 0.793 (t -0.3) · 분배 최대 0.796 (t -0.2) · 무작위 0.817 (t 0.9) · 최근 빈출 0.748 (t -1.8) · 오래 미출현 0.789 (t -0.4)<br><small>기준 모든 규칙 0.8 과 구별 안 됨 (|t|&lt;3.26, 규칙 수 Bonferroni)</small></td></tr><tr><td>정확 계산 · 완전분산 5줄</td>
+  <td class="num"><span class="tg o">통과</span></td>
+  <td class="ck">966650<br><small>기준 966650</small></td></tr><tr><td>정확 계산 · 1줄</td>
+  <td class="num"><span class="tg o">통과</span></td>
+  <td class="ck">194130<br><small>기준 194130</small></td></tr><tr><td>근사 오차 (이번 주 A~E)</td>
+  <td class="num"><span class="tg o">통과</span></td>
+  <td class="ck">0.00000pp<br><small>기준 ≤ 0.01pp</small></td></tr><tr><td>₩ 공식 · 평균 인기 1줄 = 500원</td>
+  <td class="num"><span class="tg o">통과</span></td>
+  <td class="ck">500<br><small>기준 500.00 ± 0.05</small></td></tr><tr><td>원장의 A~E 재현 (그 회차 규칙)</td>
+  <td class="num"><span class="tg o">통과</span></td>
+  <td class="ck">1241회 구 규칙 일치 · 1242회 구 규칙 일치<br><small>기준 원장 A~E 재현 (그 회차 규칙 · weeklyPicks)</small></td></tr><tr><td>검증 풀 = 사이트 추천 풀</td>
+  <td class="num"><span class="tg o">통과</span></td>
+  <td class="ck">2/2<br><small>기준 보드 풀에 같은 규칙 → 원장 A~E</small></td></tr><tr><td>이번 주 규칙 = 규칙표</td>
+  <td class="num"><span class="tg o">통과</span></td>
+  <td class="ck">1243회 portfolio (규칙표 portfolio)<br><small>기준 이번 주 추천 규칙 = 규칙표</small></td></tr><tr><td>기록 페이지 채점기 = 원본</td>
+  <td class="num"><span class="tg o">통과</span></td>
+  <td class="ck">로또 100000/100000 · 연금 100000/100000 · 금액 일치<br><small>기준 record.html 의 복사본 = index.html rankOf · pension.html gradeOf (최근 50회 × 2,000개)</small></td></tr></table></div></details></div>
 
 <h2>3층 · 그래서 돈이 됐는가 — 그리고 언제쯤 알 수 있는가</h2>
 <p class="note">여기가 이 프로젝트에서 가장 오해하기 쉬운 곳입니다. 회수율은 <b>1등 꼬리가 지배</b>하므로
 성능 지표가 될 수 없습니다. 아래는 «지금 관측된 효과 크기가 진짜라고 가정할 때, 그것을 그 지표로 판별하는 데 몇 주가 필요한가»입니다.</p>
 <div class="card"><div class="scroll"><table>
 <tr><th>선택 규칙</th><th class="num">z 이득으로 판별</th><th class="num">실제 회수금으로 판별</th></tr>
-<tr class="me"><td>분배 최소 (현행)</td>
+<tr class="me"><td>포트폴리오 (신규 기본)</td>
     <td class="num">1주</td>
-    <td class="num">1682만 년</td></tr><tr class=""><td>분배 최대 (양성 대조군)</td>
+    <td class="num">2139만 년</td></tr><tr class=""><td>포트폴리오+전주회피 (그림자)</td>
+    <td class="num">1주</td>
+    <td class="num">2311만 년</td></tr><tr class=""><td>완전분산 (커버리지 대조군)</td>
+    <td class="num">1주</td>
+    <td class="num">3087만 년</td></tr><tr class=""><td>구 주간규칙</td>
+    <td class="num">1주</td>
+    <td class="num">1697만 년</td></tr><tr class=""><td>분배 최소 5줄 (겹침 무시)</td>
+    <td class="num">1주</td>
+    <td class="num">1579만 년</td></tr><tr class=""><td>분배 최대 (양성 대조군)</td>
     <td class="num">1주</td>
     <td class="num">—</td></tr><tr class=""><td>최근 빈출</td>
-    <td class="num">765년</td>
+    <td class="num">3,126년</td>
     <td class="num">—</td></tr><tr class=""><td>오래 미출현</td>
-    <td class="num">364주</td>
+    <td class="num">12년</td>
     <td class="num">—</td></tr>
 </table></div>
 <div class="vd sig">주당 회수금의 이론 표준편차는 <b>1,976,232원</b>인데 기대 회수금은 <b>2,721원</b>입니다.
-잡음이 신호의 726배라, 돈으로 검증하려면 <b>1682만 년</b>이 걸립니다.
+잡음이 신호의 726배라, 돈으로 검증하려면 <b>2139만 년</b>이 걸립니다.
 같은 효과를 z 이득으로 재면 <b>1주</b>면 됩니다.
 <b>그래서 이 보드는 돈이 아니라 메커니즘을 봅니다.</b></div></div>
 
 <h2>연금복권 · 규칙 전수 검정</h2>
 <p class="note">모델 5종 × 상위 K 5단계 = <b>25개</b> 조합을 전부 돌렸습니다.
 균일한 추첨이라면 우연히 <b>1.3개</b>가 p&lt;0.05를 넘습니다. 다중검정 보정 후에도 남는 게 있는지가 관건입니다.</p>
-<div class="card"><div class="scroll"><table>
+<div class="card"><div class="scroll"><table class="wide">
 <tr><th>모델</th><th class="num">K</th><th class="num">적중률</th><th class="num">우연 기준선</th><th class="num">p</th><th class="num">보정 p</th></tr>
 <tr class="ctl"><td>무작위(대조군)</td>
    <td class="num">상위 1</td><td class="num">10.97%</td><td class="num">10%</td>
@@ -187,11 +443,42 @@ tr.ctl td{color:var(--ink-60)}
 <div class="vd ok">
 p&lt;0.05 인 조합 <b>0개</b>(우연 기대 1.3개) · 보정 후 살아남은 것 <b>0개</b>.
 
-보정 후 남는 것이 없습니다. <b>연금복권에는 쓸 수 있는 규칙이 없습니다.</b> 고정 당첨금이라 애초에 바꿀 것도 없습니다.</div></div>
+보정 후 남는 것이 없습니다. <b>연금복권에는 번호를 고르는 규칙이 없습니다.</b> 고정 당첨금이라 애초에 바꿀 것도 없습니다.</div></div>
 
-<h2>실구매 원장</h2>
-<p class="note">추천이 회차 번호를 시드로 결정되므로 <b>«그 회차 추천 = 그 주에 산 것»</b>으로 자동 기록됩니다.
-안 샀거나 품절된 주가 있으면 알려 주시면 고칩니다. 주간 5줄 + 연금 5장 = 10,000원.</p>
+<h2>연금복권 · 5장을 어떻게 나눠 사는가</h2>
+<p class="note">번호 선택은 확률도 당첨금도 바꾸지 못합니다. 5장의 <b>결과가 어떻게 흩어지는지</b>만 고릅니다 — 기대값은 어떤 구조든
+<b>3,750원</b>(5,000원당, 세전)입니다. 100~333회 각 회차를 <b>그때까지의 데이터로</b> 다시 만들어 페이지의 등수 판정으로 채점했습니다.
+<b>구현 점검용</b>이며 실력 주장이 아닙니다.</p>
+<div class="card"><div class="scroll"><table class="wide">
+<tr><th>구조</th><th class="num">P(1장↑) 이론</th><th class="num">실측 [95%]</th><th class="num">점검</th><th class="num">평균 수령</th><th class="num">이론 95% 범위</th><th class="num">회차</th></tr>
+<tr class="me"><td>분산 5장 (끝자리 모두 다름)</td>
+    <td class="num">50.00%</td>
+    <td class="num">52.1% <small>[45.8%, 58.5%]</small></td>
+    <td class="num"><span class="tg o">이론과 일치</span></td>
+    <td class="num">1,547원</td>
+    <td class="num">[-218,599, 221,693]</td>
+    <td class="num">234</td></tr><tr class=""><td>세트 1세트 (같은 번호 × 1~5조)</td>
+    <td class="num">10.00%</td>
+    <td class="num">8.5% <small>[5.6%, 12.8%]</small></td>
+    <td class="num"><span class="tg o">이론과 일치</span></td>
+    <td class="num">598원</td>
+    <td class="num">[-286,648, 287,845]</td>
+    <td class="num">234</td></tr><tr class=""><td>구 방식 (모델 상위 5장)</td>
+    <td class="num">22.01%</td>
+    <td class="num">20.9% <small>[16.2%, 26.6%]</small></td>
+    <td class="num"><span class="tg o">이론과 일치</span></td>
+    <td class="num">872원</td>
+    <td class="num">[-219,442, 221,185]</td>
+    <td class="num">234</td></tr>
+</table></div>
+<div class="vd">분산 5장의 실측 «1장 이상 당첨» 52.1% — 이론 50.0%의 99% 범위 안(구현이 맞음).
+모든 회차에서 5장의 끝자리가 서로 달랐습니다. 
+평균 수령의 이론 범위가 넓은 것은 1·2등(수억~수십억) 꼬리 때문입니다 — 수백 주로는 평균 수령을 판별할 수 없습니다.</div></div>
+
+<h2>추천 원장 — 추천 5+5를 매주 샀다면</h2>
+<p class="note">자동 계산은 내가 실제로 무엇을 샀는지 모릅니다. 이 원장은 <b>«그 주 추천(로또 A~E 5게임 + 연금 1~5 5장)을 샀다면»</b>의 기록입니다.
+추천이 회차 번호를 시드로 결정되므로 자동으로 적히고, 추첨이 끝나면 페이지의 등수 판정으로 채점됩니다.
+내가 실제로 산 기록은 <a href="./record.html">기록</a>에서 봅니다. 주간 5게임 + 연금 5장 = 10,000원.</p>
 <div class="card"><div class="scroll"><table>
 <tr><th>구분</th><th class="num">투입</th><th class="num">회수</th><th class="num">회수율</th><th class="num">중앙값</th><th class="num">주수</th></tr>
 <tr class="me"><td>로또 6/45</td><td class="num">10,000</td><td class="num">5,000</td>
@@ -199,32 +486,48 @@ p&lt;0.05 인 조합 <b>0개</b>(우연 기대 1.3개) · 보정 후 살아남�
 <tr class="me"><td>연금복권720+</td><td class="num">10,000</td><td class="num">0</td>
   <td class="num">0.0%</td><td class="num">0</td><td class="num">2</td></tr>
 </table></div>
+<h3>누적 투입과 회수</h3>
+<figure class="cum">
+<div class="legend"><span><i class="rt"></i>누적 회수 <b>5,000원</b></span><span><i class="sp"></i>누적 투입 <b>20,000원</b></span></div>
+<div class="plot"><span class="yl" style="top:100%">0</span><span class="yl" style="top:50%">15,000</span><span class="yl" style="top:0%">30,000</span>
+<svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="추천 원장 누적 투입 20,000원, 누적 회수 5,000원 (4건)">
+<line class="gl" x1="0" x2="100" y1="100" y2="100" vector-effect="non-scaling-stroke"/><line class="gl" x1="0" x2="100" y1="50" y2="50" vector-effect="non-scaling-stroke"/><line class="gl" x1="0" x2="100" y1="0" y2="0" vector-effect="non-scaling-stroke"/><path class="sp" d="M0,100 H0 V83.333 H25 V66.667 H50 V50 H75 V33.333 H100" vector-effect="non-scaling-stroke"/><path class="rt" d="M0,100 H0 V100 H25 V83.333 H50 V83.333 H75 V83.333 H100" vector-effect="non-scaling-stroke"/><rect class="hit" x="0" y="0" width="25" height="100"><title>2026.09.10 연금 332회 · 이번 0원 · 누적 투입 5,000원 · 누적 회수 0원</title></rect><rect class="hit" x="25" y="0" width="25" height="100"><title>2026.09.12 로또 1241회 · 이번 5,000원 · 누적 투입 10,000원 · 누적 회수 5,000원</title></rect><rect class="hit" x="50" y="0" width="25" height="100"><title>2026.09.17 연금 333회 · 이번 0원 · 누적 투입 15,000원 · 누적 회수 5,000원</title></rect><rect class="hit" x="75" y="0" width="25" height="100"><title>2026.09.19 로또 1242회 · 이번 0원 · 누적 투입 20,000원 · 누적 회수 5,000원</title></rect></svg></div>
+<div class="xl"><span>2026.09.10</span><span>2026.09.19</span></div>
+<figcaption>채점된 4건(로또·연금 추첨일 순, 5,000원씩). 그래프를 짚거나 마우스를 올리면 그 회차 값이 나옵니다. 아래 «최근 기록» 표가 같은 자료입니다.</figcaption>
+</figure>
 <h3>최근 기록</h3>
-<div class="scroll"><table>
-<tr><th>구분</th><th class="num">회차</th><th class="num">추첨일</th><th class="num">투입</th><th class="num">회수</th><th class="num">결과</th></tr>
-<tr><td class="num">연금</td><td class="num">334회</td>
-    <td class="num">2026.09.24</td><td class="num">5,000</td>
+<div class="scroll"><table class="wide led">
+<tr><th>구분</th><th class="num">회차</th><th>추천 방식</th><th class="num">추첨일</th><th class="num">투입</th><th class="num">회수</th><th class="num">결과</th></tr>
+<tr><td>로또</td><td class="num">1243회</td>
+    <td>포트폴리오</td><td class="num">—</td><td class="num">5,000</td>
     <td class="num"><span class="tg n">추첨 대기</span></td>
-    <td class="num">—</td></tr><tr><td class="num">연금</td><td class="num">333회</td>
-    <td class="num">2026.09.17</td><td class="num">5,000</td>
-    <td class="num">0</td>
-    <td class="num">—</td></tr><tr><td class="num">연금</td><td class="num">332회</td>
-    <td class="num">2026.09.10</td><td class="num">5,000</td>
-    <td class="num">0</td>
-    <td class="num">—</td></tr><tr><td class="num">로또</td><td class="num">1243회</td>
-    <td class="num">—</td><td class="num">5,000</td>
+    <td class="num">—</td></tr><tr><td>연금</td><td class="num">334회</td>
+    <td>분산</td><td class="num">2026.09.24</td><td class="num">5,000</td>
     <td class="num"><span class="tg n">추첨 대기</span></td>
-    <td class="num">—</td></tr><tr><td class="num">로또</td><td class="num">1242회</td>
-    <td class="num">2026.09.19</td><td class="num">5,000</td>
+    <td class="num">—</td></tr><tr><td>로또</td><td class="num">1242회</td>
+    <td>구 규칙</td><td class="num">2026.09.19</td><td class="num">5,000</td>
     <td class="num">0</td>
-    <td class="num">—</td></tr><tr><td class="num">로또</td><td class="num">1241회</td>
-    <td class="num">2026.09.12</td><td class="num">5,000</td>
+    <td class="num">—</td></tr><tr><td>연금</td><td class="num">333회</td>
+    <td>구 방식</td><td class="num">2026.09.17</td><td class="num">5,000</td>
+    <td class="num">0</td>
+    <td class="num">—</td></tr><tr><td>로또</td><td class="num">1241회</td>
+    <td>구 규칙</td><td class="num">2026.09.12</td><td class="num">5,000</td>
     <td class="num">5,000</td>
-    <td class="num">1게임 당첨</td></tr>
+    <td class="num">1게임 당첨</td></tr><tr><td>연금</td><td class="num">332회</td>
+    <td>구 방식</td><td class="num">2026.09.10</td><td class="num">5,000</td>
+    <td class="num">0</td>
+    <td class="num">—</td></tr>
 </table></div>
-<div class="vd">아직 <b>2주</b>입니다. 실구매 기록만으로 규칙을 판단하려면 위 3층 표의 «실제 회수금으로 판별» 칸만큼 걸립니다. <b>이 원장은 성능 측정용이 아니라 가계부입니다.</b></div></div>
+<div class="vd">아직 <b>2주</b>입니다. 원장 기록만으로 규칙을 판단하려면 위 3층 표의 «실제 회수금으로 판별» 칸만큼 걸립니다. <b>이 원장은 성능 측정용이 아니라 가계부입니다.</b></div></div>
 
-<div class="foot">동행복권 공식 API 자료로 자동 생성 · 2026-09-23 19:02 (KST) · 로또 300주 walk-forward, 연금 25개 조합 전수<br>
-확률은 어떤 규칙으로도 바뀌지 않습니다. 이 보드가 재는 것은 «당첨됐을 때 나눠 갖는 인원»뿐입니다.<br>
+<div class="foot">동행복권 공식 API 자료로 자동 생성 · 2026-09-23 21:45 (KST) · 로또 300주 walk-forward, 연금 25개 조합 전수<br>
+확률은 어떤 규칙으로도 바뀌지 않습니다. 이 보드가 재는 것은 «당첨됐을 때 나눠 갖는 인원»(로또)과 «당첨이 흩어지는 모양»(연금)뿐입니다.<br>
 복권 구매는 감당할 수 있는 범위 안에서. 만 19세 미만은 구매할 수 없습니다.</div>
-</div></body></html>
+</div>
+<script>(function(){var b=document.getElementById('themeBtn');if(!b)return;
+var K='lottolab.theme',S=['system','light','dark'],L={system:'시스템',light:'라이트',dark:'다크'};
+function g(){try{var t=localStorage.getItem(K);return t==='light'||t==='dark'?t:'system'}catch(e){return 'system'}}
+function a(t){var r=document.documentElement;if(t==='light'||t==='dark')r.dataset.theme=t;else delete r.dataset.theme}
+function p(){var t=g();b.textContent='테마 · '+L[t];b.setAttribute('aria-label','테마: '+L[t]+' · 눌러서 전환')}
+p();b.addEventListener('click',function(){var n=S[(S.indexOf(g())+1)%3];try{if(n==='system')localStorage.removeItem(K);else localStorage.setItem(K,n)}catch(e){}a(n);p()})})();</script>
+</body></html>

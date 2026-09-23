@@ -1,11 +1,51 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>주간 복권 브리핑 · 지난 호</title><style>
-body{font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;max-width:640px;margin:0 auto;padding:28px 16px;
-background:#EEF0EB;color:#16302B;line-height:1.7}
-@media(prefers-color-scheme:dark){body{background:#12181A;color:#E6EDE9}a{color:#E6EDE9}}
-h1{font-size:24px;padding-bottom:6px}a{color:#16302B}
-ul{list-style:none;padding:0}li{border-bottom:1px solid rgba(128,128,128,.25);padding:11px 0}
-</style></head><body><h1>주간 복권 브리핑</h1>
-<p><a href="../brief.html">→ 최신 호</a> · <a href="../pension.html">PENSION LAB</a> · <a href="../index.html">LOTTO LAB</a></p>
-<ul><li><a href="./2026-09-23.html">2026-09-23</a></li><li><a href="./2026-09-13.html">2026-09-13</a></li><li><a href="./2026-09-06.html">2026-09-06</a></li><li><a href="./2026-09-04.html">2026-09-04</a></li><li><a href="./2026-08-30.html">2026-08-30</a></li><li><a href="./2026-08-29.html">2026-08-29</a></li></ul>
-</body></html>
+<title>지난 호 · 일확천금</title>
+<script>try{var t=localStorage.getItem('lottolab.theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
+<style>/* site.css — 일확천금 공유 디자인 토큰 + 전역 내비(gnav)
+   손으로 쓴 페이지: <link rel="stylesheet" href="./site.css"> 를 자기 <style> 앞에.
+   생성 페이지(brief/validate/…): scripts/site-shared.mjs 의 siteCSS() 로 이 파일을 그대로 인라인.
+   D2 §5 계약을 그대로 따른다 — 여기 바꾸면 모든 페이지가 바뀐다. */
+:root{--paper:#EEF0EB;--paper-2:#F7F8F5;--paper-3:#E4E7E0;--ink:#16302B;
+ --ink-60:rgba(22,48,43,.60);--ink-40:rgba(22,48,43,.40);--ink-30:rgba(22,48,43,.30);
+ --ink-12:rgba(22,48,43,.12);--ink-06:rgba(22,48,43,.06);
+ --b-yellow:#FBC400;--b-blue:#69C8F2;--b-red:#FF7272;--b-grey:#A0A6A2;--b-green:#B0D840;
+ --sig:#B0281A;--ok:#1F6F4A;--gutter:16px;--nav-h:58px;--maxw:940px;
+ --f-mono:"Space Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+ --f-body:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#12181A;--paper-2:#182022;--paper-3:#1F2A2C;
+ --ink:#E6EDE9;--ink-60:rgba(230,237,233,.62);--ink-40:rgba(230,237,233,.40);--ink-30:rgba(230,237,233,.28);
+ --ink-12:rgba(230,237,233,.14);--ink-06:rgba(230,237,233,.06);--sig:#FF8A78;--ok:#7FD8A8;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#12181A;--paper-2:#182022;--paper-3:#1F2A2C;--ink:#E6EDE9;
+ --ink-60:rgba(230,237,233,.62);--ink-40:rgba(230,237,233,.40);--ink-30:rgba(230,237,233,.28);
+ --ink-12:rgba(230,237,233,.14);--ink-06:rgba(230,237,233,.06);--sig:#FF8A78;--ok:#7FD8A8;color-scheme:dark}
+html,body{overflow-x:clip}
+body{background:var(--paper);color:var(--ink);padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 24px)}
+.wrap{padding-left:var(--gutter)!important;padding-right:var(--gutter)!important}
+.gnav{position:fixed;inset:auto 0 0 0;z-index:50;display:grid;grid-template-columns:repeat(5,1fr);
+ height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);
+ background:var(--paper-2);border-top:1.5px solid var(--ink)}
+.gnav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;
+ font:700 12px/1.2 var(--f-body);color:var(--ink-60);text-decoration:none}
+.gnav svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8}
+.gnav a[aria-current="page"]{color:var(--ink);box-shadow:inset 0 3px 0 var(--ink)}
+:is(.gnav a,button,.btn):focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.theme-btn{font:700 11px var(--f-mono);letter-spacing:.04em;color:var(--ink-60);background:none;
+ border:1px solid var(--ink-30);padding:4px 9px;cursor:pointer;border-radius:2px}
+.theme-btn:hover{color:var(--ink);border-color:var(--ink)}
+@media(min-width:720px){body{padding-bottom:70px}
+ .gnav{position:static;display:flex;justify-content:flex-end;gap:2px;height:auto;max-width:var(--maxw);margin:0 auto;
+  padding:6px var(--gutter);background:none;border:0;border-bottom:1px solid var(--ink-12)}
+ .gnav a{flex-direction:row;gap:6px;padding:6px 10px;min-height:36px}
+ .gnav a[aria-current="page"]{box-shadow:inset 0 -3px 0 var(--ink)}}
+@media print{.gnav,.no-print{display:none!important}body{padding-bottom:0}}
+
+body{font-family:var(--f-body);line-height:1.7}
+.wrap{max-width:640px;margin:0 auto;padding:24px var(--gutter) 0}
+h1{font-size:22px;padding-bottom:6px}a{color:var(--ink)}
+ul{list-style:none;padding:0}li{border-bottom:1px solid var(--ink-12);padding:11px 0;font-size:14px}
+</style></head><body>
+<nav class="gnav" aria-label="사이트"><a href="../brief.html" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="5" width="17.6" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.2 9.6h17.6"/></svg><span>이번 주</span></a><a href="../index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><path d="M8.6 8.9a2.4 2.4 0 0 1 2.4-2.3"/></svg><span>로또</span></a><a href="../pension.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2.1a2 2 0 0 0 0 3.8v2.1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2.1a2 2 0 0 0 0-3.8V8.2Z"/><path d="M9.3 6.4v11.3" stroke-dasharray="2.1 2.1"/></svg><span>연금</span></a><a href="../validate.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 19 6v6c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6l7-2.8Z"/><path d="M8.7 12.2 11 14.5l4.3-4.3"/></svg><span>검증</span></a><a href="../record.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.2" y="3" width="15.6" height="18" rx="1.4"/><path d="M7.6 8h8.8M7.6 12h8.8M7.6 16h5.6"/></svg><span>기록</span></a></nav>
+<div class="wrap"><h1>지난 호</h1>
+<p><a href="../brief.html">→ 최신 호</a></p>
+<ul><li><a href="./2026-09-23.html">2026-09-23</a> · 로또 1243회 / 연금 334회</li><li><a href="./2026-09-13.html">2026-09-13</a></li><li><a href="./2026-09-06.html">2026-09-06</a></li><li><a href="./2026-09-04.html">2026-09-04</a></li><li><a href="./2026-08-30.html">2026-08-30</a></li><li><a href="./2026-08-29.html">2026-08-29</a></li></ul>
+</div></body></html>
