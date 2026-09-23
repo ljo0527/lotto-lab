@@ -4,8 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>PENSION LAB · 연금복권720+ 통계 실험실</title>
-<script>try{var t=localStorage.getItem('lottolab.theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
+<meta name="theme-color" content="#16302B">
 <link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<script>try{var t=localStorage.getItem('lottolab.theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -36,7 +39,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
 body{background:var(--paper);color:var(--ink);font-family:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo","Noto Sans KR",system-ui,-apple-system,sans-serif;
-  font-weight:400;line-height:1.68;font-size:15px;letter-spacing:-0.01em;padding:0 0 90px;-webkit-font-smoothing:antialiased}
+  font-weight:400;line-height:1.68;font-size:15px;letter-spacing:-0.01em;-webkit-font-smoothing:antialiased}
 .wrap{max-width:940px;margin:0 auto;padding:16px 14px 0}
 .mono{font-family:"Space Mono",monospace}
 
@@ -663,9 +666,19 @@ const rankInfo=k=>RANKS.find(r=>r.k===k);
    로또와 달리 연금복권은 당첨금이 고정(당첨자 수 무관)이라 «인기 없는 번호로 나눠갖기 인원 줄이기»가
    원천적으로 무의미하다(§renderFair 결론 카드와 동일 입장). 5장으로 조작 가능한 건 오직
    당첨 이벤트의 상관구조(=분포 모양)뿐이고, 기대값은 항상 3,750원으로 같다. */
-const PENSION_MODE = 'spread';                 // 사이트가 원장·브리핑에 쓰는 기본값. UI 토글은 화면 표시만 바꾼다.
-const PENSION_PORTFOLIO_FROM = 334;            // 이 회차부터 새 규칙. 그 전 회차 재현은 옛 generate() 그대로 —
-                                                // «지난주» 재현·purchases.json 연속성이 깨지지 않게 한다(PLAN §1.1).
+/* PENSION_RULES — 회차별 규칙 이력표(하위호환용 설정 이력). 설정을 바꿀 땐 이 배열에 새 항목을 APPEND 만
+   한다 — 과거 항목은 절대 수정하지 않는다. 그래야 나중에 설정이 바뀌어도(예: 세트 기본으로 전환)
+   지난 회차 재현·purchases.json 연속성이 깨지지 않는다(PLAN §1.1). */
+const PENSION_RULES = [{from:334, mode:'spread'}];
+/* pensionModeFor(ep) — ep 회차에 적용할 mode: from<=ep 인 마지막 규칙의 mode. ep 가 첫 규칙보다 이르면
+   null(=legacy, 옛 generate() 그대로 재현). */
+function pensionModeFor(ep){
+  let mode=null;
+  for(const r of PENSION_RULES) if(r.from<=ep) mode=r.mode;
+  return mode;
+}
+const PENSION_MODE = PENSION_RULES[PENSION_RULES.length-1].mode;  // 하위호환 별칭 — 현재(마지막 규칙) mode
+const PENSION_PORTFOLIO_FROM = PENSION_RULES[0].from;              // 하위호환 별칭 — 최초 규칙 시작 회차
 const PENSION_ANY_P = RANKS.reduce((a,r)=>a+r.p,0);   // 1장당 «뭐라도 당첨» 확률(무작위 기준선용) ≈ 0.100001
 
 /* pensionDist(tickets) — tickets:[{band,num}](개수 무관)의 정확한 당첨금 분포.
@@ -748,9 +761,11 @@ function pensionDist(tickets){
   return {EV,SD,p0,pAny,pGE,pFirst,max,table:entries.map(e=>[e.won,e.cnt/TOTAL])};
 }
 
-/* pensionPortfolio(mode,S,seed) — D1 §6 구성 규칙(결정적, DB+회차만의 함수). 실시간 재고 조회 API 가
-   없어 «대체»는 추정 순번일 뿐 매진 여부를 실제로 확인한 결과가 아니다(§renderIssue 와 같은 입장). */
-function pensionPortfolio(mode, S, seed){
+/* pensionPortfolio(mode,S,seed,opts) — D1 §6 구성 규칙(결정적, DB+회차만의 함수). 실시간 재고 조회 API 가
+   없어 «대체»는 추정 순번일 뿐 매진 여부를 실제로 확인한 결과가 아니다(§renderIssue 와 같은 입장).
+   opts.noDist=true 면 pensionDist 계산을 건너뛰고 dist:null 을 돌려준다(분포가 필요 없는 호출 경로용). */
+function pensionPortfolio(mode, S, seed, opts){
+  opts = opts || {};
   S = S || predSettings();
   seed = seed==null ? nextDraw().ep*7919 : seed;
   const cand = generate(S.model,S.K,S.J,50,seed);
@@ -791,21 +806,23 @@ function pensionPortfolio(mode, S, seed){
     alts = fallback.map(f=>f[0]);   // alts[i] = link(1) — D1 §6, dᵢ 유지
   }
 
-  const dist = pensionDist(buy);
+  const dist = opts.noDist ? null : pensionDist(buy);
   const picks = buy.concat(alts);
   return {mode, seed, buy, alts, fallback, picks, dist, rule:'portfolio'};
 }
 
 /* pensionWeekly() — 원장·브리핑이 «오늘의 5장»으로 부르는 단일 진입점.
-   PLAN §1.1: 게이팅 회차 이전은 재현성 보존을 위해 옛 규칙(generate 상위 10개) 그대로 쓴다. */
+   PLAN §1.1: 게이팅 회차 이전은 재현성 보존을 위해 옛 규칙(generate 상위 10개) 그대로 쓴다.
+   어느 규칙이 적용되는지는 PENSION_RULES 이력표(pensionModeFor)가 정한다. */
 function pensionWeekly(){
   const nx=nextDraw(); if(!nx) return null;
-  if(nx.ep < PENSION_PORTFOLIO_FROM){
+  const mode=pensionModeFor(nx.ep);
+  if(mode==null){
     const S=predSettings();
     const picks=generate(S.model,S.K,S.J,10,nx.ep*7919);
     return {picks, rule:'legacy'};
   }
-  return pensionPortfolio(PENSION_MODE, predSettings(), nx.ep*7919);
+  return pensionPortfolio(mode, predSettings(), nx.ep*7919);
 }
 
 /* 판매율 추정 — 4경로 */
@@ -1425,7 +1442,11 @@ async function loadLocalPensionJSON(){
     DB.rounds=valid.map(r=>{
       const o2=old[r.ep];
       const row={ep:+r.ep, date:String(r.date), band:+r.band, num:String(r.num).padStart(6,'0'), bonus:String(r.bonus).padStart(6,'0')};
-      return (o2&&o2.cnt) ? Object.assign(row,{cnt:o2.cnt,net:o2.net}) : row;
+      // 당첨매수(cnt/net)는 백업 파일 자체에 실려 있으면 그걸 우선 쓴다(공식 API 실패 시엔 old 가 늘 비어 있으므로,
+      // 파일 값을 버리면 판매율 추정이 통째로 사라진다) — 없을 때만 이미 불러온 old 값으로 보충한다.
+      if(r.cnt) Object.assign(row,{cnt:r.cnt,net:r.net});
+      else if(o2&&o2.cnt) Object.assign(row,{cnt:o2.cnt,net:o2.net});
+      return row;
     }).sort((a,b)=>a.ep-b.ep);
     DB.updated=Date.now(); saveDB();
     return true;

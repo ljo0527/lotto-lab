@@ -182,9 +182,13 @@ async function readPension(browser, base, pension, lotto){
 
     // 이번 주 추천 — PLAN §1.1/§1.3: pensionWeekly() 가 있으면 그걸(=포트폴리오 규칙),
     // 없으면 예전 generate() top-10 (앞 5장=구매, 뒤 5장=예비) 그대로.
+    // [F1 픽스] pensionWeekly() 는 게이팅 회차 이전(§1.1)엔 legacy 모양 {picks, rule:'legacy'}
+    // (buy/alts 없음)을 돌려줄 수 있다 — 이땐 picks 10개를 5+5 로 나눠 기존 모양을 채운다.
+    const fillBuyAlts=w=>(w && !w.buy && Array.isArray(w.picks))
+      ? Object.assign({}, w, {buy:w.picks.slice(0,5), alts:w.picks.slice(5,10)}) : w;
     let nextW;
     if(hasWeekly){
-      try{ nextW = pensionWeekly(); }catch(e){ nextW=null; }
+      try{ nextW = fillBuyAlts(pensionWeekly()); }catch(e){ nextW=null; }
     }
     if(!nextW){
       const picks10 = generate(S.model,S.K,S.J,10,seedNext);
@@ -208,7 +212,7 @@ async function readPension(browser, base, pension, lotto){
     DB.rounds=rows.slice(0,-1);
     let prevW;
     if(hasWeekly){
-      try{ prevW = pensionWeekly(); }catch(e){ prevW=null; }
+      try{ prevW = fillBuyAlts(pensionWeekly()); }catch(e){ prevW=null; }
     }
     if(!prevW){
       const prevPicks10 = generate(S.model,S.K,S.J,10,last.ep*7919);
@@ -296,6 +300,28 @@ async function readLotto(browser, base, pension, lotto){
     }
     const p0 = 1-Math.pow(1-P_LINEv,5);   // 아무렇게나 고른 5게임의 이론적 P(any) — 페이지 상수만 사용, 로직 재구현 아님
 
+    // [F1] 무작위 5게임의 P(4등 이상) 기준선. p4plus=(1+6+228+11115)/C456 의 1-(1-p4plus)^5 는
+    // 독립 가정의 닫힌 식(근사) — coverExact 가 있으면 실제로 회차 시드의 독립 구성 무작위 5줄을
+    // 뽑아 정확 계산한다(페이지 자체 RNG/pickWeighted/coverExact 재사용, 로직 재구현 아님).
+    const WAYSv=(typeof WAYS!=='undefined')?WAYS:{1:1,2:6,3:228,4:11115};
+    const p4plus=(WAYSv[1]+WAYSv[2]+WAYSv[3]+WAYSv[4])/C456v;
+    const p4plusApprox=1-Math.pow(1-p4plus,5);
+    let randomCover=null;
+    if(typeof coverExact==='function' && typeof mulberry32==='function'
+       && typeof pickWeighted==='function' && typeof weightsFor==='function'){
+      try{
+        const prevRNG=RNG;
+        const rndLines=[];
+        for(let i=0;i<5;i++){
+          RNG=mulberry32((W.round*97+i+1)>>>0);
+          rndLines.push(pickWeighted(weightsFor(),new Set(),6).sort((a,b)=>a-b));
+        }
+        RNG=prevRNG;
+        randomCover=coverExact(rndLines);
+      }catch(e){ randomCover=null; }
+    }
+    const randomP4 = randomCover ? randomCover.pAny4 : p4plusApprox;
+
     // 라인당 EV(₩) — zOf/lineEV/lottoEVctx 가 모두 있을 때만(그 전엔 —).
     let evBuy=null, evCalib=null;
     if(typeof lineEV==='function' && typeof lottoEVctx==='function' && typeof zOf==='function'){
@@ -332,6 +358,7 @@ async function readLotto(browser, base, pension, lotto){
       prevPicks: graded, prevBuy:prevBuyGraded, prevSpares:prevSparesGraded, prevTarget:prev.round,
       agree: F&&F.agree!=null?F.agree:null,
       cover, p0, evBuy, evRandom: 5*500, evCalib,
+      randomP4, randomP4Exact: !!randomCover,
       lambda, med52, overlapK,
       C456:C456v, TICKET:TICKETv
     };
@@ -397,14 +424,15 @@ function lottoBuyCard(L, meta, honesty){
   let distHTML='';
   if(L.cover){
     distHTML=`<div class="dist-row">5게임 중 1개 이상 5등 이상 <b>${pctS(L.cover.pAny)}</b> · 아무렇게나 고른 5게임 ${pctS(L.p0)}</div>
-      <div class="dist-row">4등 이상 <b>${pctS(L.cover.pAny4,3)}</b></div>
+      <div class="dist-row">4등 이상 <b>${pctS(L.cover.pAny4,3)}</b> · 무작위 5게임 ${pctS(L.randomP4,3)}</div>
       <div class="dist-row">기대 수령액은 번호와 무관</div>`;
   } else {
-    distHTML=`<div class="dist-row">정확 분포는 이번 계산에 아직 반영되지 않았습니다(로또 로직 갱신 대기). 아무렇게나 고른 5게임 기준 이론값은 ${pctS(L.p0)}.</div>`;
+    distHTML=`<div class="dist-row">정확 분포는 이번 계산에 아직 반영되지 않았습니다(로또 로직 갱신 대기). 아무렇게나 고른 5게임 기준 이론값은 ${pctS(L.p0)}.</div>
+      <div class="dist-row">4등 이상 무작위 5게임 ${pctS(L.randomP4,3)}</div>`;
   }
 
   return `
-<section class="card buycard" data-kind="lotto" data-draw="${drawYmd}" data-draw-kind="lotto">
+<section id="lotto" class="card buycard" data-kind="lotto" data-draw="${drawYmd}" data-draw-kind="lotto">
   <div class="card-head">
     <div><b>로또 6/45</b> · 제${L.target}회 · ${mmdd(drawYmd)}(${wdOf(drawYmd)}) 20:35 추첨</div>
     <span class="chip" data-countdown data-kind="lotto" data-drawymd="${drawYmd}">계산 중…</span>
@@ -438,16 +466,25 @@ function pensionBuyCard(P, meta){
       <span class="tk"><span class="bnd">${t.band}</span><span class="bndlabel">조</span>
       ${digits(t.num, hiLast?[5]:null)}</span></div>`).join('');
 
-  const distTable=(d)=>d?`<tr><td>1장 이상 당첨</td><td class="num">${pctS(d.pAny,2)}</td></tr>
-    <tr><td>기대값</td><td class="num">${fmt(d.EV)}원</td></tr>
-    <tr><td>최대 당첨금</td><td class="num">${eok(d.max)}</td></tr>` :
-    `<tr><td colspan="2">아직 계산되지 않았습니다</td></tr>`;
+  // [F1] 분산/세트/무작위 5장을 나란히 — D2 §2.2 + 새 계약: 새 확률 수치는 항상 무작위 기준선과 나란히.
+  // 무작위 EV·pAny 는 RANKS 자체에서 나오는 상수(1−(1−ΣRANKS.p)^5, EV 3,750원 불변)이므로 hasPlans 와 무관하게 항상 계산된다.
+  const sumP = (P.ranks||[]).reduce((a,r)=>a+(r&&r.p||0),0);
+  const randomPAny = sumP ? 1-Math.pow(1-sumP,5) : null;
+  const spreadDist = P.planSpread && P.planSpread.dist, setDist = P.planSet && P.planSet.dist;
+  const cell=(v,f)=>v==null?'—':f(v);
+  const distCompareHTML = `<table class="dist-table cmp">
+    <thead><tr><th></th><th class="num">분산</th><th class="num">세트</th><th class="num">무작위 5장</th></tr></thead>
+    <tbody>
+      <tr><td>1장 이상 당첨</td><td class="num">${cell(spreadDist&&spreadDist.pAny,x=>pctS(x,2))}</td><td class="num">${cell(setDist&&setDist.pAny,x=>pctS(x,2))}</td><td class="num">${cell(randomPAny,x=>pctS(x,2))}</td></tr>
+      <tr><td>기대값</td><td class="num">${cell(spreadDist&&spreadDist.EV,x=>fmt(x)+'원')}</td><td class="num">${cell(setDist&&setDist.EV,x=>fmt(x)+'원')}</td><td class="num">${randomPAny!=null?'3,750원':'—'}</td></tr>
+      <tr><td>최대 당첨금</td><td class="num">${cell(spreadDist&&spreadDist.max,eok)}</td><td class="num">${cell(setDist&&setDist.max,eok)}</td><td class="num">—</td></tr>
+    </tbody></table>`;
 
   const copyText=(mode,list)=>[`연금복권720+ 제${P.next.ep}회 (${mmdd(drawYmd)} ${wdOf(drawYmd)}) — ${mode==='set'?'세트':'분산'}`,
     ...(list||[]).map((t,i)=>`${i+1} ${t.band}조 ${t.num}`)].join('\\n');
 
   return `
-<section class="card buycard" data-kind="pension" data-draw="${drawYmd}" data-draw-kind="pension">
+<section id="pension" class="card buycard" data-kind="pension" data-draw="${drawYmd}" data-draw-kind="pension">
   <div class="card-head">
     <div><b>연금복권720+</b> · 제${P.next.ep}회 · ${mmdd(drawYmd)}(${wdOf(drawYmd)}) 19:05 추첨</div>
     <span class="chip" data-countdown data-kind="pension" data-drawymd="${drawYmd}">계산 중…</span>
@@ -472,11 +509,7 @@ function pensionBuyCard(P, meta){
     </div>
     <p class="note">실시간 재고 조회는 불가 — 매진이면 대체 번호로.</p>
   </details>
-  <table class="dist-table" data-pension-dist
-    data-spread='${hasPlans?JSON.stringify(P.planSpread.dist||null):'null'}'
-    data-set='${hasPlans?JSON.stringify(P.planSet.dist||null):'null'}'>
-    <tbody>${distTable(P.mode==='set'?(P.planSet&&P.planSet.dist):(P.planSpread&&P.planSpread.dist))}</tbody>
-  </table>
+  ${distCompareHTML}
   <p class="note">번호 선택은 확률도 당첨금도 바꾸지 못합니다. 5장의 결과가 어떻게 흩어지는지만 고릅니다.</p>
 </section>`;
 }
@@ -546,6 +579,28 @@ function carryoverSection(L,P){
 
 function staleBannerPlaceholder(){
   return `<div class="stale" data-stale hidden></div>`;
+}
+
+/* [F1] 375px 요약 스트립 — H1 바로 아래, 카드까지 가지 않아도 회차·마감·5줄 요약이 한눈에 보이게.
+   #lotto/#pension 앵커로 아래 매수 카드까지 바로 스크롤한다. */
+function summaryStrip(L,P,meta){
+  const lFirst = L.buy && L.buy[0];
+  const lottoLine = lFirst ? ('A '+lFirst.map(n=>String(n).padStart(2,'0')).join(' ')) : '—';
+  const pFirst = P.buy && P.buy[0];
+  const pensionLine = pFirst ? (pFirst.band+'조 '+pFirst.num) : '—';
+  return `
+<div class="sumstrip">
+  <a class="sumrow" href="#lotto">
+    <span class="l1"><span class="sumhd">로또 ${L.target}회 · 토 20:35</span>
+      <span class="sumchip" data-countdown data-kind="lotto" data-drawymd="${meta.lottoDrawYmd}">계산 중…</span></span>
+    <span class="sumpicks mono">${lottoLine} <span class="sumrest">외 4줄</span></span>
+  </a>
+  <a class="sumrow" href="#pension">
+    <span class="l1"><span class="sumhd">연금 ${P.next.ep}회 · 목 19:05</span>
+      <span class="sumchip" data-countdown data-kind="pension" data-drawymd="${meta.pensionDrawYmd}">계산 중…</span></span>
+    <span class="sumpicks mono">${pensionLine} <span class="sumrest">외 4장</span></span>
+  </a>
+</div>`;
 }
 
 function buildHTML(P,L,meta,honesty){
@@ -633,6 +688,15 @@ tr.win td{background:var(--ink-06)}
 .stale{background:var(--sig);color:#fff;font-size:12.5px;padding:10px 12px;margin-bottom:14px;line-height:1.5}
 .mymoney{display:flex;flex-direction:column;gap:4px;font-size:13px}
 .mymoney a{color:var(--ink)}
+.sumstrip{display:flex;flex-direction:column;gap:6px;margin:0 0 14px}
+.sumrow{display:flex;flex-direction:column;gap:2px;padding:7px 10px;border:1px solid var(--ink-12);
+ background:var(--paper-2);text-decoration:none;color:var(--ink);font-size:12px;line-height:1.3}
+.sumrow .l1{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sumhd{font-weight:700}
+.sumchip{font:700 10px/1 var(--f-mono);border:1px solid var(--ink-30);padding:3px 6px;white-space:nowrap;flex:none}
+.sumpicks{color:var(--ink-60);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sumrest{color:var(--ink-40)}
+@media(min-width:640px){.sumstrip{flex-direction:row}.sumstrip>*{flex:1}}
 .foot{font-size:12px;color:var(--ink-40);border-top:1px solid var(--ink-12);margin-top:24px;padding-top:14px;line-height:1.8}
 .foot a{color:var(--ink-40)}
 @media(min-width:640px){.cards2{flex-direction:row}.cards2>*{flex:1}}
@@ -661,6 +725,7 @@ ${gnavHTML}
   <h1>이번 주 5,000원 + 5,000원<small>로또 ${L.target}회 · 연금 ${P.next.ep}회 · ${meta.stamp} KST (${meta.weekday})</small></h1>
 </header>
 
+${summaryStrip(L,P,meta)}
 ${staleBannerPlaceholder()}
 
 <div class="cards2" data-cards>${cardLotto}${cardPension}</div>
@@ -793,10 +858,20 @@ try{
     });
   });
 
-  // 샀어요 토글
+  // 샀어요 토글 — C2: isBought/unmark 도 item-aware(같은 items 를 markBought 와 동일하게 넘긴다)
+  function buyItemsFor(kind){
+    if(kind==='lotto') return (WEEK.lotto && WEEK.lotto.buy) || [];
+    var toggle = document.querySelector('[data-pension-toggle]');
+    var cur = toggle && toggle.querySelector('[aria-checked="true"]');
+    var m = cur ? cur.getAttribute('data-mode') : ((WEEK.pension && WEEK.pension.mode) || 'spread');
+    var tksEl = document.querySelector('[data-pension-tickets]');
+    var items; try{ items = JSON.parse((tksEl && tksEl.getAttribute('data-'+m)) || '[]'); }catch(e){ items=[]; }
+    return items;
+  }
   function syncBuyBtn(btn){
     var kind = btn.getAttribute('data-kind'), round = +btn.getAttribute('data-round');
-    var bought = SITE.isBought ? SITE.isBought(kind, round) : false;
+    var items = buyItemsFor(kind);
+    var bought = SITE.isBought ? SITE.isBought(kind, round, items) : false;
     btn.textContent = bought ? '기록됨 · 취소' : '샀어요';
     btn.classList.toggle('on', bought);
   }
@@ -804,23 +879,21 @@ try{
     syncBuyBtn(btn);
     btn.addEventListener('click', function(){
       var kind = btn.getAttribute('data-kind'), round = +btn.getAttribute('data-round');
-      var bought = SITE.isBought ? SITE.isBought(kind, round) : false;
-      if(bought){ if(SITE.unmark) SITE.unmark(kind, round); syncBuyBtn(btn); return; }
-      var items;
-      if(kind==='lotto'){
-        var slip = document.querySelector('.buycard[data-kind="lotto"] .slip');
-        items = (WEEK.lotto && WEEK.lotto.buy) || [];
-      } else {
-        var toggle = document.querySelector('[data-pension-toggle]');
-        var cur = toggle && toggle.querySelector('[aria-checked="true"]');
-        var m = cur ? cur.getAttribute('data-mode') : 'spread';
-        var tksEl = document.querySelector('[data-pension-tickets]');
-        try{ items = JSON.parse(tksEl.getAttribute('data-'+m)||'[]'); }catch(e){ items=[]; }
+      var items = buyItemsFor(kind);
+      var bought = SITE.isBought ? SITE.isBought(kind, round, items) : false;
+      if(bought){
+        if(!confirm('기록을 취소할까요?')) return;
+        if(SITE.unmark) SITE.unmark(kind, round, items);
+        syncBuyBtn(btn);
+        return;
       }
       if(SITE.markBought) SITE.markBought(kind, round, items);
       syncBuyBtn(btn);
     });
   });
+  function resyncBuyBtns(kind){
+    document.querySelectorAll('[data-act="buy"][data-kind="'+kind+'"]').forEach(syncBuyBtn);
+  }
 
   // 연금 분산/세트 토글 — 표시 전용(localStorage['pensionlab.buymode.v1'])
   (function pensionToggle(){
@@ -845,16 +918,9 @@ try{
             '<span class="tk"><span class="bnd">'+t.band+'</span><span class="bndlabel">조</span>'+num+'</span></div>';
         }).join('');
       });
-      var dt = document.querySelector('[data-pension-dist]');
-      if(dt){
-        var d; try{ d=JSON.parse(dt.getAttribute('data-'+mode)||'null'); }catch(e){ d=null; }
-        var tb=dt.querySelector('tbody');
-        if(tb) tb.innerHTML = d ?
-          ('<tr><td>1장 이상 당첨</td><td class="num">'+(d.pAny*100).toFixed(2)+'%</td></tr>'+
-           '<tr><td>기대값</td><td class="num">'+Math.round(d.EV).toLocaleString('ko-KR')+'원</td></tr>'+
-           '<tr><td>최대 당첨금</td><td class="num">'+(d.max/1e8).toFixed(1)+'억</td></tr>')
-          : '<tr><td colspan="2">아직 계산되지 않았습니다</td></tr>';
-      }
+      // 분산/세트 비교표(§2.2)는 이제 두 구조를 나란히 보여주는 정적 표라 모드에 따라 다시 그리지 않는다.
+      // 다만 «샀어요» 상태는 모드마다 items 가 다르므로(C2) 여기서 다시 맞춘다.
+      resyncBuyBtns('pension');
     }
     var initial = get() || (WEEK.pension && WEEK.pension.mode) || 'spread';
     apply(initial);

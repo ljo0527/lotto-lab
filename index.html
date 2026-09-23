@@ -971,9 +971,25 @@ function renderDash(){
    기기·스크립트가 같은 조합을 봐야 지난주 채점과 원장이 맞는다). ₩ 표시만 보정값을 쓴다.
 
    [재현성] 이미 추첨된 회차는 «그때 규칙»으로 재현돼야 하므로 규칙을 회차로 가른다.
-   target < PORTFOLIO_FROM 은 옛 규칙(diversifyLegacy 10줄)을 바이트 단위로 그대로 쓴다. */
-const PORTFOLIO = { n:5, maxOv:1, dz:0.15, N:1500, carry:false };   // 사이트 상수 = 원장이 가정하는 규칙
-const PORTFOLIO_FROM = 1243;                                        // 이 회차부터 A~E 는 portfolioPick
+   target < PORTFOLIO_RULES[0].from 은 옛 규칙(diversifyLegacy 10줄)을 바이트 단위로 그대로 쓴다.
+
+   [C1 규칙 이력표] 설정을 바꿀 때는 과거 항목을 절대 고치지 말고 새 항목을 뒤에 «추가»만 한다.
+   이미 지난 회차를 지금 설정으로 다시 계산하면 그 주의 브리핑·원장(purchases.json)과 어긋난다.
+   다음 회차부터 설정을 바꾸려면:
+     PORTFOLIO_RULES.push({ from: <적용을 시작할 회차>, opts: {...} });
+   from 오름차순을 유지한다(맨 뒤에 추가하면 자동으로 유지됨). */
+const PORTFOLIO_RULES = [
+  { from:1243, opts:{ n:5, maxOv:1, dz:0.15, N:1500, carry:false } }
+];
+/* target(적용 대상 회차)에 맞는 규칙 — «from<=target» 인 마지막 항목의 opts.
+   target 이 PORTFOLIO_RULES[0].from 보다 작으면 null(= 레거시 diversifyLegacy). */
+function portfolioOptsFor(target){
+  let opts=null;
+  for(const r of PORTFOLIO_RULES) if(r.from<=target) opts=r.opts;
+  return opts;
+}
+const PORTFOLIO = PORTFOLIO_RULES[PORTFOLIO_RULES.length-1].opts;  // 하위호환 별칭 = 최신 규칙(원장이 가정하는 규칙)
+const PORTFOLIO_FROM = PORTFOLIO_RULES[0].from;                    // 하위호환 별칭 = 첫 규칙 시작 회차
 /* 겹침 o개인 두 줄이 같은 추첨에서 «둘 다 3개 이상» 맞는 경우의 수 (/C456).
    Q[o] = Σ C(o,s)·C(6−o,x)·C(6−o,y)·C(33+o,6−s−x−y)  (s+x≥3, s+y≥3) — 닫힌 식으로 검산됨 */
 const PAIR_Q = [400, 3700, 13900, 31470, 60486, 109770, 194130];
@@ -1282,8 +1298,10 @@ function carryFit(){
   CARRYFIT_REV=DB.rev;
   return (CARRYFIT=res);
 }
-/* ./brief/validation.json 의 보정값 (₩ 표시 전용). 한 번만 시도하고, 받으면 onDone 을 부른다. */
-let VAL_CALIB=null, VAL_CALIB_ST=0;
+/* ./brief/validation.json 의 보정값 (₩ 표시 전용). 한 번만 시도하고, 받으면 onDone 을 부른다.
+   같은 fetch 로 lotto.per[…].payoutGain(«검증 보드 실측» — 300주 walk-forward, 모든 방문자가 보는
+   같은 값)도 같이 받아둔다. 이 기기의 원장(ledCalib)과는 다른 수치이므로 절대 섞어 쓰지 않는다. */
+let VAL_CALIB=null, VAL_CALIB_ST=0, VAL_PER=null, VAL_LOTTO_CURRENT=null;
 function loadValCalib(onDone){
   if(VAL_CALIB_ST) return;
   VAL_CALIB_ST=1;
@@ -1295,10 +1313,26 @@ function loadValCalib(onDone){
         const c=v&&v.lotto&&v.lotto.calib;
         if(c && c.ready!==false && isFinite(c.a) && isFinite(c.b))
           VAL_CALIB={ a:c.a, b:c.b, r2:c.r2, n:c.n, src:'검증' };
+        if(v && v.lotto && v.lotto.per && typeof v.lotto.per==='object'){
+          VAL_PER=v.lotto.per; VAL_LOTTO_CURRENT=v.lotto.current||null;
+        }
       })
       .catch(()=>{})
-      .finally(()=>{ VAL_CALIB_ST=2; if(VAL_CALIB && onDone) try{ onDone(); }catch(e){} });
+      .finally(()=>{ VAL_CALIB_ST=2; if((VAL_CALIB || VAL_PER) && onDone) try{ onDone(); }catch(e){} });
   }catch(e){ VAL_CALIB_ST=2; }
+}
+/* «검증 보드 실측» — validation.json 의 lotto.per[lotto.current || 'portfolio'].payoutGain.
+   전략 키가 아직 없으면(옛 validation.json, 또는 current 가 비어 있으면) portfolio → minshare 순으로
+   물러난다. 반환 { v:비율(0.069=+6.9%), key:실제로 쓴 전략 이름 } 또는 아직 못 받았으면 null.
+   이 수치는 «모든 방문자가 같은 값을 보는» 사이트 전체 계산이고, ledCalibCached() 의 이 기기 원장
+   실측과는 다른 정의이므로 화면에 같이 쓸 때는 항상 라벨로 구분한다. */
+function valPayoutGain(){
+  if(!VAL_PER) return null;
+  const want = VAL_LOTTO_CURRENT || 'portfolio';
+  const key = VAL_PER[want] ? want : (VAL_PER.portfolio ? 'portfolio' : (VAL_PER.minshare ? 'minshare' : null));
+  if(!key) return null;
+  const rec = VAL_PER[key];
+  return (rec && typeof rec.payoutGain==='number' && isFinite(rec.payoutGain)) ? { v:rec.payoutGain, key } : null;
 }
 /* 이번 주 5게임의 요약 수치 — 카드·브리핑이 같은 값을 쓰도록 한 곳에서 계산한다.
    opt.exact 면 coverExact(수십 ms), 아니면 캐시가 있을 때만 정확값. opt.calib 로 보정값을 넘길 수 있다. */
@@ -1326,8 +1360,8 @@ function weeklyStats(opt){
      · 필터 = 합계 100~175, 홀 2~4, 연속 2쌍 이하, 한 구간 3개 이하
      · 과거 1등 조합과 중복 제외
      · 후보 3,000개를 만든 뒤 분배지수 하위에서 선택
-       - PORTFOLIO_FROM(1243)회부터: A~E = portfolioPick (두 줄 겹침 ≤1), F~J = 옛 규칙 예비
-       - 그 전 회차: 옛 규칙(diversifyLegacy) 10줄 — 과거 추천을 바이트 단위로 재현한다
+       - portfolioOptsFor(target) 이 opts 를 주는 회차부터: A~E = portfolioPick(그 회차의 opts, 두 줄 겹침 ≤maxOv), F~J = 옛 규칙 예비
+       - null 을 주는(= PORTFOLIO_RULES[0].from 이전) 회차: 옛 규칙(diversifyLegacy) 10줄 — 과거 추천을 바이트 단위로 재현한다
    같은 회차면 몇 번을 새로고침해도 같은 조합이 나온다.
    반환 {round, combos(10), tries, portfolio:{u,uStar,pAny,degraded,opts,…}|null, rule:'portfolio'|'legacy'}
    force('portfolio'|'legacy') 는 진단·테스트용 — 캐시를 쓰지도 덮지도 않는다. */
@@ -1364,19 +1398,25 @@ function weeklyPicks(force){
     const scored=pool.map(c=>({c, s:popScore(c) ?? 9}));
     scored.sort((x,y)=>x.s-y.s);
     for(let i=0;i<pool.length;i++) pool[i]=scored[i].c;
-    const rule = useForce ? force : (target>=PORTFOLIO_FROM ? 'portfolio' : 'legacy');
+    /* [C1] 규칙은 회차별로 portfolioOptsFor(target) 에서 가져온다 — PORTFOLIO(최신 규칙) 를 직접
+       쓰지 않는 이유는, 다음에 PORTFOLIO_RULES 에 새 항목이 추가돼도 «지난 회차 재현»이
+       그때 규칙(과거 opts)으로 계속 되게 하기 위해서다. force 진단은 규칙 이력이 없는(=null)
+       과거 회차에서도 최신 규칙(PORTFOLIO)으로 시험해볼 수 있도록 그대로 둔다. */
+    const ropts = portfolioOptsFor(target);
+    const rule = useForce ? force : (ropts ? 'portfolio' : 'legacy');
     let out, portfolio=null;
     if(rule==='portfolio'){
-      /* A~E: 인기도(u)를 거의 잃지 않는 범위에서 두 줄 겹침 ≤1 로 고른다 (D1 §4).
+      /* A~E: 인기도(u)를 거의 잃지 않는 범위에서 두 줄 겹침 ≤maxOv 로 고른다 (D1 §4).
          F~J: 옛 규칙으로 고른 예비 — A~E 와의 겹침·번호 사용 횟수까지 이어서 따진다. */
+      const opts = ropts || PORTFOLIO;   // ropts=null 은 force 진단으로 legacy 구간을 portfolio 로 시험하는 경우뿐
       const prev=DB.draws[DB.latest], prevN=prev?prev.n:null;
-      const A=portfolioPick(scored.map(x=>({c:x.c, z:zOf(x.c)})), {...PORTFOLIO, prevN});
+      const A=portfolioPick(scored.map(x=>({c:x.c, z:zOf(x.c)})), {...opts, prevN});
       out=A.picks.map(x=>x.c);
       diversifyLegacy(pool, out, 10);
       portfolio={ u:A.u, u1:A.u1, uStar:A.uStar, cap:A.cap, pAny:A.pAny, degraded:A.degraded,
                   maxOv:A.maxOv, passes:A.passes,
                   carry: prevN ? A.picks.reduce((s,x)=>s+carryOf(x.c,prevN),0)/Math.max(1,A.picks.length) : null,
-                  opts:{...PORTFOLIO} };
+                  opts:{...opts} };
     } else {
       /* 옛 규칙 — 최상위만 뽑으면 다섯 조합이 서로 너무 닮는다. 두 가지 다양성 규칙을 건다.
            · 두 조합이 겹치는 번호는 2개 이하 · 한 번호가 2번을 초과해 등장하지 않음
@@ -1386,7 +1426,7 @@ function weeklyPicks(force){
     if(pool.length<3000 && tries<200000)
       log('경고 · 후보 생성이 시간 예산에 걸렸습니다('+pool.length+'개). 다른 기기와 추천이 달라질 수 있습니다');
     if(portfolio && portfolio.degraded)
-      log('경고 · '+target+'회 A~E 겹침 제한(≤'+PORTFOLIO.maxOv+')을 지키지 못해 ≤'+portfolio.maxOv+' 로 완화했습니다');
+      log('경고 · '+target+'회 A~E 겹침 제한(≤'+portfolio.opts.maxOv+')을 지키지 못해 ≤'+portfolio.maxOv+' 로 완화했습니다');
     const res={ round:target, combos:out, tries, portfolio, rule };
     if(useForce) return res;
     WEEKLY_R=target; WEEKLY_REV=DB.rev;
@@ -1850,6 +1890,9 @@ function shareTag(c){
 
 function renderPopModel(){
   const F=fitPop(), box=$('#popModel'); if(!box) return;
+  /* «검증 보드 실측» 은 validation.json 을 받아야 나온다 — 아직이면 요청해 두고, 받으면 이 탭이
+     열려 있을 때만 다시 그린다(다른 탭을 보고 있으면 건드리지 않는다). */
+  if(!VAL_CALIB_ST) loadValCalib(()=>{ const gb=$('#tabs button[data-t="gen"]'); if($('#popModel') && gb && gb.classList.contains('on')) renderPopModel(); });
   if(!F.ok){ box.innerHTML='<span style="font-size:13px;color:var(--ink-60)">데이터가 부족해 모델을 학습하지 못했습니다.</span>'; return; }
   const tp=t=>{ const p=2*normSF(Math.abs(t)); return p<0.001?'&lt;0.001':p.toFixed(3); };
   const dir=(b,t)=>Math.abs(t)<2 ? '<span style="color:var(--ink-40)">유의하지 않음</span>'
@@ -1904,18 +1947,21 @@ function renderPopModel(){
   html += '<div class="verdict sig"><b>결론</b> — 이것이 이 도구 전체에서 <b>유일하게 실증되는 신호</b>입니다. '+
     '빈도·미출현·동반쌍·추첨순서는 전부 잡음이었지만 이건 다릅니다. '+
     '확률을 바꾸는 게 아니라 <b>분배 인원</b>을 바꾸기 때문입니다.<br>'+
-    /* [2026-09-03] «±10~15%» 는 재보정 전 계수로 계산한 과대평가였다.
-       원장(walk-forward 300주)으로 기울기를 다시 재니 추천 상위 5게임의 실측 이득은 약 +7% 다.
-       원장이 아직 없으면 그 사실만 밝히고 숫자를 단정하지 않는다. */
+    /* [2026-09] 효과 수치는 정의가 다른 두 개를 나란히 보여준다 — 섞어 부르지 않는다.
+       ① 검증 보드 실측 = validation.json(walk-forward 300주). 모든 방문자가 같은 값을 본다.
+       ② 이 기기 원장 실측 = 이 브라우저의 ledCalib() 재보정 기울기로 «이번 주 A~E»만 잰 값.
+       옛 "약 +7%"는 재보정 전 계수로 계산한 과대평가였다 — 이제 정의를 밝힌 실측치로 대체한다. */
+    (()=>{ const VG=valPayoutGain();
+      return '<b>검증 보드 실측 '+(VG?((VG.v>=0?'+':'')+pct(VG.v,1)):'—')+'</b> — 300주 walk-forward'+(VG?'(전략 «'+VG.key+'»)':'')+
+        ', 모든 방문자가 같은 값을 봅니다 → <a href="./validate.html" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ink-30)">검증</a><br>'; })()+
     (()=>{ const C=ledCalibCached();
-      if(!C) return '효과 크기는 「원장」 탭에서 walk-forward 로 실측합니다 — 원장을 한 번 돌려 주세요. '+
-        '재보정 전 계수로 어림한 값은 과대평가라는 것이 확인됐습니다.</div>';
+      if(!C) return '이 기기 원장 실측은 아직 없습니다 — 「원장」 탭에서 walk-forward 를 한 번 돌리면 이번 주 A~E 기준으로 여기 표시됩니다.</div>';
       const zs=(()=>{ try{ const F=fitPop(), W=weeklyPicks();
         return W.combos.slice(0,5).map(c=>shareZ(c)); }catch(e){ return null; } })();
-      if(!zs) return '효과 크기는 「원장」 탭을 참고하세요.</div>';
+      if(!zs) return '이 기기 원장 실측은 「원장」 탭을 참고하세요.</div>';
       const zb=zs.reduce((a,b)=>a+b,0)/zs.length;
       const eff=-zb*C.b;
-      return '효과 크기는 원장 '+C.n+'주로 실측해 <b>약 '+pct(eff,1)+'</b> 입니다 — '+
+      return '<b>이번 주 A~E 기대 수령액 대비 무작위 '+(eff>=0?'+':'')+pct(eff,1)+'</b> — 이 기기 원장('+C.n+'주 재보정)으로 이번 주 추천 5게임만 따로 잰 값입니다. '+
         '1등 당첨금이 20억이라면 '+won(2e9*eff)+' 남짓 차이입니다. 그 이상은 아닙니다.</div>'; })();
   box.innerHTML=html;
 }
@@ -2205,11 +2251,17 @@ function runBacktest(){
 /* ════════════════ 내 기록 ════════════════ */
 function myLoad(){ try{ return JSON.parse(localStorage.getItem(LSMY)||'[]'); }catch(e){ return []; } }
 function mySave(a){ localStorage.setItem(LSMY, JSON.stringify(a)); }
+/* nums 가 «6개 정수 배열»이 아닌 기록(수동 import·이전 버전 데이터 등)이 섞여 있어도
+   renderMine 이 죽지 않게 미리 걸러낸다 — 잘못된 행은 던지지 않고 «형식 오류» 행으로만 보여준다. */
+function validMyNums_(n){
+  return Array.isArray(n) && n.length===6 && n.every(x=>typeof x==='number' && Number.isFinite(x));
+}
 function renderMine(){
   const my=myLoad();
   let cost=0, gain=0; const cnt={0:0,1:0,2:0,3:0,4:0,5:0}, pend=[];
   const list=my.map(t=>{
-    cost+=t.cost||TICKET;
+    cost+=(t&&t.cost)||TICKET;
+    if(!t || !validMyNums_(t.nums)){ pend.push(t); return {...t, rank:null, bad:true}; }
     const d=DB.draws[t.round];
     if(!d){ pend.push(t); return {...t, rank:null}; }
     const r=rankOf(t.nums,d), amt=r?(d.a[r-1]||0):0;
@@ -2227,6 +2279,11 @@ function renderMine(){
   $('#myTbl').innerHTML='<tr><th>회차</th><th>내 번호</th><th>당첨번호</th><th>결과</th><th class="num">당첨금</th><th></th></tr>'+
     (list.length?list.slice().reverse().map((t,i)=>{
       const idx=list.length-1-i;
+      if(t.bad) return '<tr><td class="mono"><b>'+(t.round==null?'—':t.round)+'</b></td>'+
+        '<td><span style="font-size:11px;color:var(--sig)">형식 오류 · 번호 6개가 아닙니다</span></td>'+
+        '<td><span style="font-size:11px;color:var(--ink-40)">—</span></td>'+
+        '<td><span class="tag noi">오류</span></td><td class="num">—</td>'+
+        '<td><button class="btn ghost" style="padding:3px 7px;font-size:10px" onclick="myDel('+idx+')">삭제</button></td></tr>';
       const hit=t.d?t.nums.filter(n=>t.d.n.includes(n)):[];
       return '<tr><td class="mono"><b>'+t.round+'</b></td>'+
         '<td>'+tkHTML(null, t.nums, { sz:'xs', dim:!!t.d,
@@ -2490,6 +2547,7 @@ function renderLedger(){
     +'<td><span class="mono" style="font-size:10.5px">게임당 '+(matched/games).toFixed(3)+' / 우연 0.800</span></td></tr>';
 
   /* ── 모델 검증 + 재보정 ── */
+  if(!VAL_CALIB_ST) loadValCalib(()=>{ const lb=$('#tabs button[data-t="ledger"]'); if($('#ledModel') && lb && lb.classList.contains('on')) renderLedger(); });
   const C=ledCalib(recs);
   if(!C.ready){
     $('#ledModel').innerHTML='<p style="font-size:13px;color:var(--ink-60)">검증 표본이 '+C.n+'회차입니다. 60회차 이상 쌓이면 표시합니다.</p>';
@@ -2502,6 +2560,7 @@ function renderLedger(){
       const zz=W.combos.slice(0,5).map(c=>((popScoreA(c)-F.A.predMean)/F.A.predSD+(popScoreB(c)-F.B.predMean)/F.B.predSD)/2);
       return zz.reduce((a,b)=>a+b,0)/zz.length; }catch(e){ return null; } })();
     const edge = (pickZ!=null && C.b) ? (zMean-pickZ)*C.b : null;
+    const VG = valPayoutGain();
     $('#ledModel').innerHTML=
       '<div class="scroll"><table>'
       +'<tr><th>지표</th><th class="num">값</th><th>뜻</th></tr>'
@@ -2512,14 +2571,17 @@ function renderLedger(){
         +(gain!=null?pct(gain,1):'—')+' 개선</b></td></tr>'
       +'<tr><td>평균오차 (순진 예측)</td><td class="num">'+C.maeNaive.toFixed(4)+'</td></tr>'
       +'<tr><td>재보정 기울기</td><td class="num">'+C.b.toFixed(4)+'</td><td>분배지수 1σ당 당첨자수 배수 변화</td></tr>'
-      +(edge!=null?'<tr style="border-top:2px solid var(--ink)"><td><b>이번 주 추천의 실측 이득</b></td>'
-        +'<td class="num"><b>'+pct(edge,1)+'</b></td><td>1등 시 나눠 갖는 인원이 이만큼 적을 것으로 <b>측정</b>됨</td></tr>':'')
+      +'<tr style="border-top:2px solid var(--ink)"><td><b>검증 보드 실측</b></td>'
+        +'<td class="num"><b>'+(VG?((VG.v>=0?'+':'')+pct(VG.v,1)):'—')+'</b></td>'
+        +'<td>validation.json · 300주 walk-forward'+(VG?'(전략 «'+VG.key+'»)':'')+' · <b>모든 방문자가 같은 값</b>을 본다 → <a href="./validate.html" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ink-30)">검증</a></td></tr>'
+      +(edge!=null?'<tr><td><b>이 기기 원장 실측 · 이번 주 A~E</b></td>'
+        +'<td class="num"><b>'+(edge>=0?'+':'')+pct(edge,1)+'</b></td><td>이 브라우저에 쌓인 원장('+C.n+'주)의 재보정 기울기로 <b>이번 주 추천 5게임만</b> 따로 잰 값 — 위 검증 보드 값과는 다른 수치다</td></tr>':'')
       +'</table></div>'
       +'<div class="verdict" style="margin-bottom:0"><b>솔직하게 — 원래 숫자는 틀렸습니다</b><br>'
       +'· 재보정 <b>전</b> 예측은 out-of-sample R² 가 <b>음수</b>였습니다. 방향은 맞는데 폭이 과했다는 뜻입니다<br>'
       +'· 그래서 쌓인 기록으로 기울기를 다시 재 «분배지수»를 재보정했습니다. 선형 변환이라 <b>순서는 바뀌지 않습니다</b> — 추천 조합은 그대로고, 표시되는 숫자만 정직해집니다<br>'
       +'· 두 모델(판매 기준 · 구매방식 기준)에 서로 다른 가중을 줘 봤지만 지금의 «평균 결합»보다 나아지지 않았습니다. 그래서 <b>건드리지 않았습니다</b><br>'
-      +'<span style="color:var(--ink-40)">1등 확률은 여전히 1/8,145,060 입니다. 바뀌는 건 당첨됐을 때 나눠 갖는 인원뿐이고, 그 크기가 위의 실측 이득입니다.</span></div>';
+      +'<span style="color:var(--ink-40)">1등 확률은 여전히 1/8,145,060 입니다. 바뀌는 건 당첨됐을 때 나눠 갖는 인원뿐이고, 그 크기가 위의 두 실측치입니다(정의가 다르니 섞어 읽지 마세요).</span></div>';
   }
 
   /* ── 회차별 ── */

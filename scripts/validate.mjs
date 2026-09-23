@@ -21,6 +21,12 @@
      · 연금 5장 구조 — 분산·세트·구 방식을 회차별 as-of 로 만들어 페이지의 gradeOf 로 채점.
      · 추천 원장 — 현재 대상 회차(pending)는 현재 추천으로 갱신, 결과가 나온 pending 은 전부 채점(페이지 rankOf/gradeOf).
      · 새 페이지 함수는 전부 typeof 로 확인하고 없으면 옛 경로로 간다(하위호환).
+   [2026-09 2차] 규칙 이력표(C1) — 설정을 바꿔도 지난 회차 재현이 깨지지 않게.
+     · 로또 재현은 그 회차 규칙으로: 페이지의 weeklyPicks()(내부에서 portfolioOptsFor(R))를 DB 를 R−1 로 자른 채 부른다.
+       현재 상수(PORTFOLIO)로 재현하지 않는다. 원장 행에 rule 이 적혀 있으면 그 규칙을 존중한다.
+     · 연금 재현은 pensionModeFor(ep) 로 그 회차 방식을 정한다(원장 행의 mode/rule 이 있으면 그쪽 우선).
+     · pension.structure 는 pensionPortfolio(…,{noDist:true}) 로 5장만 받고, 분포는 «구조가 같은 5장»끼리
+       한 번만 계산해 재사용한다(분포는 번호 값이 아니라 끝자리 공유 구조·조 구성에만 달려 있다 — distSig 참고).
    ═══════════════════════════════════════════════════════════════════ */
 import fs from 'fs';
 import path from 'path';
@@ -32,6 +38,8 @@ const OUT =path.resolve(arg('--out', ROOT));
 const KST =()=>new Date(Date.now()+9*3600e3);
 const kstStr=d=>d.toISOString().slice(0,10);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+/* --no-dist-memo : 연금 구조 점검에서 분포를 서명 캐시 없이 매 회차 다시 계산한다(대조 실험용, 느림) */
+const DIST_MEMO=!process.argv.includes('--no-dist-memo');
 
 async function jget(url,tries=8){
   for(let i=0;i<tries;i++){
@@ -261,7 +269,7 @@ async function readLotto(browser, base, pension, lotto, WIN, ledger, calibFn, gv
   await p.waitForFunction(()=>typeof DB!=='undefined'&&DB.latest>100&&DB.draws&&DB.draws[DB.latest],{timeout:120000});
   await p.waitForTimeout(1500);
 
-  const out = await p.evaluate(async ({WIN, POOL_N, POOL_TRIES, ALL_STRATS, pend, ledPicks, gv})=>{
+  const out = await p.evaluate(async ({WIN, POOL_N, POOL_TRIES, ALL_STRATS, pend, ledPicks, ledRules, gv})=>{
     const reset=()=>{ WEEKLY=null; WEEKLY_R=0; POPFIT=null; POPFIT_N=0; WINSET=null; WINSET_N=0; };
     const tick=()=>new Promise(r=>{const c=new MessageChannel();c.port1.onmessage=()=>r();c.port2.postMessage(0);});
     const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
@@ -275,13 +283,26 @@ async function readLotto(browser, base, pension, lotto, WIN, ledger, calibFn, gv
       dl: typeof diversifyLegacy==='function',
       ev: typeof lineEV==='function',
       cx: typeof coverExact==='function',
+      pof: typeof portfolioOptsFor==='function',
     };
+    /* PF = «현재» 규칙(규칙표의 마지막 항목 = PORTFOLIO 별칭). walk-forward 의 portfolio 행은
+       «지금 설정을 과거 300주에 적용하면»을 잰다. 지난 회차 재현은 PF 가 아니라 optsFor(R) 로 한다. */
     const PF=has.pp?Object.assign({},PORTFOLIO):null;
     const PFROM=(typeof PORTFOLIO_FROM!=='undefined')?PORTFOLIO_FROM:null;
+    const RULES=(typeof PORTFOLIO_RULES!=='undefined'&&Array.isArray(PORTFOLIO_RULES))
+      ? PORTFOLIO_RULES.map(r=>({from:r.from, opts:Object.assign({},r.opts)})) : null;
     const carryF=has.co ? carryOf : (c,prev)=>prev?c.filter(n=>prev.includes(n)).length:0;
     const ovF=(a,b)=>a.filter(n=>b.includes(n)).length;
     const errors={};
     const noteErr=(k,e)=>{ if(!errors[k]) errors[k]=String(e&&e.message||e).slice(0,200); };
+    /* 회차 R 의 규칙(C1) — null 이면 옛 규칙(legacy). 규칙표가 없는 옛 페이지는 단일 상수(PORTFOLIO_FROM·PORTFOLIO)로 */
+    const optsFor=R=>{
+      if(has.pof){ try{ const o=portfolioOptsFor(R); return o?Object.assign({},o):null; }catch(e){ noteErr('portfolioOptsFor',e); } }
+      return (PF && PFROM!=null && R>=PFROM) ? PF : null;
+    };
+    const sameOpts=(a,b)=>{ if(!a||!b) return a===b;
+      const ks=new Set([...Object.keys(a),...Object.keys(b)]);
+      for(const k of ks) if(a[k]!==b[k]) return false; return true; };
 
     /* 구 주간규칙(겹침 ≤2/≤3/≤4 3단계) — 페이지의 diversifyLegacy 가 있으면 그걸 쓰고,
        없거나(옛 페이지) 모양이 다르면 옛 weeklyPicks 의 선택부를 그대로 옮긴 사본으로. */
@@ -329,6 +350,29 @@ async function readLotto(browser, base, pension, lotto, WIN, ledger, calibFn, gv
         for(let j=1;j<orig.length;j++) work[j]=orig[j];
         for(let j=R;j<work.length;j++) work[j]=undefined;
         DB.latest=R-1; bumpDB(); reset();
+
+        /* 재현 점검 — 원장에 적힌 그 회차 A~E 를 «그 회차 규칙»으로 다시 만들 수 있는가.
+           사이트가 실제로 부르는 weeklyPicks() 를 DB 를 R−1 로 자른 채 부른다(target=R → 내부에서 portfolioOptsFor(R)).
+           원장 행에 rule 이 적혀 있고 규칙표와 다르면 그 규칙으로 강제(force)해 «기록된 것»을 재현하고, 차이를 표시한다.
+           아래 풀 비교(rp.pool)는 이 검증 보드의 후보 풀이 사이트 추천 풀과 같은지(=보드가 사이트 규칙을 재는지) 본다. */
+        let rp=null;
+        const lp=ledPicks[R];
+        if(lp){
+          const tOpts=optsFor(R), table=tOpts?'portfolio':'legacy';
+          const recd=(ledRules[R]==='portfolio'||ledRules[R]==='legacy')?ledRules[R]:null;
+          const want=recd||table;
+          rp={R, rule:want, table, recorded:recd, via:null, order:false, set:false, pool:null};
+          try{
+            const W2=(want!==table)?weeklyPicks(want):weeklyPicks();
+            const cs=W2&&Array.isArray(W2.combos)?W2.combos.slice(0,lp.length).map(c=>c.join(',')):[];
+            if(cs.length===lp.length){
+              rp.via='weeklyPicks'; if(W2.rule) rp.rule=W2.rule;
+              rp.order=cs.join('|')===lp.join('|');
+              rp.set=cs.slice().sort().join('|')===lp.slice().sort().join('|');
+            }
+          }catch(e){ noteErr('weeklyPicks.repro',e); }
+          repro.push(rp);
+        }
 
         const F=fitPop(); if(!F.A) continue;
 
@@ -440,13 +484,20 @@ async function readLotto(browser, base, pension, lotto, WIN, ledger, calibFn, gv
         rec.a=actual.a.slice();
         rows.push(rec); EVS.push(evRec);
 
-        /* 재현 점검 — 원장에 적힌 그 회차 A~E 를 그 회차 규칙으로 다시 만들 수 있는가 */
-        const lp=ledPicks[R];
-        if(lp){
-          const rule=(PFROM!=null && R>=PFROM && sel.portfolio)?'portfolio':'weekly_v1';
-          const mine=sel[rule].map(x=>x.c.join(','));
-          repro.push({R, rule, order:mine.join('|')===lp.join('|'),
-                      set:mine.slice().sort().join('|')===lp.slice().sort().join('|')});
+        /* 풀 비교 — 같은 규칙(그 회차의 opts)을 이 보드의 풀 P 에 적용한 A~E 가 원장과 같은가.
+           weeklyPicks 가 없거나 실패한 옛 페이지에서는 이 값이 재현 판정을 대신한다. */
+        if(rp){
+          let mine=null;
+          if(rp.rule==='portfolio' && has.pp){
+            const o=optsFor(R)||PF;
+            if(sameOpts(o,PF)) mine=sel.portfolio;
+            else { try{ const r=portfolioPick(Ps,Object.assign({},o,{prevN})); mine=r&&r.picks; }catch(e){ noteErr('portfolioPick.repro',e); } }
+          } else if(rp.rule!=='portfolio') mine=sel.weekly_v1;
+          if(Array.isArray(mine)&&mine.length===lp.length){
+            const cs=mine.map(x=>x.c.join(','));
+            rp.pool=cs.slice().sort().join('|')===lp.slice().sort().join('|');
+            if(!rp.via){ rp.via='pool'; rp.order=cs.join('|')===lp.join('|'); rp.set=rp.pool; }
+          }
         }
         if(rows.length%25===0) await tick();
       }
@@ -454,9 +505,16 @@ async function readLotto(browser, base, pension, lotto, WIN, ledger, calibFn, gv
     const loopMs=Math.round(performance.now()-t0);
     globalThis.__VAL_EVS=EVS;
 
-    /* 현재 회차 추천(=이번 주 추천 원장 기록분) */
+    /* 현재 회차 추천(=이번 주 추천 원장 기록분) — weeklyPicks 가 규칙표(portfolioOptsFor)대로 골랐는지도 본다 */
     const W=weeklyPicks();
     const buy=W.combos.slice(0,5);
+    const wOpts=optsFor(W.round), wTable=wOpts?'portfolio':'legacy';
+    const wRule=W.rule||(has.pp&&PFROM!=null&&W.round>=PFROM?'portfolio':'legacy');
+    const weeklyRule={ round:W.round, rule:wRule, table:wTable,
+      /* opts 는 규칙표의 키만 대조한다(페이지가 opts 에 진단용 키를 더 얹어도 실패로 보지 않게) */
+      ok: wRule===wTable && (wTable!=='portfolio' || !(W.portfolio&&W.portfolio.opts) || !wOpts ||
+          Object.keys(wOpts).every(k=>W.portfolio.opts[k]===wOpts[k])),
+      opts: wOpts };
 
     /* pending 채점 — 결과가 나온 회차는 전부. 페이지의 rankOf 로(Node 복제 금지, R4 §7) */
     const graded={};
@@ -490,14 +548,15 @@ async function readLotto(browser, base, pension, lotto, WIN, ledger, calibFn, gv
 
     return { latest, from, strats:STRATS, rows, repro, has, dlMode, errors, checks, skipped,
              poolN:POOL_N, triesMax, poolShort, loopMs,
-             portfolio:PF, portfolioFrom:PFROM,
+             portfolio:PF, portfolioFrom:PFROM, portfolioRules:RULES, weeklyRule,
              target:W.round, picks:W.combos.slice(0,10), buy:buy.map(c=>c.slice()),
-             rule:W.rule||(has.pp&&PFROM!=null&&W.round>=PFROM?'portfolio':'legacy'),
+             rule:wRule,
              weeklyMeta:W.portfolio||null, graded,
              guard: gv ? gv.lotto.draws.map(d=>gv.lotto.combos.map(c=>rankOf(c,d)).join('')).join('|') : null,
              lastDraw:{r:orig[latest].r,ymd:orig[latest].ymd,n:orig[latest].n,b:orig[latest].b,
                        w:orig[latest].w,a:orig[latest].a,s:orig[latest].s} };
-  }, {WIN, POOL_N, POOL_TRIES, ALL_STRATS, pend:ledger.pend('lotto'), ledPicks:ledger.picksByRound('lotto'), gv:gv||null});
+  }, {WIN, POOL_N, POOL_TRIES, ALL_STRATS, pend:ledger.pend('lotto'), ledPicks:ledger.picksByRound('lotto'),
+      ledRules:Object.fromEntries(Object.entries(ledger.rulesByRound('lotto')).map(([k,v])=>[k,v.rule||null])), gv:gv||null});
 
   /* 2차 패스 — 최종 재보정(calib)을 페이지에 넘겨 EV/5,000원을 페이지의 lineEV 로 계산.
      ₩ 공식은 Node 에 다시 쓰지 않는다(PLAN §1.4). */
@@ -549,7 +608,7 @@ async function readPension(browser, base, pension, lotto, ledger, gv){
   await p.goto(base+'/pension.html',{waitUntil:'load'});
   await p.waitForFunction(()=>typeof DB!=='undefined'&&DB.rounds&&DB.rounds.length>50,{timeout:90000});
   await p.waitForTimeout(1200);
-  const out=await p.evaluate(async ({pend, ledPicks, gv})=>{
+  const out=await p.evaluate(async ({pend, ledPicks, ledRules, gv, DIST_MEMO})=>{
     const rows=R(), start=Math.min(100,Math.floor(rows.length*0.3));
     const MODELS=['freq','cold','recent','gap','rand'];
     const grid=[];
@@ -560,12 +619,53 @@ async function readPension(browser, base, pension, lotto, ledger, gv){
     }
     const S=predSettings(), nx=nextDraw(), last=rows[rows.length-1];
     const has={ pw:typeof pensionWeekly==='function', pp:typeof pensionPortfolio==='function',
-                pd:typeof pensionDist==='function' };
+                pd:typeof pensionDist==='function', pmf:typeof pensionModeFor==='function' };
     const MODE=(typeof PENSION_MODE!=='undefined')?PENSION_MODE:null;
     const PFROM=(typeof PENSION_PORTFOLIO_FROM!=='undefined')?PENSION_PORTFOLIO_FROM:null;
+    const RULES=(typeof PENSION_RULES!=='undefined'&&Array.isArray(PENSION_RULES))
+      ? PENSION_RULES.map(r=>({from:r.from, mode:r.mode})) : null;
     const errors={}; const noteErr=(k,e)=>{ if(!errors[k]) errors[k]=String(e&&e.message||e).slice(0,200); };
     const tk=c=>({band:+c.band,num:String(c.num)});
     const label=c=>c.band+'조 '+c.num;
+    /* 회차 ep 의 방식(C1) — null 이면 옛 방식(legacy). 규칙표가 없는 옛 페이지는 단일 상수(PENSION_PORTFOLIO_FROM·PENSION_MODE)로 */
+    const modeFor=ep=>{
+      if(has.pmf){ try{ return pensionModeFor(ep)||null; }catch(e){ noteErr('pensionModeFor',e); } }
+      return (MODE && PFROM!=null && ep>=PFROM) ? MODE : null;
+    };
+
+    /* 분포 서명 — pensionDist 의 결과는 번호 «값»이 아니라 구조에만 달려 있다.
+         ① 번호를 뒷자리부터 읽은 트라이의 모양 — 어느 장끼리 뒤 몇 자리를 공유하나(3~7등은 전부 «뒤 n자리 일치»)
+         ② 같은 번호를 가진 장들의 조 구성(몇 장씩 같은 조인가 — 1·2등)   ③ 같은 번호의 장 수(보너스)
+       추첨 W 는 000000~999999 균등이라, 트라이 각 갈래의 숫자를 서로 바꿔 붙이는 자리별 순열은 모든 장의
+       «뒤 몇 자리 일치»를 그대로 보존하는 전단사다. 그래서 서명이 같으면 pensionDist 의 히스토그램이 같고,
+       결과(EV·SD·pAny·표)가 비트 단위로 같다. 분산 5장(끝자리 모두 다름)·세트(한 번호 × 조 1~5)는 회차가
+       바뀌어도 서명이 하나다. 실측(2026-09-23, 연금 100~333회): 분포 702번 중 실제 계산 73번(구 방식 71종 + 분산 1 + 세트 1),
+       구조 점검 67초 → 8초.
+       --no-dist-memo 로 돌리면 매 회차 다시 계산한다(이 가정의 대조 실험용 — 결과 JSON 이 같아야 한다). */
+    const distSig=tks=>{
+      const root={};
+      for(const t of tks){ const s=String(t.num).padStart(6,'0'); let n=root;
+        for(let i=5;i>=0;i--){ const d=s[i]; n=n[d]||(n[d]={}); }
+        (n.$b||(n.$b=[])).push(+t.band); }
+      const canon=(n,dep)=>{
+        if(dep===6){ const c={}; n.$b.forEach(b=>{ c[b]=(c[b]||0)+1; }); return Object.values(c).sort((a,b)=>a-b).join('.'); }
+        return '('+Object.keys(n).map(k=>canon(n[k],dep+1)).sort().join(',')+')';
+      };
+      return canon(root,0);
+    };
+    const DM={memo:!!DIST_MEMO, calls:0, calc:0, map:new Map()};
+    /* 분포 — 페이지가 이미 준 것(r.dist)이 있으면 그걸, 아니면 서명 캐시, 없으면 pensionDist 로 계산.
+       반환 {D, ms} — ms 는 실제로 계산했을 때만 0 보다 크다 */
+    const distOf=(tks, given)=>{
+      DM.calls++;
+      const key=DM.memo?distSig(tks):null;
+      if(given&&given.pAny!=null){ if(key&&!DM.map.has(key)) DM.map.set(key,given); return {D:given, ms:0}; }
+      if(key&&DM.map.has(key)) return {D:DM.map.get(key), ms:0};
+      if(!has.pd) return {D:null, ms:0};
+      const q=performance.now(); const D=pensionDist(tks); const ms=performance.now()-q;
+      DM.calc++; if(key) DM.map.set(key,D);
+      return {D, ms};
+    };
 
     /* 이번 주 추천 — pensionWeekly() 가 있으면 그 buy(5장), 없으면 옛 경로 상위 5 */
     const legacy10=generate(S.model,S.K,S.J,10,nx.ep*7919);
@@ -575,6 +675,9 @@ async function readPension(browser, base, pension, lotto, ledger, gv){
     const buy=(W&&Array.isArray(W.buy)&&W.buy.length===5?W.buy:picks.slice(0,5)).map(tk);
     const mode=(W&&W.mode)||'legacy';
     const rule=(W&&W.rule)||(W&&W.buy?'portfolio':'legacy');
+    /* 이번 주 방식이 규칙표(pensionModeFor)와 같은가 — pensionWeekly 의 게이팅 점검 */
+    const weeklyMode={ ep:nx.ep, mode, table:modeFor(nx.ep)||'legacy' };
+    weeklyMode.ok = weeklyMode.mode===weeklyMode.table;
 
     /* 등수별 금액·이론 기대값은 페이지의 RANKS 에서(Node 에 따로 적지 않는다) */
     const amt={}; RANKS.forEach(r=>{ amt[r.k]=r.amt; });
@@ -594,25 +697,30 @@ async function readPension(browser, base, pension, lotto, ledger, gv){
     /* 5장 구조 as-of 백테스트 */
     const modes=has.pp?['spread','set','legacy']:['legacy'];
     const st={}; modes.forEach(m=>st[m]={n:0,any:0,ret:0,retSq:0,grades:{},distN:0,pAny:0,EV:0,SD:0,
-      distinctFail:0,distMs:0});
+      distinctFail:0,distMs:0,distCalc:0});
     const repro=[];
     const saveRounds=DB.rounds, T0=performance.now();
-    /* 회차당 수백 ms(분포 정확 계산) × 230여 회 — 한 덩어리로 돌리면 렌더러가 1분 넘게 응답하지 않는다.
-       5회마다 DB 를 원래대로 돌려놓고 이벤트 루프에 한 번 양보한다(로또 루프의 tick 과 같은 이유). */
+    /* 5장만 필요하고 분포는 distOf 가 (서명 캐시로) 따로 구한다 → pensionPortfolio 에 noDist(C1).
+       noDist 를 모르는 옛 페이지는 분포를 붙여 돌려주고, distOf 가 그걸 그대로 쓴다. */
+    const PP_OPTS={noDist:true};
+    const ppBuy=(m,seed)=>{
+      try{ const r=pensionPortfolio(m,S,seed,PP_OPTS);
+        if(r&&Array.isArray(r.buy)&&r.buy.length===5) return {buy:r.buy.map(tk), dist:r.dist||null}; }
+      catch(e){ noteErr('pensionPortfolio.'+m,e); }
+      return null;
+    };
+    /* 5회마다 DB 를 원래대로 돌려놓고 이벤트 루프에 한 번 양보한다(로또 루프의 tick 과 같은 이유 —
+       분포를 매번 계산하던 때는 한 덩어리로 돌리면 렌더러가 1분 넘게 응답하지 않았다). */
     const tick=()=>new Promise(r=>{const c=new MessageChannel();c.port1.onmessage=()=>r();c.port2.postMessage(0);});
     try{
       for(let t=start;t<rows.length;t++){
         if(t>start && (t-start)%5===0){ DB.rounds=saveRounds; await tick(); }
         DB.rounds=rows.slice(0,t);
         const tgt=rows[t], seed=tgt.ep*7919;
-        const sets={legacy:generate(S.model,S.K,S.J,10,seed).slice(0,5).map(tk)}, dists={};
+        const sets={legacy:generate(S.model,S.K,S.J,10,seed).slice(0,5).map(tk)}, given={};
         if(has.pp){
           for(const m of ['spread','set']){
-            try{ const q=performance.now(), r=pensionPortfolio(m,S,seed);
-              if(r&&Array.isArray(r.buy)&&r.buy.length===5){ sets[m]=r.buy.map(tk);
-                /* pensionPortfolio 가 이미 계산한 분포를 재사용(같은 함수·같은 5장) */
-                if(r.dist&&r.dist.pAny!=null){ dists[m]=r.dist; st[m].distMs+=performance.now()-q; } } }
-            catch(e){ noteErr('pensionPortfolio.'+m,e); }
+            const r=ppBuy(m,seed); if(r){ sets[m]=r.buy; if(r.dist) given[m]=r.dist; }
           }
         }
         for(const m of modes){
@@ -623,19 +731,25 @@ async function readPension(browser, base, pension, lotto, ledger, gv){
           o.n++; o.ret+=r; o.retSq+=r*r; if(gs.some(g=>g>0)) o.any++;
           gs.forEach(g=>{ if(g) o.grades[g]=(o.grades[g]||0)+1; });
           if(m==='spread' && new Set(tks.map(x=>x.num.slice(-1))).size!==5) o.distinctFail++;
-          let D=dists[m]||null;
-          if(!D && has.pd){
-            try{ const q=performance.now(); D=pensionDist(tks); o.distMs+=performance.now()-q; }
-            catch(e){ noteErr('pensionDist',e); D=null; }
-          }
+          let D=null;
+          try{ const x=distOf(tks, given[m]); D=x.D; if(x.ms>0){ o.distMs+=x.ms; o.distCalc++; } }
+          catch(e){ noteErr('pensionDist',e); D=null; }
           if(D){ o.distN++; o.pAny+=D.pAny; o.EV+=D.EV; o.SD+=D.SD; }
         }
+        /* 재현 점검 — 원장에 적힌 그 회차 5장을 «그 회차 방식»으로 다시 만들 수 있는가.
+           방식 = 원장 행에 적힌 mode/rule(있으면) → 없으면 규칙표 pensionModeFor(ep) → 없으면 옛 방식.
+           pensionWeekly() 는 DB 를 자른 상태에서 pensionPortfolio(pensionModeFor(ep), predSettings(), ep·7919) 이므로
+           같은 S·같은 시드의 sets[방식] 과 같다(분포 계산만 뺀 것). */
         const lp=ledPicks[tgt.ep];
         if(lp){
-          const rm=(PFROM!=null && tgt.ep>=PFROM && MODE && sets[MODE])?MODE:'legacy';
+          const rec=ledRules[tgt.ep]||{};
+          const table=modeFor(tgt.ep)||'legacy';
+          const recd=rec.rule==='legacy'?'legacy':(rec.mode&&rec.mode!=='legacy'?rec.mode:null);
+          const rm=recd||table;
+          if(rm!=='legacy' && !sets[rm] && has.pp){ const r=ppBuy(rm,seed); if(r) sets[rm]=r.buy; }
           const mine=(sets[rm]||[]).map(label);
-          repro.push({ep:tgt.ep, rule:rm, order:mine.join('|')===lp.join('|'),
-                      set:mine.slice().sort().join('|')===lp.slice().sort().join('|')});
+          repro.push({ep:tgt.ep, rule:rm, table, recorded:recd, order:mine.length>0&&mine.join('|')===lp.join('|'),
+                      set:mine.length>0&&mine.slice().sort().join('|')===lp.slice().sort().join('|')});
         }
       }
     } finally { DB.rounds=saveRounds; }
@@ -643,12 +757,15 @@ async function readPension(browser, base, pension, lotto, ledger, gv){
 
     return { grid, rounds:rows.length, from:rows[start].ep, to:last.ep,
              settings:S, next:{ep:nx.ep,date:nx.date}, has, mode, rule, pensionMode:MODE, portfolioFrom:PFROM,
+             pensionRules:RULES, weeklyMode,
              picks, buy, weeklyDist:(W&&W.dist)?{pAny:W.dist.pAny,EV:W.dist.EV,SD:W.dist.SD}:null,
              evTheory, amt, graded, errors,
              guard: gv ? gv.pension.rounds.map(r=>gv.pension.tickets.map(t=>gradeOf(t.band,t.num,r)).join('')).join('|') : null,
-             structure:{from:rows[start].ep, to:last.ep, modes:st, repro, ms:structMs},
+             structure:{from:rows[start].ep, to:last.ep, modes:st, repro, ms:structMs,
+                        dist:{memo:DM.memo, calls:DM.calls, calc:DM.calc, unique:DM.map.size}},
              last:{ep:last.ep,date:last.date,band:last.band,num:last.num,bonus:last.bonus,cnt:last.cnt||{}} };
-  }, {pend:ledger.pend('pension'), ledPicks:ledger.picksByRound('pension'), gv:gv||null});
+  }, {pend:ledger.pend('pension'), ledPicks:ledger.picksByRound('pension'), ledRules:ledger.rulesByRound('pension'),
+      gv:gv||null, DIST_MEMO});
   await ctx.close();
   if(errs.length) out.pageErrors=errs.slice(0,5);
   return out;
@@ -870,7 +987,17 @@ function analyzeLotto(L, cal){
   if(C.cover1!=null) chk('cover1', C.cover1===194130, C.cover1, 194130);
   if(C.buyPAnyApproxErr!=null) chk('pAnyApprox', C.buyPAnyApproxErr<=1e-4, (C.buyPAnyApproxErr*100).toFixed(5)+'pp', '≤ 0.01pp');
   if(C.lineEV1!=null) chk('lineEV1', Math.abs(C.lineEV1-500)<=0.05, +(+C.lineEV1).toFixed(3), '500.00 ± 0.05');
-  if(L.repro&&L.repro.length) chk('repro', L.repro.every(x=>x.set), L.repro.map(x=>`${x.R}회 ${x.rule==='portfolio'?'포트폴리오':'구 규칙'} ${x.order?'일치':(x.set?'순서만 다름':'불일치')}`).join(' · '), '원장 A~E 재현');
+  /* 재현 — 그 회차 규칙(규칙표 portfolioOptsFor(R), 원장 행에 rule 이 있으면 그것)으로 사이트의 weeklyPicks() 를 다시 불러 대조 */
+  if(L.repro&&L.repro.length){
+    const rn=x=>x.rule==='portfolio'?'포트폴리오':'구 규칙';
+    chk('repro', L.repro.every(x=>x.set), L.repro.map(x=>`${x.R}회 ${rn(x)} ${x.order?'일치':(x.set?'순서만 다름':'불일치')}`+
+      (x.via==='pool'?' (보드 풀로)':'')+(x.recorded&&x.recorded!==x.table?' (기록 규칙≠규칙표)':'')).join(' · '),
+      '원장 A~E 재현 (그 회차 규칙 · weeklyPicks)');
+    /* 보드의 후보 풀이 사이트 추천 풀과 같은가 — 다르면 위 «포트폴리오» 행이 사이트 규칙을 재는 게 아니다 */
+    const pc_=L.repro.filter(x=>x.pool!=null);
+    if(pc_.length) chk('reproPool', pc_.every(x=>x.pool), `${pc_.filter(x=>x.pool).length}/${pc_.length}`, '보드 풀에 같은 규칙 → 원장 A~E');
+  }
+  if(L.weeklyRule) chk('weeklyRule', L.weeklyRule.ok, `${L.weeklyRule.round}회 ${L.weeklyRule.rule} (규칙표 ${L.weeklyRule.table})`, '이번 주 추천 규칙 = 규칙표');
 
   return { n:rows.length, from:L.from, to:L.latest, calib, calib2, per, cur:CUR,
            sdWeek, chanceMean, hitBaseline:6*6/45, checks };
@@ -892,9 +1019,13 @@ function analyzePension(P){
       meanRet, evTheory:evTh, sdTheory:sdTh,
       /* 평균 수령의 95% 구간은 이론 SD 로 — 표본 SD 는 1·2등이 안 나와 과소평가 */
       retCI: sdTh!=null?[meanRet-1.96*sdTh/Math.sqrt(o.n), meanRet+1.96*sdTh/Math.sqrt(o.n)]:null,
-      grades:o.grades, distinctFail:o.distinctFail, distMs:o.distN?Math.round(o.distMs/o.distN):null };
+      grades:o.grades, distinctFail:o.distinctFail,
+      /* 분포 1회 계산에 든 평균 시간 — 서명 캐시로 재사용한 회차는 빼고 «실제로 계산한 횟수»로 나눈다 */
+      distMs:o.distCalc?Math.round(o.distMs/o.distCalc):null, distCalc:o.distCalc||0 };
   }
   structure.repro=S.repro||[];
+  structure.dist=S.dist||null;
+  structure.weeklyMode=P.weeklyMode||null;
   return { grid:g, tested:g.length, sig:sig.length, sigCorrected:sigC.length,
            expectedByChance:+(g.length*0.05).toFixed(1), controlSig:ctrl.length,
            rounds:P.rounds, from:P.from, to:P.to, evTheory:P.evTheory, structure };
@@ -908,14 +1039,19 @@ function analyzePension(P){
      · done 회차는 절대 건드리지 않는다.
      · 채점은 «마지막 회차»만이 아니라 결과가 알려진 모든 pending 회차(CI 가 한 주를 건너뛰어도).
        채점은 페이지의 rankOf/gradeOf 로(readLotto/readPension 안), Node 쪽 사다리는 교차 점검·예비용.
-     · 새 필드(rule, mode)는 추가만 — 기존 필드는 그대로(하위호환). */
+     · 새 필드(rule, mode)는 추가만 — 기존 필드는 그대로(하위호환).
+     · [C1] rule/mode 는 «그 회차에 쓴 규칙»의 기록이다. 재현 점검(readLotto/readPension)은 이 값을 존중해 다시 만든다.
+       pending 행은 추첨 전이라 현재 규칙표가 그 회차에 주는 규칙으로 picks·rule·mode 를 함께 덮어쓴다(PLAN §1.6). */
 function ledgerIndex(prev){
   const rounds=prev && Array.isArray(prev.rounds) ? prev.rounds : [];
   return {
     rounds,
     pend:kind=>rounds.filter(r=>r.kind===kind&&r.status==='pending'&&Array.isArray(r.picks))
                      .map(r=>({round:r.round, picks:r.picks})),
-    picksByRound:kind=>Object.fromEntries(rounds.filter(r=>r.kind===kind&&Array.isArray(r.picks)).map(r=>[r.round,r.picks]))
+    picksByRound:kind=>Object.fromEntries(rounds.filter(r=>r.kind===kind&&Array.isArray(r.picks)).map(r=>[r.round,r.picks])),
+    /* 그 회차에 기록된 규칙 — 재현할 때 존중한다(없으면 undefined → 규칙표대로). 옛 행에는 없다. */
+    rulesByRound:kind=>Object.fromEntries(rounds.filter(r=>r.kind===kind&&Array.isArray(r.picks))
+                                                .map(r=>[r.round,{rule:r.rule||null, mode:r.mode||null}]))
   };
 }
 /* Node 예비 채점 — 페이지 채점이 없을 때만 쓰고, 둘 다 있으면 서로 대조한다 */
@@ -1185,7 +1321,8 @@ const pR=P.random;
 const CKN={constraint:'A~E 쌍별 겹침 · 완화 없음',budget:'EV 예산 (평균 u ≤ 상한)',pAnyBeatsMinshare:'P(1게임↑) > 분배 최소 5줄',
   zGain:'원 z 이득 손실 (참고)',ev5VsMinshare:'EV/5,000원 ÷ 분배 최소 5줄',hitsPerGame:'게임당 일치 = 0.8',
   cover5disjoint:'정확 계산 · 완전분산 5줄',cover1:'정확 계산 · 1줄',pAnyApprox:'근사 오차 (이번 주 A~E)',
-  lineEV1:'₩ 공식 · 평균 인기 1줄 = 500원',repro:'원장의 A~E 재현',recordGrader:'기록 페이지 채점기 = 원본'};
+  lineEV1:'₩ 공식 · 평균 인기 1줄 = 500원',repro:'원장의 A~E 재현 (그 회차 규칙)',reproPool:'검증 풀 = 사이트 추천 풀',
+  weeklyRule:'이번 주 규칙 = 규칙표',recordGrader:'기록 페이지 채점기 = 원본'};
 const ckVal=v=>v==null?'—':(typeof v==='object'?Object.entries(v).map(([k,x])=>`${SNAME[k]?SNAME[k].replace(/ \(.*\)$/,''):k} ${x}`).join(' · '):String(v));
 const ckList=Object.entries(A.checks||{});
 const ckPass=ckList.filter(([,c])=>c.ok===true).length, ckHardFail=ckList.filter(([,c])=>c.ok===false&&!c.soft).length;
@@ -1447,7 +1584,9 @@ ${shared.foot||'복권 구매는 감당할 수 있는 범위 안에서. 만 19�
       if(!L.has.pp) console.error('      [하위호환] portfolioPick 없음 — 새 규칙(portfolio/carry/disjoint) 없이 진행');
       if(L.pageErrors) console.error('      로또 page errors:',L.pageErrors);
       if(Object.keys(L.errors||{}).length) console.error('      로또 page 함수 오류:',L.errors);
-      console.error(`      연금 ${P.grid.length}개 조합 · 다음 ${P.next.ep}회(${P.mode}) · 구조 ${Math.round(P.structure.ms/1000)}초 · ${P.sec}초`);
+      { const d=P.structure.dist||{};
+        console.error(`      연금 ${P.grid.length}개 조합 · 다음 ${P.next.ep}회(${P.mode}) · 구조 ${Math.round(P.structure.ms/1000)}초`+
+          ` (분포 ${d.calls||0}회 중 계산 ${d.calc||0}회${d.memo?` · 서명 ${d.unique||0}종`:' · 캐시 끔'}) · ${P.sec}초`); }
       if(!P.has.pp) console.error('      [하위호환] pensionPortfolio 없음 — 구조 점검은 구 방식만');
       if(P.pageErrors) console.error('      연금 page errors:',P.pageErrors);
       if(Object.keys(P.errors||{}).length) console.error('      연금 page 함수 오류:',P.errors);
@@ -1468,6 +1607,13 @@ ${shared.foot||'복권 구매는 감당할 수 있는 범위 안에서. 만 19�
     console.log(`::warning title=연금 구조 점검 ${m}::실측 ${pc(s.anyHitRate,2)} vs 이론 ${pc(s.pAnyTheory,2)} · 끝자리 중복 ${s.distinctFail}회`);
   if((PA.structure.repro||[]).some(x=>!x.set))
     console.log(`::warning title=연금 원장 재현 실패::${PA.structure.repro.filter(x=>!x.set).map(x=>x.ep+':'+x.rule).join(' ')}`);
+  /* 원장에 적힌 규칙과 규칙표가 그 회차에 주는 규칙이 다르면 — 재현은 기록대로 했지만, 규칙표의 과거 항목이
+     고쳐졌을 가능성이 크다(C1: 새 설정은 뒤에 «추가»만). 잡을 죽이지는 않고 알린다. */
+  { const mm=[...(L.repro||[]).filter(x=>x.recorded&&x.recorded!==x.table).map(x=>`로또 ${x.R}회 기록 ${x.recorded}·규칙표 ${x.table}`),
+              ...(PA.structure.repro||[]).filter(x=>x.recorded&&x.recorded!==x.table).map(x=>`연금 ${x.ep}회 기록 ${x.recorded}·규칙표 ${x.table}`)];
+    if(mm.length) console.log(`::warning title=원장 기록 규칙 ≠ 규칙표::${mm.join(' / ')} — 재현은 기록된 규칙으로 했습니다. 규칙표의 과거 항목을 고쳤다면 되돌리고 새 항목을 뒤에 추가하세요.`); }
+  if(PA.structure.weeklyMode && PA.structure.weeklyMode.ok===false)
+    console.log(`::warning title=연금 이번 주 방식 ≠ 규칙표::${PA.structure.weeklyMode.ep}회 ${PA.structure.weeklyMode.mode} (규칙표 ${PA.structure.weeklyMode.table})`);
   /* 채점기 가드 — record.html 의 복사본이 원본과 다르면 ::error (D2 §3.D.5) */
   const guard=compareGuard({lotto:L.guard, pension:P.guard}, RG, P.amt);
   delete L.guard; delete P.guard;
@@ -1493,7 +1639,7 @@ ${shared.foot||'복권 구매는 감당할 수 있는 범위 안에서. 만 19�
   const val={ generated:new Date().toISOString(), window:WIN,
     lotto:{ n:A.n, from:A.from, to:A.to, current:A.cur, pool:L.poolN,
       calib:A.calib, calib2:A.calib2, sdWeek:A.sdWeek, chanceMean:A.chanceMean,
-      portfolio:L.portfolio, portfolioFrom:L.portfolioFrom,
+      portfolio:L.portfolio, portfolioFrom:L.portfolioFrom, portfolioRules:L.portfolioRules, weeklyRule:L.weeklyRule,
       per:Object.fromEntries(Object.entries(A.per).map(([k,v])=>[k,{
         zGain:+v.zGain.toFixed(4), vsRandomMean:+v.vsRandom.mean.toFixed(4), p:+v.vsRandom.p.toFixed(5),
         payoutGain:v.payoutGain==null?null:+v.payoutGain.toFixed(4),
@@ -1506,7 +1652,8 @@ ${shared.foot||'복권 구매는 감당할 수 있는 범위 안에서. 만 19�
       checks:A.checks, repro:L.repro, selfCheck:L.checks },
     pension:{ tested:PA.tested, sig:PA.sig, sigCorrected:PA.sigCorrected,
       expectedByChance:PA.expectedByChance, controlSig:PA.controlSig, evTheory:PA.evTheory,
-      structure:{ from:PA.structure.from, to:PA.structure.to, mode:PA.structure.mode,
+      rules:P.pensionRules, weeklyMode:PA.structure.weeklyMode,
+      structure:{ from:PA.structure.from, to:PA.structure.to, mode:PA.structure.mode, dist:PA.structure.dist,
         ...Object.fromEntries(Object.entries(PA.structure.rows).map(([m,s])=>[m,{
           n:s.n, anyHits:s.anyHits, anyHitRate:r4(s.anyHitRate), anyHitCI:ci(s.anyHitCI), pAnyTheory:r6(s.pAnyTheory),
           within99:s.within99, meanRet:+s.meanRet.toFixed(1), evTheory:s.evTheory==null?null:+s.evTheory.toFixed(2),

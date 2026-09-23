@@ -234,27 +234,56 @@ function markBought(kind, round, items){
   }
   return 0;
 }
-function isBought(kind, round){
+/* items 비교 키: 로또는 회차+정렬된 6개 번호, 연금은 ep+조+0패딩 6자리 번호.
+   markBought 의 저장 모양(위)과 맞춘다 — 여기서만 쓰는 헬퍼라 markBought 자체는 손대지 않는다. */
+function lottoItemKey(nums){ return sortedNums(nums).join(','); }
+function pensionItemKey(band, num){ return band+':'+String(num==null?'':num).padStart(6,'0'); }
+
+/* isBought(kind, round, items?)
+   - items 생략(null/undefined): 예전 그대로 — 그 회차에 행이 하나라도 있으면 true.
+   - items 지정: 그 배열의 모든 항목이 저장돼 있어야만 true(하나라도 없으면 false). */
+function isBought(kind, round, items){
   if(kind==='lotto'){
     var arr=storeGet(LOTTO_MY, []);
-    return arr.some(function(t){ return t && t.round===round; });
+    var rows=arr.filter(function(t){ return t && t.round===round && Array.isArray(t.nums); });
+    if(items==null) return rows.length>0;
+    var have={};
+    rows.forEach(function(t){ have[lottoItemKey(t.nums)]=true; });
+    return items.every(function(nums){ return !!have[lottoItemKey(nums)]; });
   }
   if(kind==='pension'){
     var arr2=storeGet(PENSION_MY, []);
-    return arr2.some(function(t){ return t && t.ep===round; });
+    var rows2=arr2.filter(function(t){ return t && t.ep===round; });
+    if(items==null) return rows2.length>0;
+    var have2={};
+    rows2.forEach(function(t){ have2[pensionItemKey(t.band, t.num)]=true; });
+    return items.every(function(it){ return !!it && !!have2[pensionItemKey(it.band, it.num)]; });
   }
   return false;
 }
-function unmark(kind, round){
+/* unmark(kind, round, items?)
+   신규 계약(PLAN C2): items 를 생략하면 아무것도 지우지 않고 0 을 반환한다(예전처럼 그 회차를
+   통째로 지우지 않음 — 손으로 넣은 다른 행이 같이 날아가지 않도록). items 를 주면 그 항목과
+   정확히 일치하는 행만 지운다. */
+function unmark(kind, round, items){
+  if(items==null) return 0;
   if(kind==='lotto'){
     var arr=storeGet(LOTTO_MY, []);
-    var next=arr.filter(function(t){ return !(t && t.round===round); });
+    var kill={};
+    items.forEach(function(nums){ kill[lottoItemKey(nums)]=true; });
+    var next=arr.filter(function(t){
+      return !(t && t.round===round && Array.isArray(t.nums) && kill[lottoItemKey(t.nums)]);
+    });
     storeSet(LOTTO_MY, next);
     return arr.length-next.length;
   }
   if(kind==='pension'){
     var arr2=storeGet(PENSION_MY, []);
-    var next2=arr2.filter(function(t){ return !(t && t.ep===round); });
+    var kill2={};
+    items.forEach(function(it){ if(it) kill2[pensionItemKey(it.band, it.num)]=true; });
+    var next2=arr2.filter(function(t){
+      return !(t && t.ep===round && kill2[pensionItemKey(t.band, t.num)]);
+    });
     storeSet(PENSION_MY, next2);
     return arr2.length-next2.length;
   }
@@ -295,12 +324,38 @@ function gnav(active, prefix){
   return html;
 }
 
-/* ── 서비스워커 등록: https && 자동화 아님 ── */
+/* ── 서비스워커 루트 계산 ──
+   site.js 는 두 가지 방식으로 실행된다: (1) 손으로 쓴 페이지에서 <script src="./site.js"> 로 —
+   이때는 그 스크립트 자신의 절대 URL 에서 파일명을 떼면 사이트 루트가 그대로 나온다.
+   (2) 생성 페이지(brief.html 및 brief/<날짜>.html 아카이브)에 인라인 — 이때는 src 가 없으므로
+   <html>/<body> 의 data-root 속성을 본다(생성기가 아카이브에 data-root="../" 를 찍어줄 수 있음).
+   그마저 없으면 /brief/<파일> 처럼 한 단계 아래 경로인지 location 으로 방어적으로 추정하고,
+   그래도 못 정하면 './'. document.currentScript 는 비동기 콜백 안에서는 null 이 되므로
+   반드시 IIFE 최상위(동기 실행 시점)에서 한 번만 계산해 상수로 굳혀둔다. */
+var SITE_ROOT = (function(){
+  try{
+    var cs = document.currentScript;
+    if(cs && cs.src){ return cs.src.replace(/[^\/]*$/, ''); }
+  }catch(e){}
+  try{
+    var el = document.documentElement, b = document.body;
+    var dr = (el && el.getAttribute && el.getAttribute('data-root')) ||
+             (b  && b.getAttribute  && b.getAttribute('data-root'));
+    if(dr) return dr;
+  }catch(e){}
+  try{
+    if(/\/brief\/[^\/]+$/.test(location.pathname)) return '../';
+  }catch(e){}
+  return './';
+})();
+
+/* ── 서비스워커 등록: https && 자동화 아님, 사이트 루트 기준, 실패는 조용히 무시 ── */
 try{
   if(typeof window!=='undefined' && typeof navigator!=='undefined' &&
      location.protocol==='https:' && !navigator.webdriver && 'serviceWorker' in navigator){
     window.addEventListener('load', function(){
-      try{ navigator.serviceWorker.register('./sw.js'); }catch(e){}
+      try{ navigator.serviceWorker.register(SITE_ROOT+'sw.js').catch(function(){}); }
+      catch(e){}
     });
   }
 }catch(e){}

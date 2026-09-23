@@ -102,6 +102,7 @@ p.note b{color:var(--ink)}
 
 <h2>내 기록</h2>
 <div class="kpi" id="kpiMine"></div>
+<p class="note" id="pendingMineNote" hidden></p>
 
 <h2>누적 손익</h2>
 <div class="card flat">
@@ -115,6 +116,7 @@ p.note b{color:var(--ink)}
 <div class="card flat">
   <p class="note">아래는 이 사이트가 매주 추천하는 5+5(로또 5게임 + 연금 5장)를 <b>그대로 샀다고 가정</b>했을 때의 누적 수치입니다. CI가 계산한 가정이며, <b>내 실제 구매(위 「내 기록」)와는 절대 합산하지 않습니다</b> — 누적 손익 그래프의 점선이 이 원장입니다.</p>
   <div class="kpi" id="kpiLedger"></div>
+  <p class="note" id="pendingLedgerNote" hidden></p>
 </div>
 
 <h2>내보내기 · 가져오기</h2>
@@ -403,64 +405,75 @@ function main(){
 
     var list = Array.from(weeks.values()).sort(function(a,b){ return a.lottoRound-b.lottoRound; });
 
+    // 결과가 알려진(당첨 확정 — 미당첨 포함) 행만 KPI·누적 그래프에 합산한다. grade==null 은
+    // 아직 추첨/집계 전(purchases.json 의 status:'pending' 과 같은 뜻) — «추첨 대기»로 따로 센다.
+    // 추천 원장 쪽은 이렇게 해야 validate.html 의 "추천 원장 누적/회수"(done 행만 합산)와 값이 맞는다.
     var cumMine=0, cumLedger=0;
     list.forEach(function(w){
-      var mineSpend=0, mineGain=0;
+      var mineSpend=0, mineGain=0, minePending=0;
       w.mineLottoGraded = w.mineLotto.map(function(t){
-        mineSpend += t.cost||1000;
         var g = gradeLottoEntry(t.nums, lottoMap, t.round);
-        mineGain += g.amt;
+        if(g.grade==null) minePending++; else { mineSpend += t.cost||1000; mineGain += g.amt; }
         return Object.assign({}, t, g);
       });
       w.minePensionGraded = w.minePension.map(function(t){
-        mineSpend += 1000;
         var g = gradePensionEntry(t.band, t.num, pensionMap, t.ep);
-        mineGain += g.amt;
+        if(g.grade==null) minePending++; else { mineSpend += 1000; mineGain += g.amt; }
         return Object.assign({}, t, g);
       });
-      w.mineSpend=mineSpend; w.mineGain=mineGain; w.mineNet=mineGain-mineSpend;
+      w.mineSpend=mineSpend; w.mineGain=mineGain; w.mineNet=mineGain-mineSpend; w.minePending=minePending;
       cumMine += w.mineNet; w.cumMine=cumMine;
 
-      var ledgerSpend=0, ledgerGain=0;
+      var ledgerSpend=0, ledgerGain=0, ledgerPending=0;
       w.ledgerLottoGraded = (w.ledgerLottoPicks||[]).map(function(s){
-        ledgerSpend += 1000;
         var nums=parseLottoPick(s), g=gradeLottoEntry(nums, lottoMap, w.lottoRound);
-        ledgerGain += g.amt;
+        if(g.grade==null) ledgerPending++; else { ledgerSpend += 1000; ledgerGain += g.amt; }
         return Object.assign({nums:nums}, g);
       });
       w.ledgerPensionGraded = (w.ledgerPensionPicks||[]).map(function(s){
-        ledgerSpend += 1000;
         var p=parsePensionPick(s);
         if(!p) return {band:null, num:null, grade:null, amt:0};
         var g=gradePensionEntry(p.band, p.num, pensionMap, w.pensionRound);
-        ledgerGain += g.amt;
+        if(g.grade==null) ledgerPending++; else { ledgerSpend += 1000; ledgerGain += g.amt; }
         return Object.assign({band:p.band, num:p.num}, g);
       });
-      w.ledgerSpend=ledgerSpend; w.ledgerGain=ledgerGain; w.ledgerNet=ledgerGain-ledgerSpend;
+      w.ledgerSpend=ledgerSpend; w.ledgerGain=ledgerGain; w.ledgerNet=ledgerGain-ledgerSpend; w.ledgerPending=ledgerPending;
       cumLedger += w.ledgerNet; w.cumLedger=cumLedger;
     });
 
     var mineWeeks = list.filter(function(w){ return w.mineLotto.length>0 || w.minePension.length>0; });
     var totalMineSpend = mineWeeks.reduce(function(s,w){ return s+w.mineSpend; },0);
     var totalMineGain  = mineWeeks.reduce(function(s,w){ return s+w.mineGain; },0);
+    var totalMinePending = mineWeeks.reduce(function(s,w){ return s+w.minePending; },0);
     var mineL = mineWeeks.reduce(function(s,w){ return s+w.mineLotto.length; },0);
     var mineP = mineWeeks.reduce(function(s,w){ return s+w.minePension.length; },0);
     renderKPI('#kpiMine',[
       ['주', mineWeeks.length+'주', mineL+'게임 · '+mineP+'장'],
-      ['투입', won(totalMineSpend), ''],
+      ['투입', won(totalMineSpend), '결과 확정분만'],
       ['수령', won(totalMineGain), '회수율 '+recoveryLabel(totalMineGain,totalMineSpend)],
       ['손익', won(totalMineGain-totalMineSpend), (totalMineGain-totalMineSpend>=0?'수익':'손실')]
     ]);
+    var pendingMineEl=document.getElementById('pendingMineNote');
+    if(pendingMineEl){
+      pendingMineEl.hidden = totalMinePending<=0;
+      pendingMineEl.textContent = '추첨 대기 '+totalMinePending+'장 — 위 집계에서 빠져 있습니다(결과가 나오면 자동으로 반영)';
+    }
 
     var ledgerWeeks = list.filter(function(w){ return w.ledgerLottoPicks || w.ledgerPensionPicks; });
     var totalLedgerSpend = ledgerWeeks.reduce(function(s,w){ return s+w.ledgerSpend; },0);
     var totalLedgerGain  = ledgerWeeks.reduce(function(s,w){ return s+w.ledgerGain; },0);
+    var totalLedgerPending = ledgerWeeks.reduce(function(s,w){ return s+w.ledgerPending; },0);
     renderKPI('#kpiLedger',[
       ['주', ledgerWeeks.length+'주', ''],
-      ['투입', won(totalLedgerSpend), ''],
+      ['투입', won(totalLedgerSpend), '결과 확정분만'],
       ['수령', won(totalLedgerGain), '회수율 '+recoveryLabel(totalLedgerGain,totalLedgerSpend)],
       ['손익', won(totalLedgerGain-totalLedgerSpend), (totalLedgerGain-totalLedgerSpend>=0?'수익':'손실')]
     ]);
+    var pendingLedgerEl=document.getElementById('pendingLedgerNote');
+    if(pendingLedgerEl){
+      pendingLedgerEl.hidden = totalLedgerPending<=0;
+      pendingLedgerEl.textContent = '추첨 대기 '+totalLedgerPending+'장 — 위 집계에서 빠져 있습니다(결과가 나오면 자동으로 반영)';
+    }
 
     var chartEl=document.getElementById('chartWrap');
     if(chartEl) chartEl.innerHTML = buildChart(list);
