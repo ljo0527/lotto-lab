@@ -1,6 +1,6 @@
 {
  "v": 1,
- "updated": "2026-09-13T06:06:07.020Z",
+ "updated": "2026-09-23T09:59:31.908Z",
  "config": {
   "lottoGames": 5,
   "pensionTickets": 5
@@ -51,13 +51,55 @@
   {
    "kind": "lotto",
    "round": 1242,
-   "date": null,
+   "date": "20260919",
    "picks": [
     "3,25,29,30,41,44",
     "13,19,25,26,44,45",
     "13,20,22,24,28,45",
     "6,22,27,29,42,43",
     "9,23,28,30,41,42"
+   ],
+   "spend": 5000,
+   "status": "done",
+   "result": [
+    {
+     "hit": 1,
+     "bonus": false,
+     "grade": 0
+    },
+    {
+     "hit": 0,
+     "bonus": false,
+     "grade": 0
+    },
+    {
+     "hit": 0,
+     "bonus": false,
+     "grade": 0
+    },
+    {
+     "hit": 0,
+     "bonus": false,
+     "grade": 0
+    },
+    {
+     "hit": 1,
+     "bonus": true,
+     "grade": 0
+    }
+   ],
+   "return": 0
+  },
+  {
+   "kind": "lotto",
+   "round": 1243,
+   "date": null,
+   "picks": [
+    "4,26,28,30,41,45",
+    "2,15,27,28,29,44",
+    "16,17,21,29,30,44",
+    "2,24,25,31,39,45",
+    "6,15,19,41,42,43"
    ],
    "spend": 5000,
    "status": "pending"
@@ -104,6 +146,38 @@
     "5조 953028",
     "5조 873068",
     "1조 353668"
+   ],
+   "spend": 5000,
+   "status": "done",
+   "result": [
+    {
+     "grade": 0
+    },
+    {
+     "grade": 0
+    },
+    {
+     "grade": 0
+    },
+    {
+     "grade": 0
+    },
+    {
+     "grade": 0
+    }
+   ],
+   "return": 0
+  },
+  {
+   "kind": "pension",
+   "round": 334,
+   "date": "20260924",
+   "picks": [
+    "1조 953068",
+    "1조 960068",
+    "1조 977028",
+    "5조 953064",
+    "5조 970028"
    ],
    "spend": 5000,
    "status": "pending"

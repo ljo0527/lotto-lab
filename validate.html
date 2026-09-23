@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>로직 검증 보드 · 2026-09-13</title><style>
+<title>로직 검증 보드 · 2026-09-23</title><style>
 :root{--paper:#EEF0EB;--paper-2:#F7F8F5;--ink:#16302B;--ink-60:rgba(22,48,43,.6);--ink-40:rgba(22,48,43,.4);
 --ink-12:rgba(22,48,43,.12);--ink-06:rgba(22,48,43,.06);--sig:#B0281A;--ok:#1F6F4A}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#12181A;--paper-2:#182022;--ink:#E6EDE9;
@@ -49,7 +49,7 @@ tr.ctl td{color:var(--ink-60)}
 @media print{body{background:#fff;padding:0}.card{break-inside:avoid}}</style></head><body><div class="wrap">
 <header><div class="eb"><span>Logic Validation Board</span>
 <span><a href="./index.html">LOTTO LAB</a> · <a href="./pension.html">PENSION LAB</a> · <a href="./brief.html">주간 브리핑</a></span></div>
-<h1>로직 검증 보드<small>2026-09-13 자동 갱신 · 로또 942~1241회 300주 · 연금 100~332회</small></h1></header>
+<h1>로직 검증 보드<small>2026-09-23 자동 갱신 · 로또 943~1242회 300주 · 연금 100~333회</small></h1></header>
 
 <div class="vd"><b>이 보드가 답하는 질문 하나.</b> 「우리가 쓰는 규칙이 우연과 구별되는가」.
 당첨 결과로는 영원히 답할 수 없어서(1등 1/8,145,060) <b>세 층으로 나눠</b> 잽니다 —
@@ -57,15 +57,15 @@ tr.ctl td{color:var(--ink-60)}
 앞의 둘은 매주 표본이 쌓이고, 마지막은 쌓이지 않습니다.</div>
 
 <div class="kpi">
-  <div><div class="k">실구매 누적</div><div class="v">2<span style="font-size:15px;color:var(--ink-60)">건</span></div>
-    <div class="s">투입 10,000원</div></div>
+  <div><div class="k">실구매 누적</div><div class="v">4<span style="font-size:15px;color:var(--ink-60)">건</span></div>
+    <div class="s">투입 20,000원</div></div>
   <div><div class="k">실구매 회수</div><div class="v">5,000<span style="font-size:15px">원</span></div>
-    <div class="s">50.0%</div></div>
-  <div><div class="k">모델 설명력 R²</div><div class="v">0.364</div>
-    <div class="s">순진예측 대비 오차 23% 감소</div></div>
+    <div class="s">25.0%</div></div>
+  <div><div class="k">모델 설명력 R²</div><div class="v">0.368</div>
+    <div class="s">순진예측 대비 오차 22% 감소</div></div>
   <div><div class="k">현행 규칙 효과</div><div class="v">+6.9%</div>
     <div class="s">기대 수령액 기준</div></div>
-  <div><div class="k">돈으로 판별하려면</div><div class="v" style="font-size:20px">1675만 년</div>
+  <div><div class="k">돈으로 판별하려면</div><div class="v" style="font-size:20px">1682만 년</div>
     <div class="s">z 이득으로는 1주</div></div>
 </div>
 
@@ -75,11 +75,11 @@ tr.ctl td{color:var(--ink-60)}
 <div class="card"><div class="scroll"><table>
 <tr><th>지표</th><th class="num">값</th><th>읽는 법</th></tr>
 <tr><td>상관</td><td class="num">0.624</td><td>예측과 실제가 같은 방향으로 움직이는 정도</td></tr>
-<tr class="me"><td>out-of-sample R²</td><td class="num">0.364</td><td>0보다 크면 «항상 평균» 보다 낫다는 뜻</td></tr>
-<tr><td>평균오차 (모델 / 순진)</td><td class="num">0.0296 / 0.0383</td><td>낮을수록 좋음</td></tr>
-<tr><td>재보정 기울기</td><td class="num">0.0332</td><td>z 1σ 당 초과배수 변화. 효과 크기의 환산 계수</td></tr>
+<tr class="me"><td>out-of-sample R²</td><td class="num">0.368</td><td>0보다 크면 «항상 평균» 보다 낫다는 뜻</td></tr>
+<tr><td>평균오차 (모델 / 순진)</td><td class="num">0.0295 / 0.0380</td><td>낮을수록 좋음</td></tr>
+<tr><td>재보정 기울기</td><td class="num">0.0331</td><td>z 1σ 당 초과배수 변화. 효과 크기의 환산 계수</td></tr>
 </table></div>
-<div class="vd ok">R²가 0보다 큽니다 — 이 모델은 «항상 평균값을 말하는 것»보다 낫습니다. 다만 설명력은 36.4%뿐이고, 나머지는 설명되지 않습니다.</div></div>
+<div class="vd ok">R²가 0보다 큽니다 — 이 모델은 «항상 평균값을 말하는 것»보다 낫습니다. 다만 설명력은 36.8%뿐이고, 나머지는 설명되지 않습니다.</div></div>
 
 <h2>2층 · 우리가 고른 조합이 실제로 덜 인기있는가</h2>
 <p class="note">같은 회차, <b>같은 후보 풀</b>에서 선택 규칙만 갈아끼워 비교합니다. 회차별 공통 변동이 상쇄되도록
@@ -88,22 +88,22 @@ tr.ctl td{color:var(--ink-60)}
 <tr><th>선택 규칙</th><th class="num">z 이득</th><th class="num">무작위 대비</th><th class="num">95% 신뢰구간</th><th class="num">p</th><th class="num">보정 p</th><th class="num">환산 효과</th><th class="num">게임당 일치</th></tr>
 <tr class="me">
     <td>분배 최소 (현행)</td>
-    <td class="num">+2.080</td>
-    <td class="num">+2.077</td>
-    <td class="num">[2.040, 2.115]</td>
+    <td class="num">+2.081</td>
+    <td class="num">+2.078</td>
+    <td class="num">[2.041, 2.116]</td>
     <td class="num"><span class="tg s">p&lt;0.001</span></td>
     <td class="num">0.000</td>
     <td class="num">+6.9%</td>
     <td class="num">0.817</td>
   </tr><tr class="ctl">
     <td>분배 최대 (양성 대조군)</td>
-    <td class="num">-2.141</td>
-    <td class="num">-2.144</td>
-    <td class="num">[-2.181, -2.107]</td>
+    <td class="num">-2.140</td>
+    <td class="num">-2.143</td>
+    <td class="num">[-2.180, -2.106]</td>
     <td class="num"><span class="tg s">p&lt;0.001</span></td>
     <td class="num">0.000</td>
     <td class="num">-7.1%</td>
-    <td class="num">0.790</td>
+    <td class="num">0.789</td>
   </tr><tr class="ctl">
     <td>무작위 (음성 대조군)</td>
     <td class="num">+0.003</td>
@@ -112,25 +112,25 @@ tr.ctl td{color:var(--ink-60)}
     <td class="num">—</td>
     <td class="num">—</td>
     <td class="num">+0.0%</td>
-    <td class="num">0.829</td>
+    <td class="num">0.833</td>
   </tr><tr class="">
     <td>최근 빈출</td>
-    <td class="num">-0.004</td>
+    <td class="num">-0.005</td>
     <td class="num">-0.007</td>
     <td class="num">[-0.067, 0.052]</td>
     <td class="num"><span class="tg n">p=0.808</span></td>
     <td class="num">1.000</td>
     <td class="num">-0.0%</td>
-    <td class="num">0.762</td>
+    <td class="num">0.760</td>
   </tr><tr class="">
     <td>오래 미출현</td>
-    <td class="num">-0.078</td>
+    <td class="num">-0.079</td>
     <td class="num">-0.081</td>
-    <td class="num">[-0.143, -0.018]</td>
+    <td class="num">[-0.144, -0.019]</td>
     <td class="num"><span class="tg s">p=0.011</span></td>
-    <td class="num">0.045</td>
+    <td class="num">0.044</td>
     <td class="num">-0.3%</td>
-    <td class="num">0.808</td>
+    <td class="num">0.809</td>
   </tr>
 </table></div>
 <p class="note" style="padding:10px 0 0">「z 이득」은 후보 풀 평균보다 얼마나 덜 인기있는 쪽을 골랐는가(클수록 좋음).
@@ -139,7 +139,7 @@ tr.ctl td{color:var(--ink-60)}
 「보정 p」는 규칙 4개를 동시에 검정한 것에 대한 Bonferroni 보정입니다. <b>보정 p 가 0.05 를 넘으면 유의하지 않습니다</b> —
 낱개 p 만 보면 여러 규칙을 훑는 것만으로 «유의한» 규칙이 만들어집니다.</p>
 <div class="vd ok">
-<b>양성 대조군이 작동합니다.</b> 일부러 인기 조합을 고르는 규칙은 -2.144, 현행 규칙은 +2.077 로 반대 방향으로 갈립니다. 모델이 실제로 무언가를 잡고 있다는 뜻입니다.</div></div>
+<b>양성 대조군이 작동합니다.</b> 일부러 인기 조합을 고르는 규칙은 -2.143, 현행 규칙은 +2.078 로 반대 방향으로 갈립니다. 모델이 실제로 무언가를 잡고 있다는 뜻입니다.</div></div>
 
 <h2>3층 · 그래서 돈이 됐는가 — 그리고 언제쯤 알 수 있는가</h2>
 <p class="note">여기가 이 프로젝트에서 가장 오해하기 쉬운 곳입니다. 회수율은 <b>1등 꼬리가 지배</b>하므로
@@ -148,16 +148,16 @@ tr.ctl td{color:var(--ink-60)}
 <tr><th>선택 규칙</th><th class="num">z 이득으로 판별</th><th class="num">실제 회수금으로 판별</th></tr>
 <tr class="me"><td>분배 최소 (현행)</td>
     <td class="num">1주</td>
-    <td class="num">1675만 년</td></tr><tr class=""><td>분배 최대 (양성 대조군)</td>
+    <td class="num">1682만 년</td></tr><tr class=""><td>분배 최대 (양성 대조군)</td>
     <td class="num">1주</td>
     <td class="num">—</td></tr><tr class=""><td>최근 빈출</td>
-    <td class="num">767년</td>
+    <td class="num">765년</td>
     <td class="num">—</td></tr><tr class=""><td>오래 미출현</td>
-    <td class="num">367주</td>
+    <td class="num">364주</td>
     <td class="num">—</td></tr>
 </table></div>
-<div class="vd sig">주당 회수금의 이론 표준편차는 <b>1,977,993원</b>인데 기대 회수금은 <b>2,722원</b>입니다.
-잡음이 신호의 727배라, 돈으로 검증하려면 <b>1675만 년</b>이 걸립니다.
+<div class="vd sig">주당 회수금의 이론 표준편차는 <b>1,976,232원</b>인데 기대 회수금은 <b>2,721원</b>입니다.
+잡음이 신호의 726배라, 돈으로 검증하려면 <b>1682만 년</b>이 걸립니다.
 같은 효과를 z 이득으로 재면 <b>1주</b>면 됩니다.
 <b>그래서 이 보드는 돈이 아니라 메커니즘을 봅니다.</b></div></div>
 
@@ -167,22 +167,22 @@ tr.ctl td{color:var(--ink-60)}
 <div class="card"><div class="scroll"><table>
 <tr><th>모델</th><th class="num">K</th><th class="num">적중률</th><th class="num">우연 기준선</th><th class="num">p</th><th class="num">보정 p</th></tr>
 <tr class="ctl"><td>무작위(대조군)</td>
-   <td class="num">상위 1</td><td class="num">11.02%</td><td class="num">10%</td>
-   <td class="num"><span class="tg n">p=0.212</span></td><td class="num">1.000</td></tr><tr class=""><td>갭</td>
-   <td class="num">상위 3</td><td class="num">31.40%</td><td class="num">30%</td>
-   <td class="num"><span class="tg n">p=0.255</span></td><td class="num">1.000</td></tr><tr class="ctl"><td>무작위(대조군)</td>
-   <td class="num">상위 3</td><td class="num">28.83%</td><td class="num">30%</td>
-   <td class="num"><span class="tg n">p=0.350</span></td><td class="num">1.000</td></tr><tr class=""><td>최근가중</td>
-   <td class="num">상위 4</td><td class="num">38.77%</td><td class="num">40%</td>
-   <td class="num"><span class="tg n">p=0.353</span></td><td class="num">1.000</td></tr><tr class="ctl"><td>무작위(대조군)</td>
-   <td class="num">상위 4</td><td class="num">38.91%</td><td class="num">40%</td>
-   <td class="num"><span class="tg n">p=0.413</span></td><td class="num">1.000</td></tr><tr class=""><td>빈도</td>
-   <td class="num">상위 1</td><td class="num">9.30%</td><td class="num">10%</td>
-   <td class="num"><span class="tg n">p=0.422</span></td><td class="num">1.000</td></tr><tr class=""><td>빈도</td>
-   <td class="num">상위 2</td><td class="num">19.10%</td><td class="num">20%</td>
-   <td class="num"><span class="tg n">p=0.422</span></td><td class="num">1.000</td></tr><tr class=""><td>빈도</td>
-   <td class="num">상위 4</td><td class="num">38.98%</td><td class="num">40%</td>
-   <td class="num"><span class="tg n">p=0.445</span></td><td class="num">1.000</td></tr>
+   <td class="num">상위 1</td><td class="num">10.97%</td><td class="num">10%</td>
+   <td class="num"><span class="tg n">p=0.230</span></td><td class="num">1.000</td></tr><tr class=""><td>갭</td>
+   <td class="num">상위 3</td><td class="num">31.34%</td><td class="num">30%</td>
+   <td class="num"><span class="tg n">p=0.281</span></td><td class="num">1.000</td></tr><tr class="ctl"><td>무작위(대조군)</td>
+   <td class="num">상위 3</td><td class="num">28.85%</td><td class="num">30%</td>
+   <td class="num"><span class="tg n">p=0.352</span></td><td class="num">1.000</td></tr><tr class=""><td>빈도</td>
+   <td class="num">상위 2</td><td class="num">19.02%</td><td class="num">20%</td>
+   <td class="num"><span class="tg n">p=0.368</span></td><td class="num">1.000</td></tr><tr class=""><td>최근가중</td>
+   <td class="num">상위 4</td><td class="num">38.82%</td><td class="num">40%</td>
+   <td class="num"><span class="tg n">p=0.369</span></td><td class="num">1.000</td></tr><tr class=""><td>빈도</td>
+   <td class="num">상위 1</td><td class="num">9.26%</td><td class="num">10%</td>
+   <td class="num"><span class="tg n">p=0.374</span></td><td class="num">1.000</td></tr><tr class="ctl"><td>무작위(대조군)</td>
+   <td class="num">상위 4</td><td class="num">38.96%</td><td class="num">40%</td>
+   <td class="num"><span class="tg n">p=0.430</span></td><td class="num">1.000</td></tr><tr class=""><td>최근가중</td>
+   <td class="num">상위 2</td><td class="num">19.16%</td><td class="num">20%</td>
+   <td class="num"><span class="tg n">p=0.443</span></td><td class="num">1.000</td></tr>
 </table></div>
 <div class="vd ok">
 p&lt;0.05 인 조합 <b>0개</b>(우연 기대 1.3개) · 보정 후 살아남은 것 <b>0개</b>.
@@ -194,31 +194,37 @@ p&lt;0.05 인 조합 <b>0개</b>(우연 기대 1.3개) · 보정 후 살아남�
 안 샀거나 품절된 주가 있으면 알려 주시면 고칩니다. 주간 5줄 + 연금 5장 = 10,000원.</p>
 <div class="card"><div class="scroll"><table>
 <tr><th>구분</th><th class="num">투입</th><th class="num">회수</th><th class="num">회수율</th><th class="num">중앙값</th><th class="num">주수</th></tr>
-<tr class="me"><td>로또 6/45</td><td class="num">5,000</td><td class="num">5,000</td>
-  <td class="num">100.0%</td><td class="num">5,000</td><td class="num">1</td></tr>
-<tr class="me"><td>연금복권720+</td><td class="num">5,000</td><td class="num">0</td>
-  <td class="num">0.0%</td><td class="num">0</td><td class="num">1</td></tr>
+<tr class="me"><td>로또 6/45</td><td class="num">10,000</td><td class="num">5,000</td>
+  <td class="num">50.0%</td><td class="num">2,500</td><td class="num">2</td></tr>
+<tr class="me"><td>연금복권720+</td><td class="num">10,000</td><td class="num">0</td>
+  <td class="num">0.0%</td><td class="num">0</td><td class="num">2</td></tr>
 </table></div>
 <h3>최근 기록</h3>
 <div class="scroll"><table>
 <tr><th>구분</th><th class="num">회차</th><th class="num">추첨일</th><th class="num">투입</th><th class="num">회수</th><th class="num">결과</th></tr>
-<tr><td class="num">연금</td><td class="num">333회</td>
-    <td class="num">2026.09.17</td><td class="num">5,000</td>
+<tr><td class="num">연금</td><td class="num">334회</td>
+    <td class="num">2026.09.24</td><td class="num">5,000</td>
     <td class="num"><span class="tg n">추첨 대기</span></td>
+    <td class="num">—</td></tr><tr><td class="num">연금</td><td class="num">333회</td>
+    <td class="num">2026.09.17</td><td class="num">5,000</td>
+    <td class="num">0</td>
     <td class="num">—</td></tr><tr><td class="num">연금</td><td class="num">332회</td>
     <td class="num">2026.09.10</td><td class="num">5,000</td>
     <td class="num">0</td>
-    <td class="num">—</td></tr><tr><td class="num">로또</td><td class="num">1242회</td>
+    <td class="num">—</td></tr><tr><td class="num">로또</td><td class="num">1243회</td>
     <td class="num">—</td><td class="num">5,000</td>
     <td class="num"><span class="tg n">추첨 대기</span></td>
+    <td class="num">—</td></tr><tr><td class="num">로또</td><td class="num">1242회</td>
+    <td class="num">2026.09.19</td><td class="num">5,000</td>
+    <td class="num">0</td>
     <td class="num">—</td></tr><tr><td class="num">로또</td><td class="num">1241회</td>
     <td class="num">2026.09.12</td><td class="num">5,000</td>
     <td class="num">5,000</td>
     <td class="num">1게임 당첨</td></tr>
 </table></div>
-<div class="vd">아직 <b>1주</b>입니다. 실구매 기록만으로 규칙을 판단하려면 위 3층 표의 «실제 회수금으로 판별» 칸만큼 걸립니다. <b>이 원장은 성능 측정용이 아니라 가계부입니다.</b></div></div>
+<div class="vd">아직 <b>2주</b>입니다. 실구매 기록만으로 규칙을 판단하려면 위 3층 표의 «실제 회수금으로 판별» 칸만큼 걸립니다. <b>이 원장은 성능 측정용이 아니라 가계부입니다.</b></div></div>
 
-<div class="foot">동행복권 공식 API 자료로 자동 생성 · 2026-09-13 15:06 (KST) · 로또 300주 walk-forward, 연금 25개 조합 전수<br>
+<div class="foot">동행복권 공식 API 자료로 자동 생성 · 2026-09-23 18:59 (KST) · 로또 300주 walk-forward, 연금 25개 조합 전수<br>
 확률은 어떤 규칙으로도 바뀌지 않습니다. 이 보드가 재는 것은 «당첨됐을 때 나눠 갖는 인원»뿐입니다.<br>
 복권 구매는 감당할 수 있는 범위 안에서. 만 19세 미만은 구매할 수 없습니다.</div>
 </div></body></html>

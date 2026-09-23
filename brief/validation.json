@@ -1,67 +1,67 @@
 {
- "generated": "2026-09-13T06:06:07.040Z",
+ "generated": "2026-09-23T09:59:31.920Z",
  "window": 300,
  "lotto": {
   "n": 300,
-  "from": 942,
-  "to": 1241,
+  "from": 943,
+  "to": 1242,
   "calib": {
    "ready": true,
    "n": 300,
    "nOOS": 240,
-   "a": 0.998850972298679,
-   "b": 0.03315089817577411,
-   "r2": 0.36364920910565035,
-   "mae": 0.029630777753060774,
-   "maeNaive": 0.03825285520833335,
-   "corr": 0.624133861385971
+   "a": 0.9988528054355977,
+   "b": 0.03306394430471483,
+   "r2": 0.3675055913914397,
+   "mae": 0.029495778828882775,
+   "maeNaive": 0.03803312499999998,
+   "corr": 0.6236550363309165
   },
-  "sdWeek": 1977993.2508654438,
-  "chanceMean": 2722.3933333333334,
+  "sdWeek": 1976232.2489495215,
+  "chanceMean": 2721.1066666666666,
   "per": {
    "minshare": {
-    "zGain": 2.0804,
-    "vsRandomMean": 2.0773,
+    "zGain": 2.0807,
+    "vsRandomMean": 2.0781,
     "p": 0,
-    "payoutGain": 0.069,
-    "hitsPerGame": 0.8173,
+    "payoutGain": 0.0688,
+    "hitsPerGame": 0.8167,
     "weeksForZ": 1,
-    "weeksForMoney": 871074932
+    "weeksForMoney": 874693767
    },
    "maxshare": {
-    "zGain": -2.1407,
-    "vsRandomMean": -2.1439,
+    "zGain": -2.1405,
+    "vsRandomMean": -2.1431,
     "p": 0,
-    "payoutGain": -0.071,
-    "hitsPerGame": 0.79,
+    "payoutGain": -0.0708,
+    "hitsPerGame": 0.7887,
     "weeksForZ": 1,
     "weeksForMoney": null
    },
    "random": {
-    "zGain": 0.0032,
+    "zGain": 0.0026,
     "vsRandomMean": 0,
     "p": 1,
     "payoutGain": 0.0001,
-    "hitsPerGame": 0.8293,
+    "hitsPerGame": 0.8327,
     "weeksForZ": null,
-    "weeksForMoney": 369187152023872
+    "weeksForMoney": 561492381651639
    },
    "hot": {
-    "zGain": -0.0042,
+    "zGain": -0.0048,
     "vsRandomMean": -0.0074,
-    "p": 0.80808,
-    "payoutGain": -0.0001,
-    "hitsPerGame": 0.762,
-    "weeksForZ": 39908,
+    "p": 0.80773,
+    "payoutGain": -0.0002,
+    "hitsPerGame": 0.76,
+    "weeksForZ": 39763,
     "weeksForMoney": null
    },
    "cold": {
-    "zGain": -0.0776,
-    "vsRandomMean": -0.0808,
-    "p": 0.01126,
+    "zGain": -0.0786,
+    "vsRandomMean": -0.0812,
+    "p": 0.01092,
     "payoutGain": -0.0026,
-    "hitsPerGame": 0.808,
-    "weeksForZ": 367,
+    "hitsPerGame": 0.8093,
+    "weeksForZ": 364,
     "weeksForMoney": null
    }
   }
@@ -75,18 +75,18 @@
  },
  "ledger": {
   "lotto": {
-   "weeks": 1,
-   "spend": 5000,
+   "weeks": 2,
+   "spend": 10000,
    "ret": 5000,
-   "rate": 1,
-   "median": 5000,
+   "rate": 0.5,
+   "median": 2500,
    "grades": {
     "5": 1
    }
   },
   "pension": {
-   "weeks": 1,
-   "spend": 5000,
+   "weeks": 2,
+   "spend": 10000,
    "ret": 0,
    "rate": 0,
    "median": 0,
