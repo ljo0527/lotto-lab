@@ -25,7 +25,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function jget(url,tries=6){
   for(let i=0;i<tries;i++){
     try{
-      const r=await fetch(url,{headers:{Accept:'application/json'}});
+      const r=await fetch(url,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 (lotto-lab)'}});
       if(!r.ok) throw new Error('HTTP '+r.status);
       return await r.json();
     }catch(e){ if(i===tries-1) throw e; await sleep(500*(i+1)); }
@@ -315,7 +315,7 @@ tr.win td{background:var(--ink-06)}
 <div class="wrap">
 <header>
   <div class="eyebrow"><span>Weekly Lottery Brief</span>
-    <span><a href="./validate.html">검증 보드</a> · <a href="./pension.html">PENSION LAB</a> · <a href="./index.html">LOTTO LAB</a></span></div>
+    <span><a href="./carryover.html">전주 반영 분석</a> · <a href="./validate.html">검증 보드</a> · <a href="./pension.html">PENSION LAB</a> · <a href="./index.html">LOTTO LAB</a></span></div>
   <h1>주간 복권 브리핑<small>${meta.date} (금) 작성 · 연금복권720+ ${P.next.ep}회 / 로또 6/45 ${L.target}회 대상</small></h1>
 </header>
 
@@ -431,7 +431,9 @@ tr.win td{background:var(--ink-06)}
   const latestPath=path.join(OUT,'brief.html');
   const archPath=path.join(OUT,'brief',`${meta.date}.html`);
   fs.writeFileSync(latestPath,html);
-  fs.writeFileSync(archPath,html);
+  // 아카이브 사본은 brief/ 안에 놓이므로 루트 상대경로를 한 단계 올려준다.
+  // (./pension.html 은 brief/pension.html 로 404, ./index.html 은 아카이브 목차로 잘못 연결됐음)
+  fs.writeFileSync(archPath, html.replace(/href="\.\/(?!\d{4}-)/g,'href="../'));
 
   // 아카이브 목차
   const files=fs.readdirSync(path.join(OUT,'brief')).filter(f=>/^\d{4}-\d{2}-\d{2}\.html$/.test(f)).sort().reverse();

@@ -1,0 +1,112 @@
+# 자동 계산 + 배포 (한 파이프라인)
+#
+# push 하면 이 워크플로가 GitHub 안에서 알아서 돈다. PC 에서 따로 «갱신»할 필요가 없다.
+#
+#   1) compute — 동행복권 공식 API 에서 로또·연금 전 회차를 받고,
+#                index.html · pension.html 을 헤드리스 크로미움에 실제로 띄워
+#                추천(5,000원 = 로또 5게임 / 연금 5장)·지난주 채점·검증 보드·실구매 원장을 만든 뒤
+#                바뀐 결과물만 main 에 커밋한다.
+#   2) deploy  — 방금 커밋된 main 을 GitHub Pages 로 배포한다.
+#                compute 가 실패해도(API 차단 등) 배포는 한다 — 사이트는 브라우저가 직접 API 를 부르므로 살아 있다.
+#
+# 봇 커밋은 GITHUB_TOKEN 으로 push 하므로 이 워크플로를 다시 깨우지 않는다(무한 루프 없음).
+#
+# 결과물을 쓰는 곳은 이제 «여기 하나»다. PC 의 push.ps1 은 올리기 전에 원격을 먼저 당겨오고,
+# 결과물 파일이 충돌하면 원격(=여기서 계산한 값)을 남긴다.
+
+name: Compute & Deploy
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # 연금복권 — 목 19:05 KST 추첨 → 목 21:30 KST, 금 09:00 KST 재확인
+    - cron: '30 12 * * 4'
+    - cron: '0 0 * * 5'
+    # 로또 — 토 20:35 KST 추첨 → 토 22:30 KST, 일 09:00 KST 재확인
+    - cron: '30 13 * * 6'
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+concurrency:
+  group: compute-deploy
+  cancel-in-progress: false
+
+jobs:
+  compute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    outputs:
+      committed: ${{ steps.commit.outputs.committed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Playwright 준비
+        run: |
+          npm install --no-save --no-package-lock --no-audit --no-fund playwright@1
+          npx playwright install --with-deps chromium
+
+      - name: 로또 전 회차 스냅샷 (lotto-history.json)
+        continue-on-error: true
+        run: node scripts/fetch-history.mjs
+
+      - name: 주간 브리핑 (추천 + 지난주 채점)
+        run: node scripts/weekly-brief.mjs --root . --out .
+
+      - name: 검증 보드 + 실구매 원장
+        run: node scripts/validate.mjs --root . --out . --window 300 --purchases brief/purchases.json
+
+      - name: 결과 커밋
+        id: commit
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- brief.html brief validate.html lotto-history.json
+          if git diff --cached --quiet; then
+            echo "변경 없음"; echo "committed=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          P=$(node -e "const s=require('./brief/latest-summary.json');console.log(s.pension.next)")
+          L=$(node -e "const s=require('./brief/latest-summary.json');console.log(s.lotto.next)")
+          git commit -q -m "auto: 연금 ${P}회 · 로또 ${L}회 추천 ($(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M') KST)"
+          # 그 사이 사용자가 push 했으면 위에 다시 얹는다. 결과물 충돌은 방금 계산한 값(-X theirs)을 남긴다.
+          for i in 1 2 3; do
+            git pull -q --rebase -X theirs origin main && git push -q origin HEAD:main && break
+            sleep $((i*5))
+          done
+          echo "committed=true" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: compute
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      # enablement: true → 저장소에 Pages 가 아직 켜져 있지 않으면 워크플로가 직접 켠다.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

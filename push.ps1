@@ -144,6 +144,17 @@ if (-not $remote) {
 }
 
 Write-Host "  원격: $remote"
+# ── 원격 먼저 당겨오기 ──────────────────────────────────────
+#   [2026-09-23] 추천·브리핑·검증 보드는 이제 GitHub Actions(weekly.yml)가 계산해 main 에 직접 커밋합니다.
+#   그래서 원격이 이 PC 보다 앞서 있는 게 정상입니다. 먼저 당겨와 그 위에 얹습니다.
+#   결과물 파일이 충돌하면 원격(=Actions 가 계산한 값)을 남깁니다(-X ours: rebase 에서 ours = 원격).
+Write-Host "  원격 변경 당겨오는 중…"
+G pull -q --rebase --autostash -X ours origin main
+if ($LASTEXITCODE -ne 0) {
+    G rebase --abort 2>$null
+    Write-Host "  원격과 합치지 못했습니다. GitHub Desktop 에서 [Fetch origin] → [Pull] 후 다시 실행하세요." -ForegroundColor Yellow
+    Pause-Exit 1
+}
 Write-Host "  푸시 중…"
 G push -u origin main
 if ($LASTEXITCODE -ne 0) {

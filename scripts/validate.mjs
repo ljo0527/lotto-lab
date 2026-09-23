@@ -29,7 +29,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function jget(url,tries=6){
   for(let i=0;i<tries;i++){
     try{
-      const r=await fetch(url,{headers:{Accept:'application/json'}});
+      const r=await fetch(url,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 (lotto-lab)'}});
       if(!r.ok) throw new Error('HTTP '+r.status);
       return await r.json();
     }catch(e){ if(i===tries-1) throw e; await sleep(500*(i+1)); }
