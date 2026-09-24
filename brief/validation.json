@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-24T11:03:14.669Z",
+ "generated": "2026-09-24T17:25:49.454Z",
  "window": 300,
  "lotto": {
   "n": 300,
@@ -498,7 +498,7 @@
    "cover1": 194130,
    "buyPAnyExact": 0.1174638369760321,
    "buyPAnyApproxErr": 1.3877787807814457e-17,
-   "coverMs": 11,
+   "coverMs": 9,
    "lineEV1": 499.9999161828245
   }
  },
@@ -516,14 +516,14 @@
    }
   ],
   "weeklyMode": {
-   "ep": 334,
+   "ep": 335,
    "mode": "spread",
    "table": "spread",
    "ok": true
   },
   "structure": {
-   "from": 100,
-   "to": 333,
+   "from": 101,
+   "to": 334,
    "mode": "spread",
    "dist": {
     "memo": true,
@@ -533,23 +533,23 @@
    },
    "spread": {
     "n": 234,
-    "anyHits": 122,
-    "anyHitRate": 0.5214,
+    "anyHits": 123,
+    "anyHitRate": 0.5256,
     "anyHitCI": [
-     0.4575,
-     0.5845
+     0.4618,
+     0.5887
     ],
     "pAnyTheory": 0.500002,
     "within99": true,
-    "meanRet": 1547,
+    "meanRet": 1760.7,
     "evTheory": 3750,
     "sdTheory": 1718154,
     "retCI": [
-     -218599,
-     221693
+     -218385,
+     221906
     ],
     "grades": {
-     "5": 4,
+     "5": 5,
      "6": 11,
      "7": 107
     },
@@ -618,6 +618,14 @@
      "recorded": null,
      "order": true,
      "set": true
+    },
+    {
+     "ep": 334,
+     "rule": "spread",
+     "table": "spread",
+     "recorded": "spread",
+     "order": true,
+     "set": true
     }
    ]
   }
@@ -634,12 +642,14 @@
    }
   },
   "pension": {
-   "weeks": 2,
-   "spend": 10000,
-   "ret": 0,
-   "rate": 0,
+   "weeks": 3,
+   "spend": 15000,
+   "ret": 50000,
+   "rate": 3.3333333333333335,
    "median": 0,
-   "grades": {}
+   "grades": {
+    "5": 1
+   }
   }
  },
  "guard": {
@@ -662,14 +672,14 @@
     "n": 100000,
     "mismatch": 0,
     "gradeHist": {
-     "0": 89115,
+     "0": 89045,
      "1": 223,
      "2": 223,
-     "3": 223,
-     "4": 227,
+     "3": 222,
+     "4": 223,
      "5": 248,
-     "6": 1239,
-     "7": 8280,
+     "6": 1088,
+     "7": 8506,
      "8": 222
     }
    },
