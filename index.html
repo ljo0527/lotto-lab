@@ -327,12 +327,15 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
     <h3>이 데이터가 어디서 왔는지</h3>
     <p class="note" style="padding:8px 0 0">
       <b>동행복권 공식 API는 당첨번호를 오름차순으로만 제공합니다.</b> 공이 실제로 나온 순서는 추첨 방송에만 존재합니다.
-      이 탭의 순서 데이터는 방송 기록 아카이브를 모은 것입니다 — 1~<span id="ordCovMax">—</span>회는 lottohell.com 수집분(초기 적재, 고정),
-      그 이후 회차와 일부 옛 구간은 매주 <b>lottospecial.kr·lottotapa.com 두 곳을 대조</b>해 채웁니다.
-      모든 회차는 먼저 <b>6개 번호 집합과 보너스가 공식 데이터와 일치</b>하는지 검증합니다 — 여기서 어긋나면 아예 싣지 않습니다.
-      그중 <b>두 출처의 순서가 정확히 일치</b>하는 회차만 «검증됨»이고, 한 출처만 실제(오름차순이 아닌) 순서를 줄 수 있었던 회차는
-      «단일 출처»(집합·보너스는 맞지만 순서는 다른 곳과 대조하지 못했다는 뜻), 오름차순 그대로라 실제 순서인지 알 수 없거나
-      두 출처가 서로 다른 순서를 주는 회차는 «판정 보류»로 남습니다.
+      이 탭의 순서 데이터는 방송 기록 아카이브를 모은 것입니다 — 1~<span id="ordPackMax">—</span>회는 lottohell.com 수집분(초기 적재, 고정)입니다.
+      모든 회차는 먼저 <b>6개 번호 집합과 보너스가 공식 데이터와 일치</b>하는지부터 검증합니다 — 여기서 어긋나면 아예 싣지 않습니다.
+      그 위에서 회차별로 검증 수준이 다릅니다 — <b>1~328회</b>는 다른 출처가 없어 집합·보너스만 대조한
+      <b>원본(lottohell) 단독</b> 자료이고, <b>329~<span id="ordPackMax2">—</span>회</b>는 lottospecial.kr 과 순서까지 대조해
+      <b>4회의 불일치</b>(329·583·723·816회, 누가 맞는지 알 수 없어 «판정 보류»)를 찾아냈습니다.
+      그 다음 회차(신규 확장분)와 397~467회 등 일부 옛 구간은 매주 <b>lottospecial.kr·lottotapa.com 두 곳을 대조</b>해 채웁니다 —
+      두 출처가 일치하면 «검증됨», 한 곳만 실제(오름차순이 아닌) 순서를 줄 수 있었으면 «단일 출처»(집합·보너스는 맞지만
+      순서는 다른 곳과 대조하지 못했다는 뜻), 오름차순 그대로라 실제 순서인지 알 수 없거나 두 출처가 서로 다른 순서를
+      주면 «판정 보류»로 남습니다.
     </p>
   </div>
   <div class="kpi" id="kpiOrder"></div>
@@ -1716,22 +1719,29 @@ function renderStat(){
 function renderOrder(){
   const O=orderStats(), rs=rows(0);
   /* 순서 아카이브가 어디까지 덮는지는 ORDER_PACK 길이 + lotto-order.json 이 결정한다.
-     문구에 숫자를 박아두면 갱신할 때마다 본문이 거짓말을 하므로 항상 여기서 주입한다. */
-  const ordCov=$('#ordCovMax'); if(ordCov) ordCov.textContent=orderMaxEff();
+     문구에 숫자를 박아두면 갱신할 때마다 본문이 거짓말을 하므로 항상 여기서 주입한다.
+     ordPackMax/ordPackMax2 는 "1~1238회는 lottohell 수집분" 문장 전용 — 반드시 ORDER_MAX(고정
+     팩 길이)여야 한다. orderMaxEff() 를 썼다간 신규 확장분(1239회~)까지 lottohell 수집분이라고
+     읽혀 거짓말이 된다(실사례: 2026-09-24 리뷰에서 지적됨). */
+  const ordPackMax=$('#ordPackMax'); if(ordPackMax) ordPackMax.textContent=ORDER_MAX;
+  const ordPackMax2=$('#ordPackMax2'); if(ordPackMax2) ordPackMax2.textContent=ORDER_MAX;
   const ordInp=$('#orderSearch'); if(ordInp) ordInp.placeholder='예: '+orderMaxEff();
   const cover=rs.filter(d=>orderTrust(d.r)==='ok').length;
-  /* ORD_BAD_RANGE·ORD_SUSPECT 는 ORDER_PACK(lottohell.com) 만 놓고 봤을 때의 판정이다.
-     lotto-order.json(lottospecial.kr) 이 그중 일부를 실제 순서로 검증해 올렸으면
-     orderTrust() 가 이미 그 회차만 'ok'로 되돌린다 — 여기서는 "아직도 못 푼" 것만 센다. */
+  /* ORD_BAD_RANGE 는 ORDER_PACK(lottohell.com) 만 놓고 봤을 때의 판정이다. lotto-order.json 이
+     그중 일부를 실제 순서로 검증해 올렸으면 orderTrust() 가 이미 그 회차만 'ok'/'single'로
+     되돌린다 — 여기서는 "아직도 못 푼" 것만 센다.
+     판정 보류는 ORD_SUSPECT(645·824 — 두 출처 모두 오름차순) 뿐 아니라 ORD_DISPUTED(329·583·723·816
+     — 두 출처가 서로 다른 순서를 줌)도 포함해야 한다 — orderTrust(r)==='suspect' 를 직접 훑는다
+     (2026-09-24 리뷰: 예전엔 ORD_SUSPECT 만 세서 4개가 누락됐었다). */
   const stillBad=[]; for(const [a,b] of ORD_BAD_RANGE) for(let r=a;r<=b;r++) if(orderTrust(r)==='bad') stillBad.push(r);
-  const stillSuspect=ORD_SUSPECT.filter(r=>orderTrust(r)==='suspect');
+  const allSuspect=[]; for(let r=1;r<=orderMaxEff();r++) if(orderTrust(r)==='suspect') allSuspect.push(r);
   renderKPI('#kpiOrder',[
-    ['신뢰 가능 회차', nf(O.N), '두 출처 일치(또는 원본 검증) — 단일 출처·판정 보류는 제외'],
+    ['신뢰 가능 회차', nf(O.N), '1~328회 원본단독(집합·보너스만) · 329~'+ORDER_MAX+'회 lottospecial 순서대조(불일치 4회 제외) · '+(ORDER_MAX+1)+'회~ 두 출처 일치'],
     ['신뢰 불가 구간(원본)', stillBad.length?nf(stillBad.length)+'회':'0회',
       stillBad.length?(Math.min(...stillBad)+'~'+Math.max(...stillBad)+'회 · 연속 오름차순 = 자리표시자')
                      :'397~467회: lottospecial.kr 단일 출처로 채움 — 집합·보너스만 공식과 대조, 순서는 교차 확인 불가(단일 출처)'],
-    ['판정 보류', stillSuspect.length?nf(stillSuspect.length)+'회':'0회',
-      stillSuspect.length?'오름차순이라 구분 불가('+stillSuspect.join(', ')+'회)':'전부 단일 출처 또는 두 출처 일치로 판정 완료'],
+    ['판정 보류', allSuspect.length?nf(allSuspect.length)+'회':'0회',
+      allSuspect.length?'오름차순 또는 두 출처 불일치('+allSuspect.join(', ')+'회)':'전부 단일 출처 또는 두 출처 일치로 판정 완료'],
     ['첫 공이 최소값', pct(O.firstSmallest/O.N,1), '이론 1/6 = 16.7%'],
     ['첫 공이 최대값', pct(O.firstBiggest/O.N,1), '이론 1/6 = 16.7%']
   ]);

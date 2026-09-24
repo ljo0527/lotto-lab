@@ -20,6 +20,11 @@
      하나도 못 줄 때만, 그것도 신규 회차에 한해 회차당 1개씩 순차·지연
      요청으로 시도한다(자리표시자·판정보류 구간은 폴백 대상이 아니다 —
      급하지 않은 데이터라 다음 주 1순위 재시도로 충분).
+     ⚠ lottohell 과 lottotapa 는 서로 독립이 아니다(773/775 회차가
+     자리표시자까지 포함해 완전히 같다 — 한 계통으로 보인다). 그래서
+     폴백이 걸렸을 때 lottohell+lottotapa 가 일치해도 'ok' 를 주지
+     않는다(아래 라벨 정의의 'single' 로 남는다) — 'ok' 는 오직
+     lottospecial+lottotapa 조합에서만 나온다.
 
    ── 신뢰 라벨(플래너 최종 결정, 정확히 이 값만 쓴다) ────────────────
    'ok'      — ORDER_PACK 이 이미 신뢰하는 회차, 또는 신규 회차인데
@@ -66,10 +71,16 @@
      ORDER_PACK 값이 그대로 남는다 — 이 스크립트가 손댈 필요가 없다.
 
    append-only: 기존 lotto-order.json 에 이미 있는 회차는 다시 받지
-   않는다. 대신 매 실행마다 **이미 저장된 회차 중 최신 8개**를 다시
-   받아 대조한다(결정성 감시) — 값이 달라지면 ::warning 만 남기고
-   **절대 덮어쓰지 않는다**(기존 값이 이긴다, 다른 스크립트들과 같은
-   관례).
+   않는다. 대신 매 실행마다 **이미 저장된 "신규 확장분"(>ORDER_MAX)
+   회차 중 최신 8개**를 다시 받아 대조한다(결정성 감시 — 397~467·
+   판정보류 구간은 옛 자료라 바뀔 일이 없으므로 재확인 대상에서 뺀다,
+   정중함: steady-state 요청을 사이트당 1~2 GET 으로 묶어 두려고).
+   값이 달라지면 기본은 ::warning 만 남기고 **절대 덮어쓰지 않는다**
+   (기존 값이 이긴다, 다른 스크립트들과 같은 관례) — **단 하나의
+   예외**: CI 가 추첨 몇 시간 뒤에 돌아 그 시점엔 한쪽 사이트만 올라와
+   'single' 로 저장됐던 회차가, 다음 주엔 두 출처가 일치하는 'ok'가
+   되고 순서도 저장해 둔 값과 똑같으면 "더 확인됐을 뿐"이니 그때는
+   승격한다(::notice, 경고 아님) — 그 밖의 모든 차이는 여전히 경고만.
 
    안전장치:
    - 기존 파일이 있는데 읽을 수 없으면(손상) ::warning 남기고 아무것도
@@ -99,6 +110,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const UA = 'Mozilla/5.0 (compatible; lotto-lab-order-bot/1.0; +https://github.com/ljo0527/lotto-lab)';
 
 function warn(msg) { console.log('::warning title=추첨순서 수집::' + msg); }
+function notice(msg) { console.log('::notice title=추첨순서 수집::' + msg); }
 function isNum645(n) { return Number.isInteger(n) && n >= 1 && n <= 45; }
 
 /* ── 1. index.html 에서 현재 커버리지·하드코딩 구간 읽기 ──────────────── */
@@ -272,13 +284,24 @@ function validateSourceValue(nums, official) {
   const ascending = nums.slice(0, 6).every((v, i) => i === 0 || v > nums[i - 1]);
   return { nums, ascending };
 }
+/* lottohell.com(폴백)과 lottotapa.com 은 서로 독립이 아니다 — 773/775 회차가 자리표시자까지 포함해
+   완전히 같다(같은 계통 자료로 보인다). 그래서 이 두 곳이 일치해도 "두 독립 출처가 맞다"는 뜻이 아니라
+   "한 계통에서 나온 값이 맞다"는 뜻일 뿐이다 — 'ok' 가 아니라 'single' 로 남긴다.
+   'ok' 는 오직 lottospecial.kr + lottotapa.com 조합이 일치할 때만 준다. */
+function isIndependentPair(nameA, nameB) {
+  const pair = new Set([nameA, nameB]);
+  if (pair.has('lottohell') && pair.has('lottotapa')) return false;
+  return true;
+}
 function combineSources(primaryRaw, secondaryRaw, official, primaryName, secondaryName) {
   const p = validateSourceValue(primaryRaw, official);
   const s = validateSourceValue(secondaryRaw, official);
   const pReal = p && !p.ascending, sReal = s && !s.ascending;
   if (pReal && sReal) {
     const same = p.nums.slice(0, 6).join(',') === s.nums.slice(0, 6).join(',');
-    return { value: p.nums, trust: same ? 'ok' : 'suspect', src: primaryName + '+' + secondaryName };
+    if (!same) return { value: p.nums, trust: 'suspect', src: primaryName + '+' + secondaryName };
+    const trust = isIndependentPair(primaryName, secondaryName) ? 'ok' : 'single';
+    return { value: p.nums, trust, src: primaryName + '+' + secondaryName };
   }
   if (pReal && !sReal) return { value: p.nums, trust: 'single', src: primaryName };
   if (!pReal && sReal) return { value: s.nums, trust: 'single', src: secondaryName };
@@ -379,8 +402,11 @@ async function fetchBothSources(rounds) {
   const targetSuspect = suspectRounds.filter(r => !already.has(r));
   const allTarget = new Set([...targetExt, ...targetGap, ...targetSuspect]);
 
-  /* 안전장치 (d) — 이미 저장된 회차 중 최신 8개를 다시 받아 대조(결정성 감시). 덮어쓰지 않는다. */
-  const recheckSet = [...already].sort((a, b) => b - a).slice(0, 8);
+  /* 안전장치 (d) — 이미 저장된 회차 중 "신규 확장분"(>ORDER_MAX) 최신 8개만 다시 받아 대조한다
+     (결정성 감시). 397~467·판정보류 구간(옛 회차, 바뀔 일 없음)은 재확인 대상에서 뺀다 — 매주
+     여기까지 다시 훑으면 요청이 쓸데없이 늘어난다(정중함: steady-state 에 사이트당 1~2 GET 목표).
+     덮어쓰지 않는다 — 유일한 예외는 바로 아래 "단일→검증 승격"뿐. */
+  const recheckSet = [...already].filter(r => r > orderMax).sort((a, b) => b - a).slice(0, 8);
 
   if (!allTarget.size && !recheckSet.length) {
     console.log(JSON.stringify({ ok: true, added: 0, note: '새로 받을 회차 없음(이미 최신)', latest, orderMax }));
@@ -415,24 +441,33 @@ async function fetchBothSources(rounds) {
     addedSrc[r] = combo.src;
   }
 
-  /* 결정성 재확인 — 절대 덮어쓰지 않는다. 다르면 경고만. */
-  let mismatchExisting = 0;
+  /* 결정성 재확인 — 기본은 절대 덮어쓰지 않는다. 유일한 예외: CI 가 추첨 몇 시간 뒤에 돌아 한쪽
+     사이트만 아직 안 올라온 채로 'single' 로 굳어버리는 문제 — 다음 주 재확인 때 그 회차가 이제
+     'ok'(두 출처 일치)이고 순서가 그때 저장한 값과 똑같으면 "더 확인됐을 뿐"이니 승격한다(::notice,
+     경고 아님). 그 밖의 모든 차이(순서 자체가 다름, 다르게 바뀜 등)는 여전히 ::warning 만 남기고
+     기존 값이 이긴다. */
+  let mismatchExisting = 0, upgraded = 0;
   for (const r of recheckSet) {
     const combo = combineSources(lsMap.get(r), ltMap.get(r), official.get(r), 'lottospecial', 'lottotapa');
     if (!combo) continue; // 이번엔 확인 못함 — 다음 주에 다시
     const prevVal = existing.rounds[r], prevTrust = existing.trust[r];
     const sameVal = prevVal && JSON.stringify(prevVal) === JSON.stringify(combo.value);
     const sameTrust = prevTrust === combo.trust;
-    if (!sameVal || !sameTrust) {
-      mismatchExisting++;
-      warn(r + '회 결정성 재확인 불일치 — 기존 ' + JSON.stringify(prevVal) + '(' + prevTrust + ') vs 새로 받은 ' + JSON.stringify(combo.value) + '(' + combo.trust + '). 기존 값을 유지합니다.');
+    if (sameVal && sameTrust) continue; // 그대로 — 조용히 넘어간다
+    if (prevTrust === 'single' && combo.trust === 'ok' && sameVal) {
+      addedRounds[r] = combo.value; addedTrust[r] = combo.trust; addedSrc[r] = combo.src;
+      upgraded++;
+      notice(r + '회 단일 출처 → 검증됨으로 승격(순서 동일, 두 번째 출처가 뒤늦게 확인) — src=' + combo.src);
+      continue;
     }
+    mismatchExisting++;
+    warn(r + '회 결정성 재확인 불일치 — 기존 ' + JSON.stringify(prevVal) + '(' + prevTrust + ') vs 새로 받은 ' + JSON.stringify(combo.value) + '(' + combo.trust + '). 기존 값을 유지합니다.');
   }
 
   const addedCount = Object.keys(addedRounds).length;
   if (!addedCount) {
     if (rejected) warn('시도한 ' + allTarget.size + '회차 중 검증 통과 0건(집합/보너스 불일치 또는 데이터 없음 ' + rejected + '건) — 파일을 바꾸지 않습니다.');
-    console.log(JSON.stringify({ ok: false, added: 0, tried: allTarget.size, rejected, mismatchExisting, latest, orderMax, took_ms: Date.now() - t0 }));
+    console.log(JSON.stringify({ ok: false, added: 0, upgraded, tried: allTarget.size, rejected, mismatchExisting, latest, orderMax, took_ms: Date.now() - t0 }));
     process.exit(0);
   }
 
@@ -451,7 +486,7 @@ async function fetchBothSources(rounds) {
   const singleCount = Object.values(addedTrust).filter(t => t === 'single').length;
   const suspectCount = Object.values(addedTrust).filter(t => t === 'suspect').length;
   console.log(JSON.stringify({
-    ok: true, added: addedCount, ok_trust: okCount, single_trust: singleCount, suspect_trust: suspectCount,
+    ok: true, added: addedCount, upgraded, ok_trust: okCount, single_trust: singleCount, suspect_trust: suspectCount,
     rejected, mismatchExisting, tried: allTarget.size, latest, orderMax,
     source: out.source, took_ms: Date.now() - t0,
   }));
