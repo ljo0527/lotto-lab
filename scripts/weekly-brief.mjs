@@ -409,6 +409,48 @@ function readHonestyG(){
   }catch(e){ return {g:null, label:'약 +7%'}; }
 }
 
+/* 모의 원장(brief/sim-lotto.json · brief/sim-pension.json, PLAN2 §1/§4 — Opus scripts/backfill.mjs 산출물,
+   스키마는 maps/SIM-SCHEMA.md v1). CI 파이프라인에서 backfill 단계가 아직 없거나 실패해도(이 스크립트는
+   backfill 보다 먼저 돈다 — PLAN2 §5) 브리핑 자체는 절대 죽으면 안 되므로 fs 읽기를 통째로 try/catch 한다. */
+function readSimLedger(kind){
+  try{
+    const p=path.join(ROOT,'brief',`sim-${kind}.json`);
+    if(!fs.existsSync(p)) return null;
+    const o=JSON.parse(fs.readFileSync(p,'utf8'));
+    if(!o || o.kind!==kind || !o.summary || !Array.isArray(o.rows)) return null;
+    return o;
+  }catch(e){ return null; }
+}
+// «내 돈» — 로또/연금 모의 원장 요약을 한 줄로(있는 쪽만).
+function simMoneyLine(simLotto, simPension){
+  const bits=[];
+  if(simLotto && simLotto.summary){
+    const s=simLotto.summary;
+    bits.push(`로또 ${simLotto.from}회~ ${fmt(s.weeks)}주 · 회수율 ${pctS(s.roi,1)}`);
+  }
+  if(simPension && simPension.summary){
+    const s=simPension.summary;
+    bits.push(`연금 ${simPension.from}회~ ${fmt(s.weeks)}주 · 회수율 ${pctS(s.roi,1)}`);
+  }
+  return bits.length ? bits.join(' / ') : null;
+}
+// «전주 반영» — 방금 추첨된 이번 회차가 모의 원장의 notable(우연 일치) 목록에 draw 로 등장하면 한 줄.
+// cls==='after' 만 쓴다(그 이전 회차를 알고 고른 'before' 는 증거가 아니라는 SIM-SCHEMA §3.1 의 정직성 규칙 그대로).
+function simCarryoverLine(sim, kind, lastRound){
+  try{
+    if(!sim || !sim.summary || !sim.summary.cross || !Array.isArray(sim.summary.cross.notable)) return null;
+    const hits=sim.summary.cross.notable.filter(x=>x && x.draw===lastRound && x.cls==='after');
+    if(!hits.length) return null;
+    const top=hits.slice(0,2).map(x=>{
+      return kind==='lotto'
+        ? `${x.boughtIn}회에 산 줄이 ${x.hit}개${x.bonus?'+보너스':''} 일치(${GRADE[x.rank]||x.rank+'등'} 상당)`
+        : `${x.boughtIn}회에 산 ${x.line}이 ${GRADE[x.grade]||x.grade+'등'} 상당 일치`;
+    }).join(', ');
+    const rest = hits.length>2 ? ` 외 ${hits.length-2}건` : '';
+    return `모의 원장: 이번 회차 당첨번호가 그 전에 산 줄과 우연히 겹쳤습니다 — ${top}${rest} (실제 당첨이 아니라 우연의 일치 → 기록)`;
+  }catch(e){ return null; }
+}
+
 function median(arr){
   if(!arr.length) return null;
   const s=arr.slice().sort((a,b)=>a-b);
@@ -569,8 +611,10 @@ function lastWeekPension(P){
 </div>`;
 }
 
-function carryoverSection(L,P){
+function carryoverSection(L,P,simLotto,simPension){
   const w1flag = P.w1===0 ? ' <b>(1등 미판매 — 그 조합을 아무도 사지 않았습니다)</b>' : '';
+  const simLottoLine = simCarryoverLine(simLotto,'lotto',L.last.r);
+  const simPensionLine = simCarryoverLine(simPension,'pension',P.last.ep);
   return `
 <section>
   <h2>전주 반영</h2>
@@ -580,11 +624,13 @@ function carryoverSection(L,P){
       1인 ${eokWon(L.last.a[0])} (최근 52회 중앙값 ${eokWon(L.med52)})</p>
     <p class="note">이번 주 추천과 직전 당첨번호의 겹침 <b>${L.overlapK}개</b><br>
       직전 번호를 따르거나 피하는 규칙은 확률을 바꾸지 않습니다.</p>
+    ${simLottoLine?`<p class="note">${simLottoLine}</p>`:''}
   </div>
   <div class="card flat">
     <h3>연금 · ${P.last.ep}회</h3>
     <p class="note">1등 ${P.w1!=null?P.w1+'매':'—'} · 2등 ${P.w2!=null?P.w2+'매':'—'} · 보너스 ${P.wB!=null?P.wB+'매':'—'}${w1flag}<br>
       추정 판매 ${P.sold?pctS(P.sold/1e7,0):'—'}</p>
+    ${simPensionLine?`<p class="note">${simPensionLine}</p>`:''}
   </div>
 </section>`;
 }
@@ -615,7 +661,7 @@ function summaryStrip(L,P,meta){
 </div>`;
 }
 
-function buildHTML(P,L,meta,honesty){
+function buildHTML(P,L,meta,honesty,simLotto,simPension){
   const css=siteCSS(ROOT);
   const js=siteJS(ROOT);
   const gnavHTML=sharedGnav('brief','./');
@@ -748,12 +794,13 @@ ${staleBannerPlaceholder()}
 <h2>지난주 결과</h2>
 <div class="cards2">${lastWeekLotto(L)}${lastWeekPension(P)}</div>
 
-${carryoverSection(L,P)}
+${carryoverSection(L,P,simLotto,simPension)}
 
 <h2>내 돈</h2>
 <div class="card flat mymoney" data-mymoney>
   <div>내 기록 · <span data-my-record>불러오는 중…</span></div>
   <div>추천 원장(추천대로 샀다면) · <span data-my-ledger>불러오는 중…</span></div>
+  ${simMoneyLine(simLotto,simPension) ? `<div>모의 원장(1000회·100회부터 가정) · ${simMoneyLine(simLotto,simPension)}</div>` : ''}
   <div><a href="./record.html">기록 →</a></div>
 </div>
 
@@ -1024,7 +1071,10 @@ try{
   meta.lottoDrawYmd = nextDow(L.last.ymd, 6);     // 토요일
   meta.pensionDrawYmd = nextDow(P.last.date, 4);  // 목요일
   const honesty=readHonestyG();
-  const html=buildHTML(P,L,meta,honesty);
+  const simLotto=readSimLedger('lotto'), simPension=readSimLedger('pension');
+  console.error('      모의 원장: 로또 '+(simLotto?'OK('+simLotto.summary.weeks+'주)':'없음(건너뜀)')
+    +' · 연금 '+(simPension?'OK('+simPension.summary.weeks+'주)':'없음(건너뜀)'));
+  const html=buildHTML(P,L,meta,honesty,simLotto,simPension);
 
   console.error('[4/4] 저장…');
   fs.mkdirSync(path.join(OUT,'brief'),{recursive:true});
