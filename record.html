@@ -33,6 +33,9 @@ p.note b{color:var(--ink)}
 .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(124px,1fr));gap:1px;background:var(--ink-12);
  border:1.5px solid var(--ink);margin-bottom:14px}
 .kpi>div{background:var(--paper-2);padding:12px 11px}
+/* 홀수 개(모의 원장 KPI=5개)일 때 마지막 칸이 그리드 바탕색(ink-12)만 남기고 비어 보이는 것을 막는다 —
+   weekly-brief.mjs 의 .actions 홀수 버튼 처리와 같은 트릭. */
+.kpi>div:last-child:nth-child(odd){grid-column:1/-1}
 .kpi .k{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-60)}
 .kpi .v{font-size:24px;font-weight:800;line-height:1.12;padding-top:3px;letter-spacing:-.02em}
 .kpi .s{font-size:11.5px;color:var(--ink-60)}
@@ -74,6 +77,32 @@ p.note b{color:var(--ink)}
 .btn:hover{background:var(--ink);color:var(--paper)}
 .foot{font-size:12px;color:var(--ink-40);border-top:1px solid var(--ink-12);margin-top:26px;padding-top:14px;line-height:1.8}
 .foot a{color:var(--ink-60)}
+/* 모의 원장 — record.html 기존 컴포넌트(.card/.kpi/.weeklist/.weekcard/.tag)를 그대로 재사용하고
+   h3(부제목)·교차 적중 그리드·notable 목록만 새로 추가한다. */
+h3{font:700 13.5px var(--f-body);color:var(--ink);padding:0 0 8px;margin-top:26px}
+h3:first-child{margin-top:0}
+h3 .sub{display:block;font-size:11px;font-weight:400;color:var(--ink-40);letter-spacing:0;padding-top:2px}
+.crossgrid{display:flex;flex-direction:column;font-size:12.5px}
+.crosshead{font-size:11px;color:var(--ink-40);font-weight:700;padding:10px 0 4px}
+.crosshead:first-child{padding-top:0}
+/* [rev2] crossval 에 sd·pMC 가 붙으면서(예: "관측 3,355 · 기대 3299.1 ± 179.5 · p=0.749") 한 줄에 다
+   안 들어간다 — justify-content:space-between 로 나란히 두면 라벨(.crosslabel)이 0폭까지 눌려 한글이
+   한 글자씩 세로로 쪼개졌다(375px 실측 확인). 좁은 화면은 세로로 쌓고, 한 줄이 들어갈 만큼 넓을 때만
+   (약 560px~) 다시 나란히 놓는다. */
+.crossrow{display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px solid var(--ink-12)}
+.crossrow:last-child{border-bottom:0}
+.crosslabel{color:var(--ink-60)}
+.crossval{font-family:var(--f-mono);color:var(--ink)}
+.crossval b{color:var(--ink);font-weight:800}
+@media(min-width:560px){
+  .crossrow{flex-direction:row;justify-content:space-between;align-items:baseline;gap:10px}
+  .crossval{white-space:nowrap;text-align:right}
+}
+.notelist{display:flex;flex-direction:column;gap:6px;padding-top:8px}
+.noteitem{font-size:11.5px;color:var(--ink-60);padding:7px 9px;border:1px solid var(--ink-12);background:var(--paper);line-height:1.5}
+.noteitem b{color:var(--ink)}
+details.more{margin-top:8px;border-top:1px solid var(--ink-12);padding-top:8px}
+details.more summary{font-size:12px;color:var(--ink-60);font-weight:700;cursor:pointer}
 @media(min-width:720px){.wrap{padding-top:24px}}
 </style>
 </head><body>
@@ -117,6 +146,37 @@ p.note b{color:var(--ink)}
   <p class="note">아래는 이 사이트가 매주 추천하는 5+5(로또 5게임 + 연금 5장)를 <b>그대로 샀다고 가정</b>했을 때의 누적 수치입니다. CI가 계산한 가정이며, <b>내 실제 구매(위 「내 기록」)와는 절대 합산하지 않습니다</b> — 누적 손익 그래프의 점선이 이 원장입니다.</p>
   <div class="kpi" id="kpiLedger"></div>
   <p class="note" id="pendingLedgerNote" hidden></p>
+</div>
+
+<div id="simWrap" hidden>
+<h2>모의 원장 <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-40)">— 로또 1000회·연금 100회부터 매주 추천대로 샀다면(가정)</span></h2>
+<div class="card flat">
+  <p class="note">이 모의는 매 회차 <b>그 직전 회차까지의 자료만</b>으로 다시 계산한 가정입니다(walk-forward — 미래 데이터를 쓰지 않습니다). 위 「내 기록」·「추천 원장」과는 <b>절대 합산하지 않습니다</b>. 아래 「교차 적중」의 겹침은 확률을 바꾸지 않는 우연입니다.</p>
+</div>
+
+<div id="simLottoBlock" hidden>
+  <h3>로또<span class="sub" id="simLottoSub"></span></h3>
+  <div class="kpi" id="kpiSimLotto"></div>
+  <div id="noteSimLotto"></div>
+  <div class="card flat"><div id="chartSimLotto"></div></div>
+  <div id="listSimLotto" class="weeklist"></div>
+</div>
+
+<div id="simPensionBlock" hidden>
+  <h3>연금<span class="sub" id="simPensionSub"></span></h3>
+  <div class="kpi" id="kpiSimPension"></div>
+  <div id="noteSimPension"></div>
+  <div class="card flat"><div id="chartSimPension"></div></div>
+  <div id="listSimPension" class="weeklist"></div>
+</div>
+
+<h3>교차 적중<span class="sub">— 산 줄이 나중에 나온 다른 회차 당첨번호와 우연히 겹친 정도</span></h3>
+<div class="card flat">
+  <p class="note" id="crossNote"></p>
+  <div id="crossLotto" class="crossgrid"></div>
+  <div id="crossPension" class="crossgrid" style="margin-top:6px"></div>
+  <div id="crossNotable"></div>
+</div>
 </div>
 
 <h2>내보내기 · 가져오기</h2>
@@ -315,6 +375,213 @@ function buildWeekTable(mineWeeksDesc){
   }).join('');
 }
 
+/* ══════════════════ 모의 원장 (brief/sim-lotto.json · brief/sim-pension.json) ══════════════════
+   스키마: maps/SIM-SCHEMA.md(v1, Opus 작성) — scripts/backfill.mjs 가 매주 생성. 파일이 없으면(아직
+   계산 전이거나 CI 가 이 단계를 건너뛴 경우) #simWrap 을 hidden 상태로 둬 섹션째 조용히 숨긴다. */
+function mmddSim(s){ s=String(s||''); return s.length>=8 ? s.slice(4,6)+'.'+s.slice(6,8) : '—'; }
+
+function simTicketRowLotto(pickStr, res, lottoMap, round){
+  var nums = parseLottoPick(pickStr);
+  var d = lottoMap ? lottoMap[round] : null;
+  var hit = d ? nums.filter(function(n){ return d.n.includes(n) || d.b===n; }) : null;
+  var rank = res ? res.rank : null;
+  var badge = rank==null ? '<span class="tag noi">추첨 대기</span>' :
+    (rank ? '<span class="tag sig">'+LOTTO_NAME[rank]+'</span>' : '<span class="tag noi">미당첨</span>');
+  return '<div class="tkrow">'+lottoTicketHTML(nums, hit)+badge+'</div>';
+}
+function simTicketRowPension(pickStr, res){
+  var p = parsePensionPick(pickStr);
+  if(!p) return '';
+  var grade = res ? res.grade : null;
+  var badge = grade==null ? '<span class="tag noi">추첨 대기</span>' :
+    (grade ? '<span class="tag sig">'+PENSION_NAME[grade]+'</span>' : '<span class="tag noi">미당첨</span>');
+  return '<div class="tkrow">'+pensionTicketHTML(p.band, p.num, hiCountForGrade(grade))+badge+'</div>';
+}
+// 회차 카드 — 최근 20 + <details> 펼치기(그 이상). rowsDesc 는 회차 내림차순.
+function buildSimList(rowsDesc, kind, lottoMap){
+  var isL = kind==='lotto';
+  function card(row){
+    var picksHTML=(row.picks||[]).map(function(p,i){
+      var res = row.result ? row.result[i] : null;
+      return isL ? simTicketRowLotto(p,res,lottoMap,row.round) : simTicketRowPension(p,res);
+    }).join('');
+    var net = row.status==='done' ? (row.ret||0) - (row.picks?row.picks.length:5)*1000 : null;
+    var crossLine = (row.cross && row.cross.exp!=null)
+      ? '<div class="wksub" style="padding-top:4px">이 회차 교차 적중(우연) '+nf(row.cross.any)+'건 · 기대 '+row.cross.exp.toFixed(1)+'건</div>' : '';
+    return '<div class="weekcard"><div class="whead"><div><div class="wk">'+row.round+'회</div>'+
+      '<div class="wksub">'+(row.status==='done' ? '추첨 완료 · '+mmddSim(row.date) : '추첨 대기 · 예측')+'</div></div>'+
+      (net!=null ? '<div class="net mono">'+won(net)+'</div>' : '')+'</div>'+
+      picksHTML+crossLine+'</div>';
+  }
+  var head=rowsDesc.slice(0,20).map(card).join('');
+  var rest=rowsDesc.slice(20);
+  var restHTML = rest.length ? '<details class="more"><summary>더 보기 ('+rest.length+'회차)</summary>'+rest.map(card).join('')+'</details>' : '';
+  return head+restHTML || '<p class="note">회차 데이터가 없습니다.</p>';
+}
+// 누적 손익(net) SVG — record.html 의 buildChart() 와 같은 그리기 방식, 단일 선(게임별로 따로 그린다).
+function buildSimChart(rows, label){
+  var doneRows=(rows||[]).filter(function(r){ return r.status==='done' && r.cum; });
+  if(!doneRows.length) return '<p class="note">모의 데이터가 없습니다.</p>';
+  var list=doneRows.map(function(r){ return {round:r.round, cum:r.cum.net!=null?r.cum.net:(r.cum.ret-r.cum.spend)}; });
+  var n=list.length, W=680, H=150, padL=48, padR=10, padT=12, padB=10;
+  var xs=function(i){ return n<=1 ? (padL+(W-padL-padR)/2) : padL+(W-padL-padR)*i/(n-1); };
+  var vals=[0]; list.forEach(function(w){ vals.push(w.cum); });
+  var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals);
+  if(lo===hi){ lo-=1000; hi+=1000; }
+  var span=hi-lo;
+  var ys=function(v){ return padT+(H-padT-padB)*(1-(v-lo)/span); };
+  var path=list.map(function(w,i){ return (i===0?'M':'L')+xs(i).toFixed(1)+','+ys(w.cum).toFixed(1); }).join(' ');
+  var zeroY=ys(0).toFixed(1), last=list[list.length-1];
+  return '<svg viewBox="0 0 '+W+' '+H+'" class="chart" role="img" aria-label="'+label+' 누적 손익(가정)">'+
+    '<line x1="'+padL+'" y1="'+zeroY+'" x2="'+(W-padR)+'" y2="'+zeroY+'" class="axis0"/>'+
+    '<path d="'+path+'" class="ln mine"/>'+
+  '</svg>'+
+  '<div class="legend"><span class="lg"><span class="sw"></span>'+label+' 누적 손익(가정) '+won(last.cum)+' ('+list[0].round+'~'+last.round+'회)</span></div>';
+}
+// KPI(주·투입·수령·회수율·중앙값·등수 분포) — SIM-SCHEMA §3 summary 필드 그대로.
+function simKPI(sum, NAME, order){
+  if(!sum) return [];
+  var rankBits=order.map(function(g){ return (sum.ranks && sum.ranks[g]) ? (NAME[g]+' '+sum.ranks[g]) : null; }).filter(Boolean);
+  var bestLabel = sum.bestRank ? (NAME[sum.bestRank]+(sum.bestRound?' · '+sum.bestRound+'회':'')) : '없음';
+  return [
+    ['주', (sum.weeks||0)+'주', (sum.anyWeeks||0)+'주 당첨('+pct(sum.anyRate||0,1)+')'],
+    ['투입', won(sum.spend), ''],
+    ['수령', won(sum.ret), '회수율 '+recoveryLabel(sum.ret,sum.spend)],
+    ['중앙값', won(sum.median), '평균 '+won(sum.mean)],
+    ['등수 분포', rankBits.length?rankBits.join(' · '):'없음', '최고 '+bestLabel]
+  ];
+}
+function simFootnote(sum){
+  if(!sum) return '';
+  var bits=[];
+  if(sum.exp && sum.exp.ret!=null) bits.push('무작위(우연) 기준 누적 수령 약 '+won(sum.exp.ret)+' — 실제 누적 수령과 견줘 보는 기준선');
+  if(sum.dry) bits.push('연속 무당첨 최장 '+sum.dry.max+'주(현재 '+sum.dry.current+'주)');
+  if(sum.pending) bits.push('다음 예측 '+sum.pending.round+'회'+(sum.pending.date?' ('+mmddSim(sum.pending.date)+')':'')+' — 아직 추첨 전');
+  return bits.length ? '<p class="note">'+bits.join('<br>')+'</p>' : '';
+}
+// 교차 적중 — classes.after 만 보여준다: before 는 그 회차 선택이 이미 그 이전 추첨을 알고 골랐으므로
+// 증거가 아니고(SIM-SCHEMA §3.1), same 은 위에서 이미 보여준 실제 원장과 같다. 관측을 기대와 항상 나란히.
+// [rev2] sd(몬테카를로 표준편차)·pMC(상관관계를 반영한 몬테카를로 p값)가 추가됐다 — 둘 다 있으면 같이 보여준다.
+// p 는 명시하지 않으면 참고용 푸아송 근사(과소평가)라 UI 는 pMC 를 "p="로 쓴다(SIM-SCHEMA §3.1 UI 지시 그대로).
+function crossRowHTML(label,obs,exp,sd,pMC){
+  var expTxt = exp==null ? '—' : exp.toFixed(1);
+  var sdTxt = (sd==null||isNaN(sd)) ? null : sd.toFixed(1);
+  var pTxt = (pMC==null||isNaN(pMC)) ? null : (pMC<0.001 ? '<0.001' : pMC.toFixed(3));
+  return '<div class="crossrow"><span class="crosslabel">'+label+'</span><span class="crossval">관측 <b>'+nf(obs)+'</b> · 기대 <b>'+expTxt+'</b>'+
+    (sdTxt?' ± '+sdTxt:'')+(pTxt?' · p='+pTxt:'')+'</span></div>';
+}
+function buildCrossLotto(cross){
+  if(!cross || !cross.classes || !cross.classes.after) return '';
+  var af=cross.classes.after;
+  var order=[['3','3개 일치(5등 상당)'],['4','4개 일치(4등 상당)'],['5','5개 일치(3등 상당)'],['5b','5개+보너스(2등 상당)'],['6','6개 일치(1등 상당)']];
+  var rows=order.map(function(o){ return crossRowHTML(o[1], af.obs[o[0]], af.exp[o[0]], af.sd&&af.sd[o[0]], af.pMC&&af.pMC[o[0]]); }).join('');
+  return '<div class="crosshead">로또 — 나중 추첨과의 우연 일치(산 줄 '+nf(cross.lines||0)+'개 × 대조 '+nf(cross.draws||0)+'회)</div>'+rows+
+    crossRowHTML('3등 상당 이상 합계', af.obs.ge3, af.exp.ge3, af.sd&&af.sd.ge3, af.pMC&&af.pMC.ge3)+
+    buildBestHist(cross.best&&cross.best.after, 'lotto', '로또');
+}
+function buildCrossPension(cross){
+  if(!cross || !cross.classes || !cross.classes.after) return '';
+  var af=cross.classes.after;
+  var order=[7,6,5,4,3,8,2,1];
+  var rows=order.map(function(g){ return crossRowHTML(PENSION_NAME[g], af.obs[g], af.exp[g], af.sd&&af.sd[g], af.pMC&&af.pMC[g]); }).join('');
+  return '<div class="crosshead">연금 — 나중 추첨과의 우연 일치(산 줄 '+nf(cross.lines||0)+'개 × 대조 '+nf(cross.draws||0)+'회)</div>'+rows+
+    crossRowHTML('등위 합계', af.obs.any, af.exp.any, af.sd&&af.sd.any, af.pMC&&af.pMC.any)+
+    buildBestHist(cross.best&&cross.best.after, 'pension', '연금');
+}
+// (선택) 줄별 최고 성적 분포 — SIM-SCHEMA §3.1 summary.cross.best.after. sd/pMC 는 이 필드엔 없으므로
+// crossRowHTML 에 관측·기대만 넘긴다(자동으로 생략됨). after 만 쓴다 — best.all/before 는 표본 밖이 아니다.
+function buildBestHist(best, kind, kindLabel){
+  if(!best || !best.hist) return '';
+  var isL = kind==='lotto';
+  var keys = Object.keys(best.hist).map(Number).sort(function(a,b){ return b-a; });
+  var rows = keys.map(function(k){
+    var label = isL ? (k+'개 일치(줄당 최고)') : (k+'자리 일치(줄당 최고)');
+    return crossRowHTML(label, best.hist[k], best.exp&&best.exp[k]);
+  }).join('');
+  return '<div class="crosshead" style="padding-top:14px">'+kindLabel+' — 줄별 최고 성적 분포(대조한 '+nf(best.lines||0)+'줄 기준, 관측 줄 수 vs 기대)</div>'+rows;
+}
+function buildNotable(lottoCross, pensionCross, lottoDateMap, pensionDateMap){
+  var items=[];
+  ((lottoCross&&lottoCross.notable)||[]).filter(function(x){ return x.cls==='after'; }).forEach(function(x){
+    items.push({date:(lottoDateMap&&lottoDateMap[x.draw])||'', draw:x.draw,
+      html:'로또 <b>'+x.draw+'회</b> 당첨번호 — '+x.boughtIn+'회에 산 '+x.line+'이 '+x.hit+'개'+(x.bonus?'+보너스':'')+' 일치('+LOTTO_NAME[x.rank]+' 상당)'});
+  });
+  ((pensionCross&&pensionCross.notable)||[]).filter(function(x){ return x.cls==='after'; }).forEach(function(x){
+    items.push({date:(pensionDateMap&&pensionDateMap[x.draw])||'', draw:x.draw,
+      html:'연금 <b>'+x.draw+'회</b> 당첨번호 — '+x.boughtIn+'회에 산 '+x.line+'이 '+PENSION_NAME[x.grade]+' 상당 일치'});
+  });
+  if(!items.length) return '<p class="note" style="padding-top:8px">이 기간엔 나중 회차와 우연히 3등(로또)·4등(연금) 상당 이상으로 겹친 사례가 없습니다.</p>';
+  // 로또 회차(1000~)와 연금 회차(100~)는 스케일이 전혀 달라 회차 번호로 같이 정렬하면 뒤섞인다 —
+  // 두 파일 모두 각 행에 실제 추첨일(date, YYYYMMDD)이 있으므로 날짜로 정렬한다(문자열 비교=날짜순).
+  // 날짜를 못 찾은 항목(맵에 없는 경우)만 예전처럼 회차 번호로 물러난다.
+  items.sort(function(a,b){
+    if(a.date && b.date) return a.date<b.date ? 1 : (a.date>b.date ? -1 : b.draw-a.draw);
+    if(a.date) return -1; if(b.date) return 1;
+    return b.draw-a.draw;
+  });
+  var head=items.slice(0,10), rest=items.slice(10);
+  var restHTML = rest.length ? '<details class="more"><summary>더 보기 ('+rest.length+'건)</summary><div class="notelist">'+
+    rest.map(function(x){ return '<div class="noteitem">'+x.html+'</div>'; }).join('')+'</div></details>' : '';
+  return '<p class="note" style="padding-top:8px"><b>실제 당첨이 아니라 우연의 일치입니다.</b> 산 줄이 그 줄을 산 <b>이후에 나온</b> 다른 회차 당첨번호와 우연히 많이 겹친 사례만 모았습니다(날짜순) — 위 표의 관측/기대 개수가 그 전체 규모입니다.</p>'+
+    '<div class="notelist">'+head.map(function(x){ return '<div class="noteitem">'+x.html+'</div>'; }).join('')+'</div>'+restHTML;
+}
+
+function renderSimLedger(lottoMap){
+  Promise.all([fetchJSON('./brief/sim-lotto.json'), fetchJSON('./brief/sim-pension.json')]).then(function(res){
+    var simL=res[0], simP=res[1];
+    var okL = !!(simL && Array.isArray(simL.rows) && simL.rows.length);
+    var okP = !!(simP && Array.isArray(simP.rows) && simP.rows.length);
+    var wrap=document.getElementById('simWrap');
+    if(!wrap) return;
+    if(!okL && !okP){ wrap.hidden=true; return; } // 데이터 없으면 조용히 숨김(섹션째)
+    wrap.hidden=false;
+
+    var lb=document.getElementById('simLottoBlock');
+    if(lb) lb.hidden = !okL;
+    if(okL){
+      var subL=document.getElementById('simLottoSub');
+      if(subL) subL.textContent = ' — 규칙 '+((simL.rule&&simL.rule.name)||'—')+' · '+simL.from+'회~ · 생성 '+mmddSim((simL.generated||'').replace(/-/g,'').slice(0,8));
+      renderKPI('#kpiSimLotto', simKPI(simL.summary, LOTTO_NAME, [1,2,3,4,5]));
+      var noteL=document.getElementById('noteSimLotto'); if(noteL) noteL.innerHTML = simFootnote(simL.summary);
+      var chL=document.getElementById('chartSimLotto'); if(chL) chL.innerHTML = buildSimChart(simL.rows, '로또 모의');
+      var listL=document.getElementById('listSimLotto');
+      if(listL) listL.innerHTML = buildSimList(simL.rows.slice().sort(function(a,b){return b.round-a.round;}), 'lotto', lottoMap);
+    }
+
+    var pb=document.getElementById('simPensionBlock');
+    if(pb) pb.hidden = !okP;
+    if(okP){
+      var subP=document.getElementById('simPensionSub');
+      if(subP) subP.textContent = ' — 규칙 '+((simP.rule&&simP.rule.name)||'—')+' · '+simP.from+'회~ · 생성 '+mmddSim((simP.generated||'').replace(/-/g,'').slice(0,8));
+      renderKPI('#kpiSimPension', simKPI(simP.summary, PENSION_NAME, [1,2,3,4,5,6,7,8]));
+      var noteP=document.getElementById('noteSimPension'); if(noteP) noteP.innerHTML = simFootnote(simP.summary);
+      var chP=document.getElementById('chartSimPension'); if(chP) chP.innerHTML = buildSimChart(simP.rows, '연금 모의');
+      var listP=document.getElementById('listSimPension');
+      if(listP) listP.innerHTML = buildSimList(simP.rows.slice().sort(function(a,b){return b.round-a.round;}), 'pension', null);
+    }
+
+    var crossNoteEl=document.getElementById('crossNote');
+    if(crossNoteEl){
+      var jsonNote=(okL&&simL.summary&&simL.summary.cross&&simL.summary.cross.note) || (okP&&simP.summary&&simP.summary.cross&&simP.summary.cross.note) || '';
+      crossNoteEl.innerHTML = '이 회차 자체(같은 회차에 산 줄)가 아니라, <b>산 줄이 나중에 나온 다른 회차</b>와 우연히 겹친 정도만 모았습니다 — 관측 개수를 무작위 기대 개수(±표준편차)와 나란히 둡니다.<br>'+
+        '<b>p</b>는 줄끼리 번호(연금은 끝자리)를 공유하는 상관관계까지 반영한 몬테카를로 값입니다(단순 푸아송 근사보다 큼) — 칸을 여러 개 한꺼번에 보면 그중 몇 칸은 우연히 작게 나옵니다.'+
+        (jsonNote?'<br>'+jsonNote:'');
+    }
+    var clEl=document.getElementById('crossLotto'); if(clEl) clEl.innerHTML = okL ? buildCrossLotto(simL.summary&&simL.summary.cross) : '';
+    var cpEl=document.getElementById('crossPension'); if(cpEl) cpEl.innerHTML = okP ? buildCrossPension(simP.summary&&simP.summary.cross) : '';
+    var cnEl=document.getElementById('crossNotable');
+    if(cnEl){
+      // 로또 회차 ↔ 연금 회차는 스케일이 달라(1000~ vs 100~) 날짜로 정렬해야 뒤섞이지 않는다(위 buildNotable 참고).
+      var lottoDateMap={}, pensionDateMap={};
+      if(okL) simL.rows.forEach(function(r){ if(r && r.round!=null) lottoDateMap[r.round]=r.date; });
+      if(okP) simP.rows.forEach(function(r){ if(r && r.round!=null) pensionDateMap[r.round]=r.date; });
+      cnEl.innerHTML = buildNotable(okL&&simL.summary&&simL.summary.cross, okP&&simP.summary&&simP.summary.cross, lottoDateMap, pensionDateMap);
+    }
+  }).catch(function(){
+    var wrap=document.getElementById('simWrap'); if(wrap) wrap.hidden=true;
+  });
+}
+
 /* ══════════════════ 내보내기 · 가져오기 ══════════════════ */
 function wireExportImport(){
   var expBtn=document.getElementById('exportBtn'), impBtn=document.getElementById('importBtn'), impFile=document.getElementById('importFile');
@@ -386,6 +653,8 @@ function main(){
     var lottoMap=res[0], pensionMap=res[1], ledgerRows=res[2];
     var degradedEl = document.getElementById('pensionDegradedNote');
     if(degradedEl) degradedEl.hidden = !!pensionMap;
+
+    renderSimLedger(lottoMap); // 모의 원장(별도 섹션) — 실패해도 위 내 기록/추천 원장 렌더링에 영향 없음
 
     var weeks = new Map();
     function wk(lottoRound){

@@ -75,6 +75,28 @@ jobs:
           node scripts/weekly-brief.mjs --root . --out . --cache /tmp/lab-data.json 2> >(tee /tmp/brief.err >&2) || {
             echo "::error title=weekly-brief 실패::$(tail -c 1800 /tmp/brief.err | tr -s '\r\n' '  ')"; exit 1; }
 
+      # 모의 원장 — 로또 1000회·연금 100회부터 «현재 규칙대로 매주 샀다면»(가정, walk-forward) + 교차 적중 분석.
+      # append-only: 이미 채점된 행은 보존하고 다시 계산한 값이 다르면 ::warning(결정성 감시). 캐시 재사용.
+      - name: 모의 원장 적재 (brief/sim-*.json)
+        id: backfill
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node scripts/backfill.mjs --root . --out . --cache /tmp/lab-data.json 2> >(tee /tmp/backfill.err >&2) || {
+            echo "::error title=backfill 실패::$(tail -c 1800 /tmp/backfill.err | tr -s '\r\n' '  ')"; exit 1; }
+
+      # 모의 원장을 페이지 없이 독립 구현으로 다시 계산해 대조한다(채점·누적·교차 개수·라이브 동일성).
+      - name: 모의 원장 독립 검증
+        id: checksim
+        if: steps.backfill.outcome == 'success'
+        continue-on-error: true
+        run: node scripts/check-sim.mjs --root . --cache /tmp/lab-data.json
+
+      # 추첨순서(공이 나온 순서) 자동 누적 — 외부 공개 출처에서 빠진 회차만 받아 공식 당첨번호 집합과 대조 후 추가.
+      - name: 추첨순서 누적 (lotto-order.json)
+        continue-on-error: true
+        run: node scripts/fetch-order.mjs --out lotto-order.json --cache /tmp/lab-data.json
+
       # 앞 단계가 받아 둔 데이터를 재사용한다(동행복권 추가 호출 없음)
       - name: 로또 전 회차 스냅샷 (lotto-history.json)
         continue-on-error: true
@@ -117,6 +139,18 @@ jobs:
           const pend=(led.rounds||[]).filter(r=>r.status==='pending');
           note('ledger', {updated:led.updated,totals:v.ledger||null,pending:pend.map(r=>({kind:r.kind,round:r.round,rule:r.rule,mode:r.mode,picks:r.picks}))},
                          {updated:led.updated,totals:v.ledger||null,pending:pend.map(r=>({kind:r.kind,round:r.round,rule:r.rule,mode:r.mode}))});
+          /* 모의 원장(sim-*) · 추첨순서(lotto-order.json) 요약 */
+          const sl=j('brief/sim-lotto.json'), sp=j('brief/sim-pension.json'), od=j('lotto-order.json');
+          const simS=x=>{ if(!x) return null; const rows=x.rows||[], S=x.summary||{}, C=S.cross||{}, K=C.classes||{};
+            const any=x.kind==='lotto'?'ge3':'any';
+            const cls=c=>c&&{obs:(c.obs||{})[any],exp:(c.exp||{})[any],sd:(c.sd||{})[any],pMC:(c.pMC||{})[any]};
+            return {from:x.from, to:x.to, rows:rows.length, weeks:S.weeks, spend:S.spend, ret:S.ret, roi:S.roi, median:S.median,
+                    ranks:S.ranks, anyWeeks:S.anyWeeks, expAnyWeeks:S.exp&&S.exp.anyWeeks, checks:x.checks&&{live:x.checks.live&&x.checks.live.ok,
+                    determinism:x.checks.determinism&&{mismatch:(x.checks.determinism.mismatch||[]).length,regrade:(x.checks.determinism.regrade||[]).length}},
+                    cross:{replay:C.replay, before:cls(K.before), same:cls(K.same), after:cls(K.after), notable:(C.notable||[]).length}}; };
+          const ok=od&&od.rounds?Object.keys(od.rounds).map(Number):[];
+          note('sim', {lotto:simS(sl), pension:simS(sp),
+                       order:od?{source:od.source&&od.source.name, rounds:ok.length, max:ok.length?Math.max(...ok):null}:null});
           JS
 
       - name: 결과 커밋
@@ -125,7 +159,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A -- brief.html brief validate.html lotto-history.json
+          git add -A -- brief.html brief validate.html lotto-history.json lotto-order.json
           if git diff --cached --quiet; then
             echo "변경 없음"; echo "committed=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
@@ -138,6 +172,10 @@ jobs:
             sleep $((i*5))
           done
           echo "committed=true" >> "$GITHUB_OUTPUT"
+
+      - name: 모의 원장 실패 표시
+        if: steps.backfill.outcome == 'failure' || steps.checksim.outcome == 'failure'
+        run: echo "::error::모의 원장(backfill/check-sim) 단계가 실패했습니다 — 브리핑·검증은 커밋됨" && exit 1
 
       - name: 검증 보드 실패 표시
         if: steps.validate.outcome == 'failure'

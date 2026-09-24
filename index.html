@@ -327,9 +327,12 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
     <h3>이 데이터가 어디서 왔는지</h3>
     <p class="note" style="padding:8px 0 0">
       <b>동행복권 공식 API는 당첨번호를 오름차순으로만 제공합니다.</b> 공이 실제로 나온 순서는 추첨 방송에만 존재합니다.
-      이 탭의 순서 데이터는 방송 기록을 정리해 둔 외부 아카이브(lottohell.com)를 수집한 것이며,
-      <b>1~<span id="ordCovMax">—</span>회 전 회차에 대해 6개 번호 집합과 보너스가 공식 데이터와 100% 일치함을 검증</b>했습니다.
-      다만 아래 <b>신뢰 불가 구간</b>은 순서가 오름차순 그대로여서 실제 순서가 아닌 것으로 판단됩니다.
+      이 탭의 순서 데이터는 방송 기록 아카이브를 모은 것입니다 — 1~<span id="ordCovMax">—</span>회는 lottohell.com 수집분(초기 적재, 고정),
+      그 이후 회차와 일부 옛 구간은 매주 <b>lottospecial.kr·lottotapa.com 두 곳을 대조</b>해 채웁니다.
+      모든 회차는 먼저 <b>6개 번호 집합과 보너스가 공식 데이터와 일치</b>하는지 검증합니다 — 여기서 어긋나면 아예 싣지 않습니다.
+      그중 <b>두 출처의 순서가 정확히 일치</b>하는 회차만 «검증됨»이고, 한 출처만 실제(오름차순이 아닌) 순서를 줄 수 있었던 회차는
+      «단일 출처»(집합·보너스는 맞지만 순서는 다른 곳과 대조하지 못했다는 뜻), 오름차순 그대로라 실제 순서인지 알 수 없거나
+      두 출처가 서로 다른 순서를 주는 회차는 «판정 보류»로 남습니다.
     </p>
   </div>
   <div class="kpi" id="kpiOrder"></div>
@@ -533,6 +536,11 @@ const A45   = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrs';
    (우연히 오름차순일 기대치 = ORDER_MAX/720, 현재 팩 기준 약 1.7회) */
 const ORD_BAD_RANGE = [[397,467]];
 const ORD_SUSPECT   = [626,635,637,642,643,645,652,655,664,666,667,668,669,670,756,824];
+/* 두 번째 출처(lottotapa.com)와 대조해 보니 ORDER_PACK(lottohell.com)과 순서가 다른 회차가 7개 있었다.
+   그중 3개(368·620·831)는 lottospecial.kr 쪽이 자체적으로 틀렸다(368 보너스 오류, 620 은 오름차순
+   자리표시자, 831 은 번호 자체가 다름) — ORDER_PACK 이 맞으므로 건드리지 않는다.
+   나머지 4개는 두 출처 모두 유효해 보이는데 순서만 다르다 — 누가 맞는지 알 수 없어 'suspect' 로 뺀다. */
+const ORD_DISPUTED  = [329,583,723,816];
 const ORDER_PACK = "kWJgcnPpUIYfMBeUaSKPdndNpeaBPpcnXoCZOpNanhPInYBZpYHmSkhIQDPmjBNdgYoIrFojkGApNYmUBsKrkWVpYlZFLnegBOkdCePDMklnGXFgQfkCDIASCLMifcdmlnqFZWNJTRdoQeFfLRUQEmHDFYMREQgprqHjGacFZrUqBDPDTERYGeqbAkTZaWRkiYIAAmhEMnKQjriHTDRGWibIfSFNrhYKonfDgGIIipnZkBZkqKCBmnAWZJbedgiGakpVQkdqPjqOUMGFHSGZRMYFMTlWqihUWQfRSAeFmlriAUKCdlsmaTJAgiQMeHlOWmNsZjQeaZkJFRlCPgDSnGdBVOLJrArBZPCKiODTPBcANmGfHgpmaHjUAkkernQUGedNgJkScGPYrJFYrXJngAomjsFcMYHmpjBKlSOdqNHcHOaCiUTjWClnEOZUjRNmnDqjgYmVBQGCXsGlJCjOgOmLZJPlOSHENmibqEVYSZEIocLPUZBDaKQAqLfCRnlOFniRQWXrfhBEbkYAOVCqqfrBcRkicMgJYlLXafdCNYQXdZRAKEgTGMFCBANapmOJSFhQNahWpsPKjHMeWFUmkBoLsgPWhqLDZodQXATacbngZDklricTQJZpAUXcaCgijNXQVXlrFjSosEfnhFQqhaeHNCeHAUVTTjFNGOCXWfFIPqacCkJAKApKWkGFfsiACQHiVQXnZpdaNEsOJQprhgfishoJTHbDLJXgVcAeIEDFQWRGcVrLErApjhgcGWTqVAngGejRadogcpZqDgjbIsZKSZoNbBYIbABFeehYkDBQjrVEhJiQDVCJSlNCQKUMlFJKDkfdlbLdhqIKAPjnQHRGsQdbaPcDWpYAfBigjHRTVnqGaAqEcfCJijdsLkhmWpSblYQpGasSXeUKNOJHkWCohQsqOGZDWRMCieWLTqbiNVFmPBoPjdpKYITmjGOJkbKmaSqITOKbMbSRCMQHLHpqceBLPrhdnSapqbZsHDjZQOkqMCBraTIpaiSoBYDMpFUnjghjUiYQpoKUhBambYkBRPJMSRBAOZchAEMqLMHjCKgSUinsFTPTogfSDsRdpbEBdgZSmikRDhIUMGRAodpqfCohHGmAnVhsjprlYoUAEXcGKZbrPFmKJoIaVERpMSemILsajNXajmdbDqCneJpdqaPsikSpMeBOKJcDhPYiADUXZSoigIdXChRNMmiVRPSjebgZQdhgfQDOkJqMAPFWALERKIqIEmYQfThcOUBVNUnWfsrOMcanhihXRpBnEAgFBTPoBHADlSNNDJsSUIRcABHlpSXaehdjfsNkHibNerdRHOfFXkEYHkHsDRKgjZRNmFMZrmOTWbiJSnGVeksojridhPpGsLDYsLSToBYdjVUNqFETNMQGClmXKrZmgNLraQfCKdAXGCnNiLsEcUkCAidYBCTAOqNefKCklheYrNnXRXgTBGkVkWJSYmQoMTLgHUleRKLHTCXBEDpYbkGETfGBOCrqDGjPngQAmaPigTlcNARHrTiZDkKTPKUqSEheTBinkgJGmqEcbrRAaTZClDpSdaZGESeKMjGUBHNFVhDVpPEOBQjYirmWEDIKWlifgKNEcLeJrsESaIHJLXribDFMnQmXUMZkVDaVUkZeHkmMDAHGArQXKUgDeBbhOiorOmXKGFJoPqnUBibXPaUSDhUfTqBbpLSQhlPYjMkSfIaleKVZWURMmObjnOmLMlsQHCWMaHroeCKWkqdSsllYGSFbsWesZNmbhSHYejgXATEdSaEaFApXfNKqDWUfFefkaMDneaNldQNDsipEhGXnLOkqPRqKFeBeLYXIcjAfnkbaRPjIoraEElmkIhLpCKVDIkojGhXHAXfSsJCLqETjRpfLEUIZTanaIHcCjLIGqmabXHrAehFiNOZmMYnNiTSlZmgDoOUYLJOcYMTkoKqmCMlGePkjKkXWKJjiCAFDoNLEeRfBJdeRFlHspGOBdXsbognkMsBSrpAOnQXLakFioibAQoLJCgkNlpJmfRHsMGTGpRCHsheQRfgJgcUIQAXJFQkldnlRDALPHOdCasHrSKFTfbhEacIknSYsATjCXIGZlJLmMKgkqGZSMTlfpDQslBdNqZDoJPglRmWHUGIDWohdRSYOWUsELQskOSNnBEKjARVSAEhboPaLXfDbJBFETLCYihsQIqBOSolQhBAqgsMiWKeUaJmqKjVJCmHSThQBsUpEHbVgkPWsYSoChTRLUYplfcRIqTfONjpJCYUgDjBQsTrGfQggmYPWjnLrMQfFXAbIPQFXIidQpSDCPSQDTWDrZeNImsQjPhpCqamdENiUmcOMqgIPEZWsUEThrCiPkRANfEDMpBshlPUHFNdksZRlXhcfmASqHhogNMqhAYeAQJcqOObAhBslWcpOTmBNVMErsgfaHCpMJNeXQCThENMYTXjgcXHRAiacYjEhgQToPZEXjPKcSVZsrjSqNAicEdrHlHcsNBYXkRJNUjEUAILnJkTAnJXSWYinPDWaXJaPEigdBVaCncUKNfLlFBPGENnDdEZOUYeSarLZElYrVcfCSXKUmsdZoiTqQjUsPRXprQGIOaZpRHRPNKUMskqZpOIKQYhMOZaSDsHYGnbXKMAGVFqcskWcVmhEeqiVJeFnSkAQBHZaEALJTPKOVJpXaSODkngbYfljKXVGGScLUfIGJeDnSZnqZehATcAHQfIsZRGPTWCPbQnkmOKmVbJRdHApCXGqqnbPoIUTMVbYAOiOTKeZGRhseTndLMQVYgHJOTWprGABIQSpTIUahoqBFLRelqIEIOSVjfJNVXbkZETUXgnjABJYZrDGLUXajsFGMPXYAITUVdkPFIUefnlACRfnoPKNVikmEDGmopsnBIOWhnCBNOVWrqGQTZdnXEFHKVZrDENTVqrKMOZbheBKMNbdGDIJcehaFKZabrdHOSUhrLAQabcnEJKZehrdHJNaglCDQRamqSFGOXbdULPSVknHCWbhmpPACPRdhrRVYelsFBCEKamgSWcgiqaCMTXgkiHPZdlspINTVghbKPclorUFLTZclsQTdeknYJVbhjrBAWbdhiIYacjlnoDFJSTrNKMWiqsQMTUdmsfAKLNZiFBGHIQghCGManojCJTZiqjFNSUWeMLOTXdlcHJRdfhaLXglnpdMYahloJDSTZdiXAGLRWarHJRWangDIJfjnRDFJNYnLHKbdqsoKRZeknqCTXfksDWceghrnFLOhprDAHKMVleDJMWfrTBLNQXnmHMqbkOQDlkhUVgomTPJpamFockMqjZPeYqrMWTVjHhegsMRDqNAPUIcCMkIOLlaYcNgfskRmqcdkHWaYiHrXeECdJQPWonCDcTYJPXiAqbLOVhSEsAbCfaKjZmVaQTBAYnlWqDHkaoYUHelQBdYTHDOBaKqBGZcnpmpQjiHDkneaiVpTVgZjkYqOdEGHVaMrVhDFTDcMojmrSWXTqMXoMfmNCaiTEnWqCTDhLXoApJeQDBhnfFbVZEAahjdnZVqFNreVnTYGlrKIXdFVeLngofMDiEaehqkicYqpLXgfcnLmpWCNGpZXZIDaEMAgEaWUHLiTZpAOIKBOLkWHWHrBqodLIjAboJfWhldNFFqdMHPCnVbDlaAjfRGCcSkoNMDEKknAlDsGocKsJlUWrmKcZVmiGTQNepAfLgVlYmnEQeJpeTaXRmcaPWogVAiUEIasPcXrQWCgNIOeQWJklZcXfKRLNOmhkHfGRqLqjLZWdKfJFheRKCepVqSZhMOjLCNMbHfZhqSEoZsFhZhMRerLrEjQYUJXaihYDBHkQTaqFOFhmVGbALfMUsNrcelinQAGThNkoTCFarXYJinTAfqmGcBbQkMfoQpNFjQUXZKLdbrLTWqnbTZiDeqLOZnScsYfLKrWWTcDAsbksERpGTeQMKTDgeQJPfEUYaNZhSBRsaJDnlYZEqDFoJOfPAobeQrTACnCMiXFWAcLAgaZpZqUlRKcsRCkgMAiDBqThNqOPYNSBghHTBdFiOoJYKMkQePVhgEhNpfLPpTEGVkmGfiEIKgpTrCNEgLnogNBYnQagrHXonmdRGjlPJGFoDGhULOBEecNUkfQBVOHYodHFglmbVsjTodlWmNHdMlErMEBbFqMIJXglbYkBMbHCnXlHbiENqLYCDQXHiqJWksDLlgXVciLhQEaKaEcNjrPiheBSkadVMNlBqZSYaBbhUBgFRdGlAJBIpANmFETVNlHjWmMSHDRrmoDnmhaHMNRTbWjgkVgjaBNSgFIRYnHPorKGiUHnYmrRQaRJSWinREMWsCKLEaDXbHPdqYpOidHMnFUBfsPQmnASBFpPIPOhbIUXMsmdGoYZGiASaPGCFmUTMMNZgnqOVIseBYLpGALWOKrleqSbAUQHaeXOWhADBeHRiUOfrFomTSILMaKLTDJlKMYZcgfGFPOeTZCPVklrWGVRehXFVfOYWFnOZUNRiWqRUKjkLHQRXmsfOXefgnMQEWMjbHADPZnoeIqXsoBdWPUXdEcbkMqSlDpCgoVUToCeDKGiLZcKPrRCMOnorTZFlaEmAUePZjqFGklmnrRPeNCGnmqnSNmJWjfYHSbkGcaSpRsWmDIgrNCTlaLBnIFkKEOZClpESHTJTgjorErEFlQKMBDFKQbPOQYkpqMLNOXafCGHTcglIKRZanoYiJMGeIXbesUHjqrQGcJgEIJeNYaKAsKROHGmQsAhHajoXLOrpDEYLkFsCZEGNhiDcpSfJdaUrqXcGiaQWqlBTabMFnOKmQOYAnLbnlFGRGOqLYXMMpAHbJsEiVhWOBjQSldGhhlYXgmqsOiqagPOKjfNCrhbFpKAdgGqOTYLhlZDRgNAlPhRGUBHKmgEeUgCkKMREUHPcDCcKdWbrMNjlPJCiZXPCMcIreJgobUDgAHpWssbVQFAWDJbdCFkXLSrBmiSPBshJAmrdRjJfDXgCIYJXkKiOspegdQsTSWSBEROrGVkAgnTagGrBoJMcBFdPUfSBYKbrfmTWKDnHSDqMTZhLcjAkoqoibAreUmLqdNsTijdgrVkBgiHoNFqGUSolAKWUrhXeHGJUSTJFkCdhjsQUZjKPJDNOVRmpsGYBMmfaEDQBqXfinKgMskoPlFRMkEaJoDQaURKBFORaXoMKbaqlWpjchGigVdHISPDQeUarshEPHJjknMFoSUhrOJhJUoORqWLCABIJspgjLCYNWILbGQMfCJeVcZshNXLoBXOAjSLTPDrbCQTDgqPnGBQXSkoCHecQBXfdjNbMZkJNPRabDKgFrQGAEdLqmIXgqnjIpfVqJapeLDKpsXGdCoZALUPHhqfPCJGXhVjeOAHpqLCgdimoIhUphOEeTVrldGacDoPKEGsDLAWqmIhRQFUJcdEKUFNofiHSLeUrRLhpObIpglcKLQHRIbnUTUQhLFkRikFjoUKXhFLoSDUOsaQSPmSRXKPqshelFRTPlQsONjeXJmWCVYgFOZDndTXLOPlFEPbaMIBKSmiJcSBLGFslCaHdoSLJpgBLefGjcYSBPUiqOlJeFGSdlRMhMZlCJjZUnAojEfmsEVejJfBNjVoQhsWpLgAbJLDsZkQYqrbBLRXKpJaZIENqdBjZMAJfIRfLCeMpkWelNTaiJhRFYgUefqoOXKWnQFOmEmMUJqKsSKjHUYNLCAPqJdiKhpraslUpbBdjYZQUaDReLmScGLCMYIqhOdcNbYCYPglsnOpdJUViFAXrMLcPaXRjITLnmZXRLOGIXchlZlOUHegpPXMYgjpKLErcgNcMmDGeRDesiqEcRPkElFQSCmPJeIqMnNZSdpodLRmSpiqFRHCsbJIMlibIANKZSBdbsgYFglINjQTMLCKSIiBbqcKDaNglEdKXZfpjNmlUdhSgpDsHGOMgRcAPgnsFsdoEqRMdPbLZpVPBmlVAhhEMmQcCbXTjmPERVNZernbgQdKiIZBHrWaMYTqjefCrHQOSqGnJqXorQFlbJhPqMqfIlmWVloHimXYHDfRapSUVKQYXnJqphlfqimPUbLjMCJGYffCOsgVBmOchkILNVQSnXoLqrQobYTkmFBaDfndUYpeZLdhFBlqdDfgBcLMmgEClSWbOApfVhSrmdjpPZhEUXRWQqEVLPBFKYeCiODNJATWXsSGQlfDaRTZImRshqrWkRrfgIVDbskWNQXAmsCaeWbpSskBjQNasHJlGhLCefpCMclmZDARNckFIMemobSIQpRDZjOYQAoWJnqkfoSslmePoZWZEsLYlWjLZGVFckUibpRQTUHmSgkMPRilGNEWdRhTUSWmjXGdOBUPVbsHFqZsBKDnlPCaTbEeBNfTralUcnkCUrPWVdhXiGdcgmQKaiAeDELNpfiEUVHRlJUPakNFnrpXPgSakVMBKFNUjiFVfQaWqXAChLGKeglERpNIQriChZqBgcoEVGbLABFMaqQjojWRQCZprChKqMmXhMpfDYRePTJFOqoVDlZrTDCJbdISGOWLDYrUmHlbOiNqYWfkljOFAEsjeWcakmjCdAgLflDrJTRQRcGKMqcBnJMVZeDPJjHIDsmpbKFVXoCTOKmLnNaYiLJqipRmsMAHrjmgfSMBPpkIdJgOZhSdIRnTaQiTCHZdRMoelEjUrniNdVDbCOnJBLmdeqloXgLDVlkGaVpIhZodbAIfWZgcDIHKYoTJUnDnXOjiABPikJIAANnoXOidBfsXRNKcgpeTqhbqAeRnSpFhWLimFUlqjdBcYbMjhUkYhcAjFkMAlnImXBLENgsIcnCJGUbKjPIEQBUZRFGkQmWCFZZVopekXBPrKAmfIQHVXGEYiNLDkBrVNIBJPGOhAfpHgGKPaUXPWCMiXNasqokjfrGUEMTgeMiWZqOkjJiWCRWUrhdQSJGpboPnWcBlODGMeoBdTaURacQgZjZkDYBbRMYgerlTgsZLrXFXNpRPrXaAiCHbcMDmAlGFKXOfmbPGDrXNTRsMTQpoIAbCRNhSBHVpfmLNJTFpOYlsigQOmAsqDcekdOGrmRRcMHXaQkQHOPKjKUPYHSnKedroIgcrhWnOTIjOLYhCAiLlIZpisRTEKCjUVohZfZCKaRNUkeNWgnrOphoZbrhVLWRdfsUkYSCiQmADMhFcLsoalFLsOXQcPsEKpFcbNPcJiRYVTIlRrJITcgYHGfMoeLEhisPNmaERMGLiEWkfLodmXEQKcXBIVfFGijSFjLSApbTrOiCKJglnZfeKINpihoBVfhBsEmVgNOBaeParXkGBSFmjBCZjZeHPcKGKIRFQsqNhWEODLCEVZeSbZjLQTDSUNFOokiGcYjPbBgnTrpfFLQUmfdMCEkTUQLFlqeiQZgUfidrEaQZliAsdZVhcOaSdNbsgVGgNLDeXfMsTjcsHSnaMLfKWndYphYGJnValsJCgXjkDsXiaOoefsTnLXCWFVldRFiCIVNWCfSRsXPfFUKSsbGJWgSRDSiZGgCebARVJrdFoVNCjBdUKiAmWfTRqPaldRbFfOaAboTFOiXsrWAJgIGkjCJqnDHdQhjFlJKNqRskHDXFPWMjrellIPXWAQUpahZfeGVCNlOQcpgHLMEDGQlrRjPaiYjKkhNURrMPUmdVrKeDepqkRncnSLUsAXdWbFTrsZGSgRkQqJdiVrOGFZVnonhNHcbLqAWSPLhhkngiNDXPoqULOTClnqbDecZQdqLGFpjMboZMlkVNTneLrcJBldUGAiBmPhnkFKDcAsCpjdonFNecGmSkZraMSLgnJBKTGVCoXdMqgCsDPZTrjpXTfrMUKHPgJlSfCGWLfhjHQdYPeOfDdjgCIGPKNMOsCMIsLTAColBZeShfrlXFeHFdihUCVUhSiXMZdQhHgCbgFNnYrdKIDnkEGkJOeXdfgbPEAHsQbJEhKVbYSUaOnaNFBlAgohFGbSEMhcTbNWSGCIMXWAUgSMFDrgplUiAgsODILZSTNhPciOkLEndRlcJVeGOUZiLGKTkodBbHVjQaPJbFhLDZCOFegBKrkfFSQKnqbGkKZXafPVMOFCfUOHfjSlsRmiIHYacICOBHejikfdEiIrMAJEVlfHDZaSJkalPMsmhodeGEGTZYLblUaYfkTCbmIlaGmGjMsRSBLhXTpkcbUYVTFMBgPOqDYRmWQlVlcsGFaQNpYcWaPinHemWXgIXkUdcmZXLpETClMbhpYGCLFQKSrpnIXGsdiTARECHQmNjKVpHDCFfedKiIGUcCqGOSPUqEarFKQrRPXnCUknRFLoCHNToJgbeUMYbAVjDOWQaePNWekYpQFfbcVlBbHWPMiZkEMncpCSLVDaIkcSIlieWZGSIsgAKDoLTBnmjJPWKIXSbFPQCMXOgkBahjCgOkLnOcsHNAEbqGZdlomdZgUYePXdfGTDfPBAsjGiaXIkLgEnkUGRFcmCiXebHrPdaeDWoPABACaQZpWlaJsXVKFljdapYQimTBkXAaIQlGenlWaZiJHYreEosjaYlKEBSOdJgaNOSUsrMmCOXJWNYTeJHOcobCsepfYsBAmbOeBbhqYVPjRbFMdIfDoKVQhTRPmgfZasIRrUbpHYoISgZDQbMFoArPNhoMdcreiXAkMpLhcPVCIHbpsRleNMDOLXjSVOCnTkYBGceSOiAqaKqOmGFTRLclUhJJnThkWjBMfpRlV";
 const ORDER_MAX = ORDER_PACK.length / 7;
 
@@ -631,17 +639,77 @@ function sigTag(p){
 const DB = { draws:[], latest:0, loadedAt:null, source:'—', rev:0 };
 function bumpDB(){ DB.rev++; ROWS_CACHE=null; }
 
+/* lotto-order.json (scripts/fetch-order.mjs 가 만든다) — ORDER_PACK(1~ORDER_MAX, 고정 문자열) 다음
+   회차와, ORDER_PACK 안의 "신뢰 불가"(397~467)·"판정 보류"(ORD_SUSPECT) 구간 중 다른 출처에서
+   검증된 순서를 구한 회차를 담는다. 비동기로 읽는다 — 읽기 전/실패 시엔 null 이라
+   decodeOrder/orderTrust 가 전부 ORDER_PACK 만으로 예전과 똑같이 동작한다(회귀 없음).
+   {v:1, source, generated, rounds:{"1239":[o1..o6,bonus],…}, trust:{"1239":"ok"|"single"|"suspect"}, src:{…}}
+   신뢰 라벨 3단계(플래너 최종 결정) — 'ok' = ORDER_PACK 이 원래 신뢰하던 회차, 또는 신규 회차인데
+   두 독립 출처(lottospecial.kr·lottotapa.com)의 순서가 일치. 'single' = 그중 한 출처만 실제(비-오름차순)
+   순서를 준다 — 순서 자체는 보여주되 신뢰 가능 카운트·χ² 검정에서는 기본적으로 뺀다. 'suspect' = 두
+   출처가 서로 다른 실제 순서를 주거나(누가 맞는지 알 수 없음), 확보한 모든 출처가 오름차순(자리표시자
+   패턴)이라 실제 순서인지 전혀 판단할 수 없음. */
+let ORDER_EXTRA = null;
 function decodeOrder(r){
+  if(ORDER_EXTRA && ORDER_EXTRA.rounds[r]) return ORDER_EXTRA.rounds[r].slice();
   if(r<1 || r>ORDER_MAX) return null;
   const seg = ORDER_PACK.substr((r-1)*7, 7), out=[];
   for(let i=0;i<7;i++) out.push(A45.indexOf(seg[i])+1);
   return out;
 }
-function orderTrust(r){
+/* ORDER_PACK 자체 판정(lotto-order.json 을 고려하지 않은 값) — loadOrderExtra() 가 "이 회차는 JSON이
+   덮어써도 되는가"를 가리는 데 쓴다(이미 'ok'인 회차를 JSON 이 조작해도 무시하게). */
+function baseOrderTrust(r){
   if(r>ORDER_MAX) return 'none';
   for(const [a,b] of ORD_BAD_RANGE) if(r>=a&&r<=b) return 'bad';
   if(ORD_SUSPECT.includes(r)) return 'suspect';
+  if(ORD_DISPUTED.includes(r)) return 'suspect';
   return 'ok';
+}
+function orderTrust(r){
+  if(ORDER_EXTRA && ORDER_EXTRA.trust[r]) return ORDER_EXTRA.trust[r];
+  return baseOrderTrust(r);
+}
+/* decodeOrder(r) 의 결과가 실제 당첨 집합·보너스(d.n/d.b, DB 에서 온 값)와 맞는지 확인한다.
+   신뢰 카운트·χ² 검정에 쓰는 모든 필터는 이 확인을 반드시 거친다 — lotto-order.json 이 조작되거나
+   깨져서(예: 회차 1239의 집합이 실제와 다름) 들어와도 통계에 섞이지 않게 하는 마지막 방어선. */
+function orderSetBonusOk(d){
+  const o=decodeOrder(d.r);
+  if(!o) return false;
+  return o.slice(0,6).slice().sort((a,b)=>a-b).join(',')===d.n.join(',') && o[6]===d.b;
+}
+/* «1~N회 커버」 문구·필터가 쓰는 실질 상한 — ORDER_PACK 끝(ORDER_MAX)에서 lotto-order.json 이
+   빈틈없이 이어지는 데까지만 센다(중간에 빠진 회차가 있으면 거기서 멈춘다 — 문구가 거짓말하지 않게). */
+function orderMaxEff(){
+  let m=ORDER_MAX;
+  if(ORDER_EXTRA && ORDER_EXTRA.rounds) while(ORDER_EXTRA.rounds[m+1]) m++;
+  return m;
+}
+/* lotto-order.json 비동기 로드. 실패해도 조용히 넘어간다(ORDER_PACK 만으로 기존 동작 유지).
+   1~ORDER_MAX 회차 중 ORDER_PACK 이 이미 'ok'로 신뢰하는 회차는 JSON 이 뭐라고 하든 받아들이지
+   않는다(라운드>ORDER_MAX 이거나, baseOrderTrust 가 'ok'가 아닐 때만 허용) — 회차 조작·주입 방어. */
+async function loadOrderExtra(){
+  try{
+    const r = await fetch('./lotto-order.json', {cache:'no-store'});
+    if(!r.ok) return false;
+    const o = await r.json();
+    if(!o || o.v!==1 || !o.rounds || typeof o.rounds!=='object') return false;
+    const rounds={}, trust={};
+    for(const k of Object.keys(o.rounds)){
+      const rn=+k, arr=o.rounds[k];
+      if(!Number.isInteger(rn) || rn<1) continue;
+      if(!(rn>ORDER_MAX || baseOrderTrust(rn)!=='ok')) continue;
+      if(!Array.isArray(arr) || arr.length!==7) continue;
+      if(arr.some(n=>!Number.isInteger(n)||n<1||n>45)) continue;
+      rounds[rn]=arr.slice();
+      const t=o.trust && o.trust[k];
+      trust[rn]=(t==='ok'||t==='single'||t==='suspect') ? t : 'suspect';
+    }
+    if(!Object.keys(rounds).length) return false;
+    ORDER_EXTRA = { rounds, trust, source:o.source||null, generated:o.generated||null };
+    log('추첨순서 확장 로드 · '+Object.keys(rounds).length+'회차'+(o.source&&o.source.name?' ('+o.source.name+')':''));
+    return true;
+  }catch(e){ return false; }
 }
 
 function rowFromApi(o){
@@ -884,7 +952,7 @@ function structOf(win){
 const SUM_E = 138, SUM_SD = Math.sqrt(6*((45*45-1)/12)*(45-6)/(45-1));
 
 function orderStats(){
-  const rs=rows(0).filter(d=>orderTrust(d.r)==='ok' && d.r<=ORDER_MAX);
+  const rs=rows(0).filter(d=>orderTrust(d.r)==='ok' && d.r<=orderMaxEff() && orderSetBonusOk(d));
   const pos=[0,1,2,3,4,5].map(()=>new Array(46).fill(0));
   const bonusPos=new Array(8).fill(0);
   let firstBiggest=0, firstSmallest=0, ascRun=0, lowFirst=0;
@@ -922,12 +990,13 @@ function renderDash(){
   const y=rs.slice(-52);
   const avg1 = y.filter(d=>d.w[0]>0).reduce((s,d)=>s+d.a[0],0)/Math.max(1,y.filter(d=>d.w[0]>0).length);
   const sales= last.s;
+  const orderOkN = rows(0).filter(d=>orderTrust(d.r)==='ok' && orderSetBonusOk(d)).length;
   renderKPI('#kpiDash',[
     ['보유 회차', nf(rs.length), '1회 ~ '+DB.latest+'회'],
     ['최신 추첨', DB.latest+'회', ymd2disp(last.ymd)],
     ['최근 1년 1등 평균', won(avg1), '1게임당'],
     ['직전 회 총판매', won(sales), '당첨금 약 '+won(sales*0.5)],
-    ['추첨순서 확보', nf(rows(0).filter(d=>orderTrust(d.r)==='ok').length)+'회', '전체 대비 '+pct(rows(0).filter(d=>orderTrust(d.r)==='ok').length/rs.length,0)]
+    ['추첨순서 확보', nf(orderOkN)+'회', '전체 대비 '+pct(orderOkN/rs.length,0)]
   ]);
 
   const c=$('#recentCard'); c.innerHTML='';
@@ -1646,15 +1715,23 @@ function renderStat(){
 
 function renderOrder(){
   const O=orderStats(), rs=rows(0);
-  /* 순서 아카이브가 어디까지 덮는지는 ORDER_PACK 길이가 결정한다.
-     문구에 숫자를 박아두면 팩을 갱신할 때마다 본문이 거짓말을 하므로 항상 여기서 주입한다. */
-  const ordCov=$('#ordCovMax'); if(ordCov) ordCov.textContent=ORDER_MAX;
-  const ordInp=$('#orderSearch'); if(ordInp) ordInp.placeholder='예: '+ORDER_MAX;
+  /* 순서 아카이브가 어디까지 덮는지는 ORDER_PACK 길이 + lotto-order.json 이 결정한다.
+     문구에 숫자를 박아두면 갱신할 때마다 본문이 거짓말을 하므로 항상 여기서 주입한다. */
+  const ordCov=$('#ordCovMax'); if(ordCov) ordCov.textContent=orderMaxEff();
+  const ordInp=$('#orderSearch'); if(ordInp) ordInp.placeholder='예: '+orderMaxEff();
   const cover=rs.filter(d=>orderTrust(d.r)==='ok').length;
+  /* ORD_BAD_RANGE·ORD_SUSPECT 는 ORDER_PACK(lottohell.com) 만 놓고 봤을 때의 판정이다.
+     lotto-order.json(lottospecial.kr) 이 그중 일부를 실제 순서로 검증해 올렸으면
+     orderTrust() 가 이미 그 회차만 'ok'로 되돌린다 — 여기서는 "아직도 못 푼" 것만 센다. */
+  const stillBad=[]; for(const [a,b] of ORD_BAD_RANGE) for(let r=a;r<=b;r++) if(orderTrust(r)==='bad') stillBad.push(r);
+  const stillSuspect=ORD_SUSPECT.filter(r=>orderTrust(r)==='suspect');
   renderKPI('#kpiOrder',[
-    ['신뢰 가능 회차', nf(O.N), '집합·보너스 100% 검증'],
-    ['신뢰 불가 구간', '397~467회', '71회 연속 오름차순 = 자리표시자'],
-    ['판정 보류', ORD_SUSPECT.length+'회', '오름차순이라 구분 불가'],
+    ['신뢰 가능 회차', nf(O.N), '두 출처 일치(또는 원본 검증) — 단일 출처·판정 보류는 제외'],
+    ['신뢰 불가 구간(원본)', stillBad.length?nf(stillBad.length)+'회':'0회',
+      stillBad.length?(Math.min(...stillBad)+'~'+Math.max(...stillBad)+'회 · 연속 오름차순 = 자리표시자')
+                     :'397~467회: lottospecial.kr 단일 출처로 채움 — 집합·보너스만 공식과 대조, 순서는 교차 확인 불가(단일 출처)'],
+    ['판정 보류', stillSuspect.length?nf(stillSuspect.length)+'회':'0회',
+      stillSuspect.length?'오름차순이라 구분 불가('+stillSuspect.join(', ')+'회)':'전부 단일 출처 또는 두 출처 일치로 판정 완료'],
     ['첫 공이 최소값', pct(O.firstSmallest/O.N,1), '이론 1/6 = 16.7%'],
     ['첫 공이 최대값', pct(O.firstBiggest/O.N,1), '이론 1/6 = 16.7%']
   ]);
@@ -1696,8 +1773,8 @@ function renderOrder(){
 
   const pat=[
     ['첫 공이 저번호(1~22)', pct(O.lowFirst/O.N,1), '이론 22/45 = 48.9%'],
-    ['6개가 오름차순', O.ascRun+'회', '이론 기대 '+(O.N/720).toFixed(1)+'회'],
-    ['검정 대상 회차', nf(O.N)+'회', '1~'+ORDER_MAX+'회 중']
+    ['6개가 오름차순', O.ascRun+'회', '오름차순 회차는 이미 suspect 로 빠져 이 집계에 없음 — 순환 참고용(이론 기대 '+(O.N/720).toFixed(1)+'회는 제외 전 기준)'],
+    ['검정 대상 회차', nf(O.N)+'회', '1~'+orderMaxEff()+'회 중']
   ];
   $('#orderPatterns').innerHTML = pat.map(([a,b,c])=>
     '<div class="card flat"><div class="k mono" style="font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60)">'+a+'</div>'+
@@ -1711,6 +1788,7 @@ function renderOrderList(list){
     list.map(d=>{
       const o=decodeOrder(d.r), t=orderTrust(d.r);
       const tagm={ok:'<span class="tag ok">검증됨</span>',bad:'<span class="tag noi">순서없음</span>',
+                  single:'<span class="tag noi">단일 출처</span>',
                   suspect:'<span class="tag noi">보류</span>',none:'<span class="tag noi">미보유</span>'};
       return '<tr><td class="mono"><b>'+d.r+'</b><br><span style="font-size:9px;color:var(--ink-40)">'+ymd2disp(d.ymd).slice(2)+'</span></td>'+
         '<td><span class="balls">'+(o?o.slice(0,6).map(n=>ballHTML(n,'xs')).join(''):'—')+'</span></td>'+
@@ -2626,7 +2704,7 @@ function renderData(){
     if(d.n.some((n,i)=>i&&n<=d.n[i-1])) bad.push([d.r,'정렬 이상']);
     if(d.b<1||d.b>45||s.has(d.b)) bad.push([d.r,'보너스 이상']);
     const o=decodeOrder(d.r);
-    if(o && d.r<=ORDER_MAX){
+    if(o && d.r<=orderMaxEff()){
       if(o.slice(0,6).slice().sort((a,b)=>a-b).join(',')!==d.n.join(',')) bad.push([d.r,'추첨순서 불일치']);
       if(o[6]!==d.b) bad.push([d.r,'추첨순서 보너스 불일치']);
     }
@@ -2635,7 +2713,7 @@ function renderData(){
     ['보유 회차', nf(rs.length), '최신 '+DB.latest+'회'],
     ['누락', nf(miss.length), miss.length?miss.slice(0,5).join(', ')+'…':'없음'],
     ['무결성 오류', nf(bad.length), bad.length?'확인 필요':'이상 없음'],
-    ['추첨순서', nf(ORDER_MAX)+'회', '검증 완료'],
+    ['추첨순서', nf(orderMaxEff())+'회', '검증 완료'],
     ['마지막 갱신', DB.loadedAt?new Date(DB.loadedAt).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'—', DB.source]
   ]);
   const checks=[
@@ -2653,9 +2731,11 @@ function renderData(){
 }
 function exportJSON(){
   const data={ meta:{ generated:new Date().toISOString(), latest:DB.latest,
-    source:'dhlottery.co.kr /lt645/selectPstLt645InfoNew.do', orderSource:'lottohell.com archive', orderMax:ORDER_MAX },
+    source:'dhlottery.co.kr /lt645/selectPstLt645InfoNew.do',
+    orderSource:(ORDER_EXTRA&&ORDER_EXTRA.source&&ORDER_EXTRA.source.name)?('lottohell.com archive + '+ORDER_EXTRA.source.name):'lottohell.com archive',
+    orderMax:orderMaxEff() },
     draws: rows(0).map(d=>({ round:d.r, date:d.ymd, numbers:d.n, bonus:d.b,
-      order: (d.r<=ORDER_MAX && orderTrust(d.r)==='ok') ? decodeOrder(d.r) : null,
+      order: (d.r<=orderMaxEff() && (orderTrust(d.r)==='ok'||orderTrust(d.r)==='single') && orderSetBonusOk(d)) ? decodeOrder(d.r) : null,
       orderTrust: orderTrust(d.r),
       winners:{first:d.w[0],second:d.w[1],third:d.w[2],fourth:d.w[3],fifth:d.w[4]},
       prize:{first:d.a[0],second:d.a[1],third:d.a[2],fourth:d.a[3],fifth:d.a[4]},
@@ -2870,6 +2950,9 @@ function applyHash(){
 }
 (async function init(){
   wire(); renderPickBoard();
+  /* lotto-order.json — 로또 DB 와 독립이라 병렬로 시작하고, 끝나면 지금 보이는 탭만 다시 그린다.
+     loadOrderExtra() 는 항상 true/false 만 돌려준다(예외를 던지지 않음) — 실패해도 여기서 안 막힌다. */
+  loadOrderExtra().then(ok=>{ if(ok) refreshAll(); });
   const cached=loadDB();
   if(cached){
     setStatus('캐시 '+DB.draws.filter(Boolean).length+'회차 · 최신 확인 중…','warn');
