@@ -3,7 +3,7 @@
 "from":100,
 "to":335,
 "latest":334,
-"generated":"2026-09-24T17:26:14.124Z",
+"generated":"2026-09-25T03:03:15.746Z",
 "rule":{"name":"spread@334","from":334,"mode":"spread","settings":{"model":"gap","K":3,"J":2},"seed":"ep*7919"},
 "games":5,
 "ticket":1000,
@@ -22,13 +22,13 @@
   }
  },
  "determinism": {
-  "compared": 234,
+  "compared": 235,
   "mismatch": [],
   "ruleChanged": [],
   "regrade": []
  },
- "kept": 234,
- "added": 2
+ "kept": 235,
+ "added": 1
 },
 "rows":[
 {"round":100,"date":"20220331","status":"done","rule":"spread@334","picks":["5조 068766","5조 064773","5조 064860","2조 068762","5조 664715"],"result":[{"grade":0},{"grade":0},{"grade":0},{"grade":0},{"grade":0}],"ret":0,"carry":[0,0,0,0,0],"prevHit":null,"cum":{"weeks":1,"spend":5000,"ret":0,"net":-5000,"roi":0,"ranks":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0},"anyWeeks":0,"lastPrizeRound":null,"bestRank":0},"cross":{"pairs":0,"n":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0},"any":0,"exp":0,"top":[]}},
