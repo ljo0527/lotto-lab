@@ -1168,7 +1168,7 @@ const FALLBACK_CSS=`
 html,body{overflow-x:clip}
 body{background:var(--paper);color:var(--ink);padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 24px)}
 .wrap{padding-left:var(--gutter)!important;padding-right:var(--gutter)!important}
-.gnav{position:fixed;inset:auto 0 0 0;z-index:50;display:grid;grid-template-columns:repeat(5,1fr);
+.gnav{position:fixed;inset:auto 0 0 0;z-index:50;display:grid;grid-template-columns:repeat(6,1fr);
 height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:var(--paper-2);border-top:1.5px solid var(--ink)}
 .gnav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;
 font:700 12px/1.2 var(--f-body);color:var(--ink-60);text-decoration:none}
@@ -1181,7 +1181,7 @@ padding:6px var(--gutter);background:none;border:0;border-bottom:1px solid var(-
 .gnav a[aria-current="page"]{box-shadow:inset 0 -3px 0 var(--ink)}}
 @media print{.gnav,.no-print{display:none!important}body{padding-bottom:0}}`;
 const FALLBACK_GNAV=active=>'<nav class="gnav" aria-label="사이트">'+
-  [['brief','이번 주'],['index','로또'],['pension','연금'],['validate','검증'],['record','기록']]
+  [['brief','이번 주'],['index','로또'],['pension','연금'],['rank','순위'],['validate','검증'],['record','기록']]
   .map(([f,l])=>`<a href="./${f}.html"${f===active?' aria-current="page"':''}><span>${l}</span></a>`).join('')+'</nav>';
 async function loadShared(root){
   try{
@@ -1222,7 +1222,125 @@ ${grid}<path class="sp" d="${path('cs')}" vector-effect="non-scaling-stroke"/><p
 </figure>`;
 }
 
-function buildBoard(A, PA, led, tot, meta, shared){
+/* ── 4층 · 순위 균등성 (PLAN3 §10.3) ─────────────────────────────
+   Opus-A(scripts/rank-track.mjs)·Fable-2(scripts/rank-tiers.mjs) 의 산출물을 읽어 요약만 얹는다.
+   통계를 다시 계산하지 않는다 — 그 산출물의 summary 를 그대로 표로 옮긴다(재계산·교차검정은 check-rank.mjs/check-tiers.mjs 몫).
+   파일이 없으면(순위 파이프라인이 이 스크립트보다 먼저/따로 돈다) 조용히 생략 — fs try/catch, ROOT 기준
+   (다른 brief/*.json 읽기와 동일 관례, weekly-brief.mjs readRankLine 참고). */
+function readJSON(p){
+  try{ if(!fs.existsSync(p)) return null; return JSON.parse(fs.readFileSync(p,'utf8')); }
+  catch(e){ return null; }
+}
+function loadRankData(root){
+  const lotto=readJSON(path.join(root,'brief','rank-lotto.json'));
+  const pension=readJSON(path.join(root,'brief','rank-pension.json'));
+  const tiersLotto=readJSON(path.join(root,'brief','rank-tiers-lotto.json'));
+  const tiersPension=readJSON(path.join(root,'brief','rank-tiers-pension.json'));
+  const okLotto=lotto&&Array.isArray(lotto.rows)&&lotto.summary&&lotto.summary.models;
+  const okPension=pension&&Array.isArray(pension.rows)&&pension.summary&&pension.summary.models;
+  if(!okLotto && !okPension) return null;
+  const okTiers=d=>d&&d.summary&&d.summary.models?d:null;
+  return { lotto:okLotto?lotto:null, pension:okPension?pension:null,
+           tiersLotto:okTiers(tiersLotto), tiersPension:okTiers(tiersPension) };
+}
+/* 동점을 구간에 걸쳐 «비율로» 나누는 정의(rank-track.mjs, .lab/STATUS-track.md §1)라 deciles·top 관측치·구간전략 hits 가
+   정수가 아닐 수 있다(예: hot 10% 상위 관측 23.770159). 정수면 그대로, 아니면 소수 1자리로 — 거짓 정밀도(소수 6자리)를 보여주지 않는다. */
+const fmtCnt=x=>x==null||isNaN(x)?'—':(Math.abs(x-Math.round(x))<1e-6?String(Math.round(x)):x.toFixed(1));
+/* sub='num' 이면 연금의 «번호만(2등 기준)» 하위 통계(summary.models.<m>.num — best/band 없음, .lab/STATUS-track.md §6)를 쓴다. */
+function rankModelRows(doc, sub){
+  const models=Array.isArray(doc.models)?doc.models:[];
+  const order=models.length?models.map(m=>m.key).filter(k=>doc.summary.models[k]&&(!sub||doc.summary.models[k][sub])):Object.keys(doc.summary.models);
+  return order.map(k=>{
+    let s=doc.summary.models[k]; if(!s) return '';
+    if(sub){ s=s[sub]; if(!s) return ''; }
+    const meta=models.find(m=>m.key===k)||{};
+    const claimTag=meta.claims==='none'
+      ? '<span class="tg n">적중 주장 아님(순서/대조군)</span>' : '<span class="tg s">적중 주장 · 검정 대상</span>';
+    const top=s.top||{}, topExp=s.topExp||{};
+    const b=s.band||{};
+    const bandTxt=(b.n||0)>0 ? `${fmtCnt(b.hits)}/${fmtCnt(b.n)} (${pc(b.rate,1)}) ${pTag(b.p)}` : `<span class="tg n">표본 부족</span>`;
+    return `<tr><td>${esc(meta.name||k)}<br>${claimTag}</td>
+      <td class="num">${s.n}</td>
+      <td class="num">${pc(s.meanPct,1)} <small>${ciTxt(s.meanCI)}</small></td>
+      <td class="num">${pTag(s.ks&&s.ks.p)}</td>
+      <td class="num">${pTag(s.chi2&&s.chi2.p)}</td>
+      <td class="num">${top['10%']==null?'—':fmtCnt(top['10%'])} / ${topExp['10%']==null?'—':topExp['10%'].toFixed(2)}</td>
+      <td class="num">${top['1%']==null?'—':fmtCnt(top['1%'])} / ${topExp['1%']==null?'—':topExp['1%'].toFixed(2)}</td>
+      <td class="num">${bandTxt}</td></tr>`;
+  }).join('');
+}
+/* summary.popf(로또만, .lab/STATUS-track.md §4) — 당첨 조합이 추천 필터(합·홀짝·연속·구간·1등 이력 제외)를 통과한 비율. */
+function rankPopfNote(doc){
+  const pf=doc&&doc.summary&&doc.summary.popf; if(!pf||pf.n==null) return '';
+  return `<p class="note">필터 통과: 당첨 조합 중 <b>${pf.passed}/${pf.n}개</b>(${pc(pf.rate,1)})가 추천 필터(popf)를 통과 —
+기대 ${pc(pf.exp,1)} ${pTag(pf.p)}. 필터도 당첨 확률을 바꾸지 않습니다.</p>`;
+}
+function rankTierRows(doc){
+  if(!doc) return '';
+  const tierN=doc.tiers||{};
+  const rows=[];
+  for(const [mk,tiers] of Object.entries(doc.summary.models)){
+    for(const [tk,t] of Object.entries(tiers||{})){
+      if(!t||t.meanPct==null) continue;
+      const rm=t.roundMean||{}, mc=t.mc||{};
+      rows.push(`<tr><td>${esc(mk)}</td><td class="num">${tk}등${tierN[tk]?` <small>(${fmtN(tierN[tk])}개)</small>`:''}</td>
+        <td class="num">${pc(t.meanPct,1)}</td>
+        <td class="num">${pTag(rm.p)}</td>
+        <td class="num">${mc.pMC==null?'—':mc.pMC.toFixed(3)}</td></tr>`);
+    }
+  }
+  return rows.join('');
+}
+function rankGameSection(title, doc, tiersDoc){
+  if(!doc) return '';
+  const rows=rankModelRows(doc);
+  if(!rows) return '';
+  const tierRows=rankTierRows(tiersDoc);
+  const numRows=rankModelRows(doc,'num');
+  const noteDetails=doc.note?`<details class="cks"><summary>이 표의 정의(동점 처리 포함) 전문</summary>
+<p class="note" style="padding-top:8px">${esc(doc.note)}</p></details>`:'';
+  return `<h3>${title}</h3>
+<p class="note">${doc.from}~${doc.latest}회 · walk-forward(그 회차 이전 자료만으로 매긴 순위). 기대값은 모두 «균등»입니다 —
+평균 백분위 50%, KS·χ² p&gt;0.05, 상위 10%/1% 관측 ≈ 기대. 동점은 구간에 걸쳐 비율로 나누므로 관측 개수·구간전략 적중이
+정수가 아닐 수 있습니다(소수 1자리로 표시).</p>
+<div class="card"><div class="scroll"><table class="wide">
+<tr><th>모델</th><th class="num">회차</th><th class="num">평균 백분위(기대 50%)</th><th class="num">KS p</th><th class="num">χ² p</th>
+<th class="num">상위 10% 관측/기대</th><th class="num">상위 1% 관측/기대</th><th class="num">구간전략 적중(기대 10%)</th></tr>
+${rows}
+</table></div></div>
+${rankPopfNote(doc)}
+${numRows?`<h3>${title} · 번호만 순위(2등 기준)</h3>
+<p class="note">위 표는 1등 전체(조+숫자 또는 6개 번호 모두)의 순위이고, 이 표는 <b>숫자만</b>(연금 6자리, 조는 무시 — 2등 판정 기준)의
+순위입니다. 조를 뺐을 뿐 같은 «균등해야 정상» 원칙이 적용됩니다.</p>
+<div class="card"><div class="scroll"><table class="wide">
+<tr><th>모델</th><th class="num">회차</th><th class="num">평균 백분위(기대 50%)</th><th class="num">KS p</th><th class="num">χ² p</th>
+<th class="num">상위 10% 관측/기대</th><th class="num">상위 1% 관측/기대</th><th class="num">구간전략 적중(기대 10%)</th></tr>
+${numRows}
+</table></div></div>`:''}
+${tierRows?`<h3>${title} · 등수별 순위 요약</h3>
+<p class="note">1등 1개가 아니라 그 회차의 등수별 당첨 조합 전체(예: 로또 5등 182,780개)를 순위표에 흩뿌려 봅니다.
+회차 단위로 요약하고(같은 회차 등수 조합은 당첨번호를 공유해 상관되므로) 몬테카를로 귀무(추첨을 무작위로 바꿔 같은 계산)로 pMC 를 냅니다.</p>
+<div class="card"><div class="scroll"><table class="wide">
+<tr><th>모델</th><th>등수</th><th class="num">관측 평균 백분위</th><th class="num">회차수준 p</th><th class="num">몬테카를로 pMC</th></tr>
+${tierRows}
+</table></div></div>`:''}
+${noteDetails}`;
+}
+function buildRankSection(rank){
+  if(!rank) return '';
+  const lottoHTML=rankGameSection('로또', rank.lotto, rank.tiersLotto);
+  const pensionHTML=rankGameSection('연금', rank.pension, rank.tiersPension);
+  if(!lottoHTML && !pensionHTML) return '';
+  return `<h2>4층 · 순위 균등성 — 무한 순위표에서도 균등과 구별되지 않는가</h2>
+<p class="note">모든 조합에 순위를 매기고(로또 814만·연금 500만), 실제 당첨 조합이 그 표의 몇 위였는지를 매 회차 walk-forward 로 봅니다.
+<b>기대 결과는 «균등과 구별되지 않음»입니다.</b> 분배 모델(pop)의 순서는 <b>당첨되면 나눠 갖는 인원이 적은 순서</b>일 뿐 «맞을 가능성»의 순서가 아니고,
+hot/cold 류(«많이/안 나온 번호가 또 나온다»)는 적중을 주장하는 모델이라 이 표가 그 주장을 검정합니다. 구간 전략(walk-forward)은 표본이 적고
+모델을 여러 개 동시에 보므로 <b>다중검정 주의</b> — 낱개 p 만으로 판단하지 마세요. 회차를 넘겨 보거나 내 번호의 순위를 직접 조회하려면
+<a href="./rank.html">순위</a> 페이지로.</p>
+${lottoHTML}${pensionHTML}`;
+}
+
+function buildBoard(A, PA, led, tot, meta, shared, rank){
 const css=`
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--f-body);font-size:15px;line-height:1.68;letter-spacing:-.01em}
@@ -1290,6 +1408,7 @@ td small{font-size:11px;color:var(--ink-40)}
 @media print{body{background:#fff;padding:0}.card{break-inside:avoid}}`;
 
 const P=A.per, cal=A.calib, c2=A.calib2||{ready:false}, CUR=A.cur, cur=P[CUR];
+const rankSection=buildRankSection(rank);
 const has=k=>A.strats.includes(k);
 const stratRows=A.strats.map(k=>{
   const s=P[k], me=k===CUR, ctl=CTL.has(k);
@@ -1486,7 +1605,7 @@ ${powerRows}
 잡음이 신호의 ${Math.round(A.sdWeek/A.chanceMean)}배라, 돈으로 검증하려면 <b>${bigWeeks(cur.weeksForMoney)}</b>이 걸립니다.
 같은 효과를 z 이득으로 재면 <b>${bigWeeks(cur.weeksForZ)}</b>면 됩니다.
 <b>그래서 이 보드는 돈이 아니라 메커니즘을 봅니다.</b></div></div>
-
+${rankSection}
 <h2>연금복권 · 규칙 전수 검정</h2>
 <p class="note">모델 5종 × 상위 K 5단계 = <b>${PA.tested}개</b> 조합을 전부 돌렸습니다.
 균일한 추첨이라면 우연히 <b>${PA.expectedByChance}개</b>가 p&lt;0.05를 넘습니다. 다중검정 보정 후에도 남는 게 있는지가 관건입니다.</p>
@@ -1630,9 +1749,13 @@ ${shared.foot||'복권 구매는 감당할 수 있는 범위 안에서. 만 19�
 
   console.error('[5/5] 저장…');
   const shared=await loadShared(ROOT);
+  /* 4층 · 순위 균등성(PLAN3 §10.3) — brief/rank-*.json·rank-tiers-*.json, 없으면 조용히 생략(rank=null) */
+  const rank=loadRankData(ROOT);
+  if(rank) console.error(`      순위 데이터: 로또 ${rank.lotto?rank.lotto.summary.n+'회':'없음'}`+
+    `${rank.tiersLotto?' (+등수별)':''} · 연금 ${rank.pension?rank.pension.summary.n+'회':'없음'}${rank.tiersPension?' (+등수별)':''}`);
   const now=KST(); const meta={date:kstStr(now), stamp:now.toISOString().slice(0,16).replace('T',' ')};
   fs.mkdirSync(path.join(OUT,'brief'),{recursive:true});
-  fs.writeFileSync(path.join(OUT,'validate.html'), buildBoard(A,PA,led,tot,meta,shared));
+  fs.writeFileSync(path.join(OUT,'validate.html'), buildBoard(A,PA,led,tot,meta,shared,rank));
   fs.writeFileSync(path.join(OUT,'brief','purchases.json'), JSON.stringify(led,null,1));
   const r4=x=>x==null||!isFinite(x)?null:+x.toFixed(4), r6=x=>x==null||!isFinite(x)?null:+x.toFixed(6);
   const ci=(c,f=r4)=>c?[f(c[0]),f(c[1])]:null;
@@ -1665,6 +1788,29 @@ ${shared.foot||'복권 구매는 감당할 수 있는 범위 안에서. 만 19�
       lotto:{ok:guard.lotto.ok, n:guard.lotto.n, mismatch:guard.lotto.mismatch, gradeHist:guard.lotto.gradeHist},
       pension:{ok:guard.pension.ok, n:guard.pension.n, mismatch:guard.pension.mismatch, gradeHist:guard.pension.gradeHist},
       pensionAmt:guard.pensionAmt||null } } };
+  /* 4층 · 순위 균등성 — 추가 키(기존 키는 그대로). rank 가 null 이면(파일 없음) 키를 아예 안 붙인다. */
+  if(rank){
+    /* 동점 구간을 비율로 나누므로(§ .lab/STATUS-track.md) top 관측·band.hits 가 비정수일 수 있다 — r6 로 그대로 보존(반올림만). */
+    const oneModelVal=s=>({
+      n:s.n, meanPct:r4(s.meanPct), meanCI:ci(s.meanCI), medianPct:r4(s.medianPct),
+      ksP:r6(s.ks&&s.ks.p), chi2P:r6(s.chi2&&s.chi2.p),
+      top10pct:r6(s.top&&s.top['10%']), top10pctExp:r6(s.topExp&&s.topExp['10%']),
+      top1pct:r6(s.top&&s.top['1%']), top1pctExp:r6(s.topExp&&s.topExp['1%']),
+      band:s.band?{n:s.band.n,hits:r6(s.band.hits),rate:r4(s.band.rate),exp:s.band.exp,p:r6(s.band.p)}:null });
+    const rankModelsVal=doc=>Object.fromEntries(Object.entries(doc.summary.models).map(([k,s])=>[k,
+      Object.assign(oneModelVal(s), s.num?{num:oneModelVal(s.num)}:null)]));
+    const rankTiersVal=doc=>Object.fromEntries(Object.entries(doc.summary.models).map(([mk,tiers])=>[mk,
+      Object.fromEntries(Object.entries(tiers||{}).map(([tk,t])=>[tk, t&&t.meanPct!=null?{
+        meanPct:r4(t.meanPct), roundP:r6(t.roundMean&&t.roundMean.p), pMC:r6(t.mc&&t.mc.pMC) }:null]))]));
+    val.rank={
+      lotto: rank.lotto?{n:rank.lotto.summary.n, from:rank.lotto.from, latest:rank.lotto.latest, models:rankModelsVal(rank.lotto),
+        popf:rank.lotto.summary.popf?{passed:rank.lotto.summary.popf.passed, n:rank.lotto.summary.popf.n,
+          rate:r4(rank.lotto.summary.popf.rate), exp:r4(rank.lotto.summary.popf.exp), p:r6(rank.lotto.summary.popf.p)}:null}:null,
+      pension: rank.pension?{n:rank.pension.summary.n, from:rank.pension.from, latest:rank.pension.latest, models:rankModelsVal(rank.pension)}:null,
+      tiersLotto: rank.tiersLotto?{from:rank.tiersLotto.from, latest:rank.tiersLotto.latest, models:rankTiersVal(rank.tiersLotto)}:null,
+      tiersPension: rank.tiersPension?{from:rank.tiersPension.from, latest:rank.tiersPension.latest, models:rankTiersVal(rank.tiersPension)}:null,
+    };
+  }
   fs.writeFileSync(path.join(OUT,'brief','validation.json'), JSON.stringify(val,null,1));
 
   const S=A.per, CUR=A.cur;

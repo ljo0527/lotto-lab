@@ -73,7 +73,7 @@ p.note b{color:var(--ink)}
 .weeklabel{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60);padding-bottom:4px}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap;padding-top:4px}
 .btn{font:700 12.5px var(--f-body);color:var(--ink);background:var(--paper-2);border:1.5px solid var(--ink);
- padding:9px 14px;cursor:pointer;border-radius:2px;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+ padding:9px 14px;min-height:44px;cursor:pointer;border-radius:2px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;box-sizing:border-box}
 .btn:hover{background:var(--ink);color:var(--paper)}
 .foot{font-size:12px;color:var(--ink-40);border-top:1px solid var(--ink-12);margin-top:26px;padding-top:14px;line-height:1.8}
 .foot a{color:var(--ink-60)}
@@ -104,12 +104,28 @@ h3 .sub{display:block;font-size:11px;font-weight:400;color:var(--ink-40);letter-
 details.more{margin-top:8px;border-top:1px solid var(--ink-12);padding-top:8px}
 details.more summary{font-size:12px;color:var(--ink-60);font-weight:700;cursor:pointer}
 @media(min-width:720px){.wrap{padding-top:24px}}
+/* 내가 산 번호의 순위 (Sonnet-10, PLAN3 §10.3) — .weekcard/.weeksec/.weeklabel/.card/.btn/.crossrow 재사용,
+   순위 막대(.rankbar)·상태 태그(.ranktag)만 새로 추가 */
+.ranktk{padding:6px 0;border-bottom:1px solid var(--ink-12);display:flex;flex-direction:column;gap:4px}
+.ranktk:last-child{border-bottom:0}
+.ranktag{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;padding:2px 6px;border:1px solid currentColor;white-space:nowrap;align-self:flex-start}
+.ranktag.pending{color:var(--ink-40)}
+.ranktag.err{color:var(--sig)}
+.rankbar{position:relative;height:6px;background:var(--ink-12);margin:2px 0 1px;border-radius:1px}
+.rankbar-fill{position:absolute;top:0;left:0;bottom:0;background:var(--ink);border-radius:1px;min-width:2px}
+.rankbar-mid{position:absolute;top:-3px;bottom:-3px;left:50%;border-left:1px dashed var(--ink-40)}
+.rankbar-txt{font-size:11px;color:var(--ink-60)}
+.rankgatenote{font-size:11.5px;color:var(--ink-60);padding-bottom:2px}
+/* .btn{display:inline-flex} 는 작성자 스타일이라 동일 특정성의 UA [hidden]{display:none} 보다 우선한다 —
+   버튼에 hidden 을 쓰는 곳(취소 버튼)이 이 페이지에 처음이라 지금까지 드러나지 않았던 버그. 명시로 고정. */
+.btn[hidden]{display:none}
 </style>
 </head><body>
 <nav class="gnav" aria-label="사이트">
 <a href="./brief.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="5" width="17.6" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.2 9.6h17.6"/></svg><span>이번 주</span></a>
 <a href="./index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><path d="M8.6 8.9a2.4 2.4 0 0 1 2.4-2.3"/></svg><span>로또</span></a>
 <a href="./pension.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2.1a2 2 0 0 0 0 3.8v2.1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2.1a2 2 0 0 0 0-3.8V8.2Z"/><path d="M9.3 6.4v11.3" stroke-dasharray="2.1 2.1"/></svg><span>연금</span></a>
+<a href="./rank.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="13" width="5" height="7" rx="1"/><rect x="9.5" y="9" width="5" height="11" rx="1"/><rect x="15.5" y="5" width="5" height="15" rx="1"/></svg><span>순위</span></a>
 <a href="./validate.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 19 6v6c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6l7-2.8Z"/><path d="M8.7 12.2 11 14.5l4.3-4.3"/></svg><span>검증</span></a>
 <a href="./record.html" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.2" y="3" width="15.6" height="18" rx="1.4"/><path d="M7.6 8h8.8M7.6 12h8.8M7.6 16h5.6"/></svg><span>기록</span></a>
 </nav>
@@ -179,6 +195,35 @@ details.more summary{font-size:12px;color:var(--ink-60);font-weight:700;cursor:p
 </div>
 </div>
 
+<!-- ══════════════ 내가 산 번호의 순위 (Sonnet-10, PLAN3 §10.3) — 시작 ══════════════
+     brief/rank-params-lotto.json · rank-params-pension.json(Opus-A) + rank-core.js(Fable-1) ·
+     rank-worker.js(Sonnet-2)가 없으면 #rankMineUnavail 만 보이고 조용히 넘어간다(다른 섹션과 같은 저하 패턴). -->
+<h2>내가 산 번호의 순위</h2>
+<div class="card flat">
+  <p class="note"><b>어떤 순위든 당첨 확률은 같습니다</b> — 이 숫자는 그 주 모델 순서에서 내 번호가 어디 있었는지를 보여줄 뿐입니다. 추첨이 공정하면 순위 백분위는 0~100%에 고르게 흩어집니다(평균 50% — 아래 막대의 점선 기준선). <b>「순위가 좋다」가 「당첨될 가능성이 높다」는 뜻이 아닙니다.</b> 분배 모델(pop)의 순서는 «당첨 시 나눠 갖는 인원이 적을 것으로 추정되는 순서»입니다.</p>
+</div>
+<div id="rankMineUnavail" class="card empty" hidden>
+  <p class="note" style="padding-bottom:0"><b>아직 순위 계산에 필요한 자료가 없습니다.</b> <span class="mono">brief/rank-params-lotto.json</span> · <span class="mono">brief/rank-params-pension.json</span>이 생성되면 자동으로 나타납니다.</p>
+</div>
+<div id="rankMineWrap" hidden>
+
+<h3>로또<span class="sub" id="rankMineLottoSub"></span></h3>
+<div class="card flat" id="rankMineLottoGate">
+  <p class="rankgatenote">로또는 814만 5,060개 조합을 한 번 정렬해야 순위를 매길 수 있어 <b>처음 누르면 수 초~수십 초</b> 걸립니다(그 뒤로는 빠릅니다). 이 기기에서만 계산하며 저장하지 않습니다 — 새로고침하면 다시 계산합니다.</p>
+  <div class="btnrow">
+    <button class="btn" id="rankMineLottoBtn" type="button">로또 순위 계산하기</button>
+    <button class="btn" id="rankMineLottoCancelBtn" type="button" hidden>취소</button>
+  </div>
+  <p class="note" id="rankMineLottoProgress" style="padding-bottom:0" role="status" aria-live="polite" hidden></p>
+</div>
+<div id="rankMineLottoList" class="weeklist"></div>
+
+<h3 style="margin-top:26px">연금<span class="sub" id="rankMinePensionSub"></span></h3>
+<div id="rankMinePensionList" class="weeklist"></div>
+
+</div>
+<!-- ══════════════ 내가 산 번호의 순위 — 끝 ══════════════ -->
+
 <h2>내보내기 · 가져오기</h2>
 <div class="card flat">
   <p class="note">로또(<span class="mono">lottolab.my.v1</span>) + 연금(<span class="mono">pensionlab.my.v1</span>) 기록을 파일 하나로 내보내거나, 다른 기기에서 내보낸 파일을 가져와 병합합니다. 가져오기는 <b>겹치는 항목을 건너뛰고 새 항목만 합칩니다</b>(기존 기록을 지우지 않음) — 적용 전 확인 창이 뜹니다.</p>
@@ -238,6 +283,21 @@ var won = function(n){
   return nf(n)+'원';
 };
 var pct = function(x,d){ d=d==null?1:d; return (x*100).toFixed(d)+'%'; };
+// 상위/하위 몇 %인지 — 아주 작은 값(상위 0.001% 같은)도 자리수가 뭉개지지 않도록 적응형 소수자리.
+// copied from rank.html adaptivePct()/sideText() — keep in sync
+function adaptivePct(x){
+  if(x==null||isNaN(x)) return '—';
+  if(x<0.01) return x.toFixed(4)+'%';
+  if(x<1) return x.toFixed(3)+'%';
+  if(x<10) return x.toFixed(2)+'%';
+  return x.toFixed(1)+'%';
+}
+function sideText(pct01){
+  if(pct01==null||isNaN(pct01)) return '—';
+  var side = pct01<=0.5 ? '상위' : '하위';
+  var d = side==='상위' ? pct01*100 : (1-pct01)*100;
+  return side+' '+adaptivePct(d);
+}
 // 큰 당첨금 1건이 작은 총 투입액을 나누면 "1115620.3%" 처럼 자릿수가 폭주한다 — 그럴 때는 배율로 표시.
 var recoveryLabel = function(gain, spend){
   if(!spend) return '—';
@@ -582,6 +642,274 @@ function renderSimLedger(lottoMap){
   });
 }
 
+/* ══════════════════ 내가 산 번호의 순위 (Sonnet-10, PLAN3 §10.3) ══════════════════
+   brief/rank-params-lotto.json · rank-params-pension.json(Opus-A 소유, 회차별 모델 파라미터) +
+   rank-core.js(Fable-1)/rank-worker.js(Sonnet-2, 메시지 프로토콜은 rank-worker.js 머리 주석이 진실)로
+   그 회차 순위표에서 내 번호가 어디 있었는지 보여준다.
+   - 로또: 814만 조합 표를 한 번 만들어야 해서(무거움) 버튼을 눌러야만 계산 — 첫 페인트를 막지 않는다.
+   - 연금: 회차당 계산이 가벼워(목표 ≤300ms/회) 화면에 보이는 최근분만 자동 계산한다.
+   - 최근 8회차(로또/연금 각각)만 보여준다 — 전체 아카이브는 위 "주별 기록"에 이미 있다.
+   - 결과는 메모리에만 캐시(rankCache) — 새로고침하면 다시 계산(로또는 그래서 버튼이 다시 필요). */
+var RANK_RECENT_ROUNDS = 8;
+// 폴백 이름(brief/rank-lotto.json·rank-pension.json 을 못 불러올 때만 씀) — 순서·키는 rank-worker.js 프로토콜과 일치해야 한다.
+var RANK_LOTTO_MODEL_FALLBACK = {pop:'분배 모델(추천 순서)', popf:'분배 모델 + 주간 필터', hot:'빈도 모델(많이 나온 번호)', cold:'미출현 모델(오래 안 나온 번호)'};
+var RANK_PENSION_MODEL_FALLBACK = {site:'사이트 설정 모델', freq:'빈도 모델(많이 나온 숫자)', cold:'역빈도 모델(적게 나온 숫자)', recent:'최근가중 모델(최근에 자주 나온 숫자)', gap:'갭 모델(오래 안 나온 숫자)', rand:'무작위(대조군)'};
+var RANK_LOTTO_MODELS = [['pop',RANK_LOTTO_MODEL_FALLBACK.pop],['popf',RANK_LOTTO_MODEL_FALLBACK.popf],['hot',RANK_LOTTO_MODEL_FALLBACK.hot],['cold',RANK_LOTTO_MODEL_FALLBACK.cold]];
+var RANK_PENSION_MODELS = [['site',RANK_PENSION_MODEL_FALLBACK.site],['freq',RANK_PENSION_MODEL_FALLBACK.freq],['cold',RANK_PENSION_MODEL_FALLBACK.cold],['recent',RANK_PENSION_MODEL_FALLBACK.recent],['gap',RANK_PENSION_MODEL_FALLBACK.gap],['rand',RANK_PENSION_MODEL_FALLBACK.rand]];
+// brief/rank-lotto.json · rank-pension.json 의 models:[{key,name}] 로 표시 이름을 갱신한다(그 파일이 "표준" 이름의 출처 —
+// rank-tiers-view.js MODEL_FALLBACK_NAME 과 같은 패턴). 파일이 없거나 키가 없으면 위 폴백을 그대로 둔다.
+function applyModelNames(list, data, fallback){
+  var byKey = {};
+  ((data && data.models) || []).forEach(function(m){ if(m && m.key) byKey[m.key] = m.name; });
+  list.forEach(function(pair){ pair[1] = byKey[pair[0]] || fallback[pair[0]] || pair[1]; });
+}
+
+var rankWorker = null, rankWorkerFailed = false, rankReqSeq = 1, rankPending = {};
+function ensureRankWorker(){
+  if(rankWorker || rankWorkerFailed) return;
+  try{ rankWorker = new Worker('./rank-worker.js'); }
+  catch(e){ rankWorkerFailed = true; return; }
+  rankWorker.onmessage = function(ev){
+    var m = ev.data || {};
+    if(m.type==='core-error'){
+      rankWorkerFailed = true;
+      Object.keys(rankPending).forEach(function(id){ rankPending[id].reject(new Error(m.message||'코어 로딩 실패')); delete rankPending[id]; });
+      return;
+    }
+    if(m.type==='ready') return;
+    var p = rankPending[m.id]; if(!p) return;
+    if(m.type==='progress'){ if(p.onProgress) p.onProgress(m.frac, m.stage); return; }
+    if(m.type==='result'){ delete rankPending[m.id]; p.resolve(m.data); return; }
+    if(m.type==='error'){ delete rankPending[m.id]; p.reject(new Error(m.message)); return; }
+    if(m.type==='cancelled'){ delete rankPending[m.id]; var err=new Error('취소됨'); err.cancelled=true; p.reject(err); return; }
+  };
+  rankWorker.onerror = function(){
+    rankWorkerFailed = true;
+    Object.keys(rankPending).forEach(function(id){ rankPending[id].reject(new Error('워커 오류')); delete rankPending[id]; });
+  };
+}
+function rankRequest(cmd, args, onProgress, onId){
+  return new Promise(function(resolve, reject){
+    ensureRankWorker();
+    if(rankWorkerFailed){ reject(new Error('워커를 불러오지 못했습니다')); return; }
+    var id = 'r' + (rankReqSeq++);
+    if(onId) onId(id);
+    rankPending[id] = {resolve:resolve, reject:reject, onProgress:onProgress};
+    try{
+      rankWorker.postMessage({id:id, cmd:cmd, game:args.game, round:args.round, models:args.models,
+        combo:args.combo, ticket:args.ticket, params:args.params, excludeWon:args.excludeWon});
+    }catch(e){ delete rankPending[id]; reject(e); }
+  });
+}
+function rankCancelReq(id){ if(rankWorker && id){ try{ rankWorker.postMessage({cmd:'cancel', targetId:id}); }catch(e){} } }
+
+var rankParamsLotto=null, rankParamsPension=null, rankAllWon=null;
+var rankCache = {lotto:{}, pension:{}};
+var rankLottoRows=[], rankPensionRows=[];
+function lottoRankKey(round,nums){ return round+':'+nums.join(','); }
+function pensionRankKey(ep,band,num){ return ep+':'+band+':'+num; }
+function paramsForLottoRound(R){ return rankParamsLotto && rankParamsLotto.rows && rankParamsLotto.rows[String(R)]; }
+function paramsForPensionEp(ep){ return rankParamsPension && rankParamsPension.rows && rankParamsPension.rows[String(ep)]; }
+function buildAllWonCombos(lottoMap){
+  var arr=[];
+  Object.keys(lottoMap).forEach(function(k){ var d=lottoMap[k]; if(d && Array.isArray(d.n)) arr.push({round:Number(k), nums:d.n.slice().sort(function(a,b){return a-b;})}); });
+  arr.sort(function(a,b){ return a.round-b.round; });
+  return arr;
+}
+function excludeWonFor(R){
+  if(!rankAllWon) return [];
+  var out=[];
+  for(var i=0;i<rankAllWon.length;i++){ if(rankAllWon[i].round<R) out.push(rankAllWon[i].nums); else break; }
+  return out;
+}
+
+function collectRankData(myLotto, myPension, ledgerRows){
+  var lottoByRound={}, pensionByEp={};
+  function lt(round){ if(!lottoByRound[round]) lottoByRound[round]={round:round, mine:[], ledger:[]}; return lottoByRound[round]; }
+  function pe(ep){ if(!pensionByEp[ep]) pensionByEp[ep]={ep:ep, mine:[], ledger:[]}; return pensionByEp[ep]; }
+  myLotto.forEach(function(t){ if(t && t.round!=null && Array.isArray(t.nums) && t.nums.length===6) lt(t.round).mine.push(t.nums.slice().sort(function(a,b){return a-b;})); });
+  myPension.forEach(function(t){ if(t && t.ep!=null && t.num!=null) pe(t.ep).mine.push({band:t.band, num:String(t.num).padStart(6,'0')}); });
+  ledgerRows.forEach(function(row){
+    if(!row || !Array.isArray(row.picks)) return;
+    if(row.kind==='lotto'){
+      row.picks.forEach(function(s){ var nums=parseLottoPick(s); if(nums.length===6) lt(row.round).ledger.push(nums.slice().sort(function(a,b){return a-b;})); });
+    }else if(row.kind==='pension'){
+      row.picks.forEach(function(s){ var p=parsePensionPick(s); if(p) pe(row.round).ledger.push({band:p.band, num:p.num}); });
+    }
+  });
+  var lottoRounds = Object.keys(lottoByRound).map(Number).sort(function(a,b){ return b-a; });
+  var pensionEps = Object.keys(pensionByEp).map(Number).sort(function(a,b){ return b-a; });
+  return {
+    lottoRoundsDesc: lottoRounds.map(function(r){ return lottoByRound[r]; }),
+    pensionEpsDesc: pensionEps.map(function(e){ return pensionByEp[e]; })
+  };
+}
+
+/* ── 결과 렌더링 ── */
+function rankOneHTML(r){
+  if(!r) return '<span class="ranktag pending">—</span>';
+  if(r.error) return '<span class="ranktag err">오류</span>';
+  if(r.excluded) return '<span class="ranktag pending">필터 밖(제외) · 전체 '+nf(r.of)+'개 중</span>';
+  var pctv = Math.max(0, Math.min(1, r.pct));
+  return '<div class="rankbar"><span class="rankbar-mid"></span><span class="rankbar-fill" style="width:'+(pctv*100).toFixed(2)+'%"></span></div>'+
+    '<div class="rankbar-txt">'+sideText(pctv)+' · '+nf(r.mid)+'위'+(r.best!==r.worst?' (동률 '+nf(r.best)+'~'+nf(r.worst)+'위)':'')+' / '+nf(r.of)+'개 중</div>';
+}
+function rankOneShort(r){
+  if(!r) return '—';
+  if(r.error) return '오류';
+  if(r.excluded) return '필터 밖(제외)';
+  var pctv = Math.max(0, Math.min(1, r.pct));
+  return sideText(pctv)+' · '+nf(r.mid)+'위';
+}
+function rankSlotHTML(kind, results){
+  if(!results) return '<span class="ranktag pending">계산 전</span>';
+  if(results.unavailable) return '<span class="ranktag pending">이 회차 자료 없음</span>';
+  if(results.error) return '<span class="ranktag err">계산 실패</span>';
+  var meta = kind==='lotto' ? RANK_LOTTO_MODELS : RANK_PENSION_MODELS;
+  var mainKey = kind==='lotto' ? 'pop' : 'site';
+  var detailRows = meta.map(function(mm){
+    return '<div class="crossrow"><span class="crosslabel">'+mm[1]+'</span><span class="crossval">'+rankOneShort(results[mm[0]])+'</span></div>';
+  }).join('');
+  return rankOneHTML(results[mainKey])+
+    '<details class="more"><summary>모델별 보기</summary><div class="crossgrid" style="padding-top:4px">'+detailRows+'</div></details>';
+}
+function lottoRankRowHTML(round, nums){
+  var id = 'rkl'+rankLottoRows.length;
+  rankLottoRows.push({id:id, round:round, nums:nums});
+  var cached = rankCache.lotto[lottoRankKey(round,nums)];
+  return '<div class="ranktk">'+lottoTicketHTML(nums)+'<div id="'+id+'" role="status" aria-live="polite">'+rankSlotHTML('lotto', cached)+'</div></div>';
+}
+function pensionRankRowHTML(ep, band, num){
+  var id = 'rkp'+rankPensionRows.length;
+  rankPensionRows.push({id:id, ep:ep, band:band, num:num});
+  var cached = rankCache.pension[pensionRankKey(ep,band,num)];
+  return '<div class="ranktk">'+pensionTicketHTML(band, num, 0)+'<div id="'+id+'" role="status" aria-live="polite">'+rankSlotHTML('pension', cached)+'</div></div>';
+}
+function buildLottoRoundCard(rd){
+  var mineHTML = rd.mine.length ? rd.mine.map(function(n){ return lottoRankRowHTML(rd.round,n); }).join('') : '<span class="wksub">내 기록 없음</span>';
+  var ledgerHTML = rd.ledger.length ? rd.ledger.map(function(n){ return lottoRankRowHTML(rd.round,n); }).join('') : '<span class="wksub">추천 원장 없음</span>';
+  return '<div class="weekcard"><div class="whead"><div><div class="wk">로또 '+rd.round+'회</div></div></div>'+
+    '<div class="weeksec"><div class="weeklabel">내 기록</div>'+mineHTML+'</div>'+
+    '<div class="weeksec"><div class="weeklabel">추천 원장</div>'+ledgerHTML+'</div></div>';
+}
+function buildPensionRoundCard(rd){
+  var mineHTML = rd.mine.length ? rd.mine.map(function(t){ return pensionRankRowHTML(rd.ep,t.band,t.num); }).join('') : '<span class="wksub">내 기록 없음</span>';
+  var ledgerHTML = rd.ledger.length ? rd.ledger.map(function(t){ return pensionRankRowHTML(rd.ep,t.band,t.num); }).join('') : '<span class="wksub">추천 원장 없음</span>';
+  return '<div class="weekcard"><div class="whead"><div><div class="wk">연금 '+rd.ep+'회</div></div></div>'+
+    '<div class="weeksec"><div class="weeklabel">내 기록</div>'+mineHTML+'</div>'+
+    '<div class="weeksec"><div class="weeklabel">추천 원장</div>'+ledgerHTML+'</div></div>';
+}
+
+function updateLottoSlot(row){
+  var el=document.getElementById(row.id); if(!el) return;
+  el.innerHTML = rankSlotHTML('lotto', rankCache.lotto[lottoRankKey(row.round,row.nums)]);
+}
+function updatePensionSlot(row){
+  var el=document.getElementById(row.id); if(!el) return;
+  el.innerHTML = rankSlotHTML('pension', rankCache.pension[pensionRankKey(row.ep,row.band,row.num)]);
+}
+
+/* 연금 — 화면에 보이는(최근분) 티켓만, 가벼우니 자동 계산 */
+function computePensionVisible(){
+  var rows = rankPensionRows.slice(), i=0;
+  function next(){
+    if(i>=rows.length) return;
+    var row = rows[i++];
+    var key = pensionRankKey(row.ep,row.band,row.num);
+    if(rankCache.pension[key]!==undefined){ updatePensionSlot(row); next(); return; }
+    var params = paramsForPensionEp(row.ep);
+    if(!params){ rankCache.pension[key]={unavailable:true}; updatePensionSlot(row); next(); return; }
+    rankRequest('rankOf', {game:'pension', round:row.ep, models:RANK_PENSION_MODELS.map(function(m){return m[0];}),
+      ticket:{band:row.band, num:row.num}, params:params})
+      .then(function(data){ rankCache.pension[key]=data.results; updatePensionSlot(row); next(); })
+      .catch(function(){ rankCache.pension[key]={error:true}; updatePensionSlot(row); next(); });
+  }
+  next();
+}
+
+/* 로또 — 버튼을 눌러야만 시작(무거운 814만 조합 표 생성 포함), 진행률 + 취소 */
+var rankLottoBusy = false;
+function computeLottoAll(){
+  if(rankLottoBusy) return;
+  var btn=document.getElementById('rankMineLottoBtn'), cancelBtn=document.getElementById('rankMineLottoCancelBtn'), prog=document.getElementById('rankMineLottoProgress');
+  if(!btn || !prog) return;
+  rankLottoBusy = true;
+  var cancelled=false, curId=null;
+  btn.hidden = true; if(cancelBtn) cancelBtn.hidden = false; prog.hidden = false; prog.textContent = '준비 중…';
+  if(cancelBtn) cancelBtn.onclick = function(){ cancelled=true; if(curId) rankCancelReq(curId); prog.textContent = '취소하는 중…'; };
+  var rows = rankLottoRows.slice(); // 렌더 시점에 등록된 대상 전부(최근 8회차에 보이는 줄)
+  var total = rows.length, done=0;
+  function next(){
+    if(cancelled || done>=total){ finish(); return; }
+    var row = rows[done];
+    var key = lottoRankKey(row.round,row.nums);
+    if(rankCache.lotto[key]!==undefined){ updateLottoSlot(row); done++; next(); return; }
+    var params = paramsForLottoRound(row.round);
+    if(!params){ rankCache.lotto[key]={unavailable:true}; updateLottoSlot(row); done++; next(); return; }
+    rankRequest('rankOf',
+      {game:'lotto', round:row.round, models:RANK_LOTTO_MODELS.map(function(m){return m[0];}), combo:row.nums, params:params, excludeWon:excludeWonFor(row.round)},
+      function(frac, stage){ prog.textContent = '로또 순위 계산 중 '+done+'/'+total+(stage==='buildTable' ? ' · 조합표 준비 '+Math.round(frac*100)+'%(최초 1회만)' : ''); },
+      function(id){ curId=id; }
+    ).then(function(data){
+      rankCache.lotto[key]=data.results; updateLottoSlot(row); done++; curId=null;
+      prog.textContent = '로또 순위 계산 중 '+done+'/'+total;
+      next();
+    }).catch(function(e){
+      if(e && e.cancelled){ finish(); return; }
+      rankCache.lotto[key]={error:true}; updateLottoSlot(row); done++; curId=null;
+      next();
+    });
+  }
+  function finish(){
+    rankLottoBusy = false;
+    if(cancelBtn) cancelBtn.hidden = true;
+    if(done>=total){ btn.hidden = true; prog.hidden = true; }
+    else{ btn.hidden = false; btn.textContent = '이어서 계산하기'; prog.hidden = false;
+      prog.textContent = (cancelled ? '취소됨 · ' : '')+done+'/'+total+' 계산됨'; }
+  }
+  next();
+}
+function wireRankMine(){
+  var btn = document.getElementById('rankMineLottoBtn');
+  if(btn) btn.onclick = computeLottoAll;
+}
+
+function renderRankMineSection(data){
+  rankLottoRows = []; rankPensionRows = [];
+  var lottoHead = data.lottoRoundsDesc.slice(0, RANK_RECENT_ROUNDS);
+  var pensionHead = data.pensionEpsDesc.slice(0, RANK_RECENT_ROUNDS);
+  var lottoSubEl=document.getElementById('rankMineLottoSub'), pensionSubEl=document.getElementById('rankMinePensionSub');
+  if(lottoSubEl) lottoSubEl.textContent = lottoHead.length ? (' — 최근 '+lottoHead.length+'회차'+(data.lottoRoundsDesc.length>lottoHead.length?' (전체 '+data.lottoRoundsDesc.length+'회차 중)':'')) : '';
+  if(pensionSubEl) pensionSubEl.textContent = pensionHead.length ? (' — 최근 '+pensionHead.length+'회차'+(data.pensionEpsDesc.length>pensionHead.length?' (전체 '+data.pensionEpsDesc.length+'회차 중)':'')) : '';
+  var lottoListEl=document.getElementById('rankMineLottoList');
+  if(lottoListEl) lottoListEl.innerHTML = lottoHead.length ? lottoHead.map(buildLottoRoundCard).join('') : '<p class="note">로또 기록이 없습니다.</p>';
+  var lottoGateEl=document.getElementById('rankMineLottoGate');
+  if(lottoGateEl) lottoGateEl.hidden = lottoHead.length===0;
+  var pensionListEl=document.getElementById('rankMinePensionList');
+  if(pensionListEl) pensionListEl.innerHTML = pensionHead.length ? pensionHead.map(buildPensionRoundCard).join('') : '<p class="note">연금 기록이 없습니다.</p>';
+  if(pensionHead.length) computePensionVisible();
+}
+
+function initRankMine(myLotto, myPension, ledgerRows, lottoMap){
+  var wrap=document.getElementById('rankMineWrap'), unavail=document.getElementById('rankMineUnavail');
+  Promise.all([
+    fetchJSON('./brief/rank-params-lotto.json'), fetchJSON('./brief/rank-params-pension.json'),
+    fetchJSON('./brief/rank-lotto.json'), fetchJSON('./brief/rank-pension.json')
+  ]).then(function(res){
+    rankParamsLotto=res[0]; rankParamsPension=res[1];
+    applyModelNames(RANK_LOTTO_MODELS, res[2], RANK_LOTTO_MODEL_FALLBACK);
+    applyModelNames(RANK_PENSION_MODELS, res[3], RANK_PENSION_MODEL_FALLBACK);
+    var ok = !!(rankParamsLotto && rankParamsLotto.rows) || !!(rankParamsPension && rankParamsPension.rows);
+    if(!ok){ if(wrap) wrap.hidden=true; if(unavail) unavail.hidden=false; return; }
+    if(unavail) unavail.hidden=true; if(wrap) wrap.hidden=false;
+    if(lottoMap) rankAllWon = buildAllWonCombos(lottoMap);
+    renderRankMineSection(collectRankData(myLotto, myPension, ledgerRows));
+    wireRankMine();
+  }).catch(function(){
+    if(wrap) wrap.hidden=true; if(unavail) unavail.hidden=false;
+  });
+}
+
 /* ══════════════════ 내보내기 · 가져오기 ══════════════════ */
 function wireExportImport(){
   var expBtn=document.getElementById('exportBtn'), impBtn=document.getElementById('importBtn'), impFile=document.getElementById('importFile');
@@ -655,6 +983,7 @@ function main(){
     if(degradedEl) degradedEl.hidden = !!pensionMap;
 
     renderSimLedger(lottoMap); // 모의 원장(별도 섹션) — 실패해도 위 내 기록/추천 원장 렌더링에 영향 없음
+    initRankMine(myLotto, myPension, ledgerRows, lottoMap); // 내가 산 번호의 순위(별도 섹션) — 실패해도 영향 없음
 
     var weeks = new Map();
     function wk(lottoRound){

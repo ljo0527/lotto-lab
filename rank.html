@@ -1,0 +1,548 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script>try{var t=localStorage.getItem('lottolab.theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
+<title>순위 · 당첨 조합은 몇 위였나</title>
+<meta name="description" content="로또 814만·연금 500만 조합 전체에 순위를 매기고, 실제 당첨조합이 회차마다 몇 위였는지 기록합니다 — 추첨이 공정하면 순위는 1위~꼴찌에 고르게 흩어집니다">
+<meta name="theme-color" content="#16302B">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="stylesheet" href="./site.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--f-body);font-size:15px;line-height:1.68;letter-spacing:-.01em}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:18px 0 0}
+.mono{font-family:var(--f-mono)}
+header{border-bottom:1.5px solid var(--ink);padding-bottom:12px;margin-bottom:20px}
+.eyebrow{font-family:ui-monospace,monospace;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-60);
+ display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+h1{font-size:clamp(28px,7vw,42px);line-height:1.08;font-weight:800;padding:10px 0 4px;letter-spacing:-.02em}
+h1 small{display:block;font-size:.36em;font-weight:600;color:var(--ink-60);padding-top:6px;letter-spacing:.02em}
+h2{font-family:ui-monospace,monospace;font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+ padding:0 0 12px;display:flex;align-items:center;gap:10px;margin-top:30px}
+h2::after{content:"";flex:1;height:1px;background:var(--ink-12)}
+h3{font:700 13.5px var(--f-body);color:var(--ink);padding:0 0 8px;margin-top:2px}
+p.note{font-size:13.5px;color:var(--ink-60);padding-bottom:10px;line-height:1.7}
+p.note b{color:var(--ink)}
+p.lead{font-size:13.5px;line-height:1.78;color:var(--ink-60);padding-bottom:6px}
+p.lead b{color:var(--ink)}
+.card{background:var(--paper-2);border:1.5px solid var(--ink);padding:16px 15px;margin-bottom:14px}
+.card.flat{border-width:1px;border-color:var(--ink-12)}
+.card.empty{text-align:center;padding:28px 16px}
+.card.empty p{padding-bottom:8px}
+.card.empty a{color:var(--ink);font-weight:700}
+/* KPI 그리드 — record.html 과 동일 컴포넌트. 홀수 개일 때 마지막 칸이 그리드 바탕색만 남는 것을 막는 트릭 포함 */
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(124px,1fr));gap:1px;background:var(--ink-12);
+ border:1.5px solid var(--ink);margin-bottom:14px}
+.kpi>div{background:var(--paper-2);padding:12px 11px}
+.kpi>div:last-child:nth-child(odd){grid-column:1/-1}
+.kpi .k{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-60)}
+.kpi .v{font-size:22px;font-weight:800;line-height:1.14;padding-top:3px;letter-spacing:-.02em}
+.kpi .s{font-size:11px;color:var(--ink-60)}
+.chart{width:100%;height:auto;display:block;margin-bottom:8px}
+.chart text{font-family:var(--f-mono)}
+.axtick{font-size:9px;fill:var(--ink-40)}
+.axis0{stroke:var(--ink-12);stroke-width:1}
+.ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.ln.ledger{stroke:var(--ink-40);stroke-dasharray:6 4}
+.dbar{fill:var(--ink);opacity:.66}
+.dotpath{fill:none;stroke:var(--ink);stroke-width:5.2;stroke-linecap:round;opacity:.72}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--ink-60);flex-wrap:wrap}
+.legend .lg{display:flex;align-items:center;gap:6px}
+.legend .sw{width:16px;height:0;border-top:2.4px solid var(--ink)}
+.legend .sw.ledger{border-top-style:dashed;border-color:var(--ink-40)}
+/* 당첨번호 표시 — index.html/record.html 과 같은 볼·연금 티켓 컴포넌트 */
+.ball{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+ font-family:var(--f-mono);font-weight:700;font-size:10.5px;color:#16302B;flex:none}
+.balls{display:flex;gap:3px;flex-wrap:wrap;align-items:center}
+.dg{width:20px;height:25px;border:1px solid var(--ink-40);display:inline-flex;align-items:center;justify-content:center;
+ font-family:var(--f-mono);font-weight:700;font-size:11.5px;background:var(--paper-2);flex:none}
+.tk{display:inline-flex;gap:3px;align-items:center;flex-wrap:wrap}
+.bnd{font-weight:800;font-size:14px;border:1.5px solid var(--ink);padding:1px 6px;line-height:1.3;flex:none}
+.bndlabel{font-family:var(--f-mono);font-size:9.5px;color:var(--ink-60);letter-spacing:.06em;margin-right:2px}
+.wk{font-family:var(--f-mono);font-weight:700;white-space:nowrap}
+.wksub{font-size:10.5px;color:var(--ink-60)}
+.weeklist{display:flex;flex-direction:column;gap:10px}
+.weekcard{background:var(--paper-2);border:1px solid var(--ink-12);padding:12px 13px}
+.weekcard .whead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+ padding-bottom:8px;border-bottom:1px solid var(--ink-12);margin-bottom:8px}
+/* 모델별 순위 행 — 백분위 막대. flex-wrap 로 좁은 화면에서 줄바꿈시켜 가로 스크롤을 원천 차단한다 */
+.modelrow{display:flex;align-items:center;gap:6px 8px;padding:3px 0;font-size:11px;flex-wrap:wrap}
+.modelrow .mn{flex:none;min-width:36px;color:var(--ink-60);font-family:var(--f-mono);font-size:10px}
+.modelrow .bar{flex:1 1 56px;min-width:56px;position:relative;height:11px;background:var(--ink-06);border:1px solid var(--ink-12)}
+.modelrow .bar .exp{position:absolute;left:50%;top:-1px;bottom:-1px;width:0;border-left:1px dashed var(--ink-30)}
+.modelrow .bar .mid{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:var(--ink)}
+.modelrow .vv{flex:none;margin-left:auto;font-family:var(--f-mono);font-size:10px;color:var(--ink-60);text-align:right}
+/* 게임/모델 토글 — 필터·클릭형 pill */
+.pillrow{display:flex;gap:6px;flex-wrap:wrap;padding-bottom:4px}
+/* 터치 타겟 ≥44px(review-copy.md §5-2) — 내용은 왼쪽 정렬 그대로 두고 세로만 flex 로 가운데 맞춘다 */
+.pill{font:700 12px var(--f-mono);letter-spacing:.01em;padding:7px 11px;border:1.5px solid var(--ink-30);
+ background:var(--paper-2);color:var(--ink-60);cursor:pointer;border-radius:2px;text-align:left;line-height:1.3;
+ min-height:44px;display:inline-flex;flex-direction:column;justify-content:center}
+.pill[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);background:var(--paper-3)}
+.pill .claim{display:block;font-size:9px;font-weight:400;color:var(--ink-40);letter-spacing:0;padding-top:1px}
+.pill[aria-pressed="true"] .claim{color:var(--ink-60)}
+/* 상위 N 안 — record.html 의 crossgrid 패턴 그대로(관측 vs 기대) */
+.crossgrid{display:flex;flex-direction:column;font-size:12.5px}
+.crossrow{display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px solid var(--ink-12)}
+.crossrow:last-child{border-bottom:0}
+.crosslabel{color:var(--ink-60)}
+.crossval{font-family:var(--f-mono);color:var(--ink)}
+.crossval b{color:var(--ink);font-weight:800}
+@media(min-width:560px){
+  .crossrow{flex-direction:row;justify-content:space-between;align-items:baseline;gap:10px}
+  .crossval{white-space:nowrap;text-align:right}
+}
+.tag{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;padding:2px 6px;border:1px solid currentColor;white-space:nowrap;flex:none}
+.tag.noi{color:var(--ink-40)}
+details.more{margin-top:8px;border-top:1px solid var(--ink-12);padding-top:8px}
+details.more summary{font-size:12px;color:var(--ink-60);font-weight:700;cursor:pointer}
+.foot{font-size:12px;color:var(--ink-40);border-top:1px solid var(--ink-12);margin-top:26px;padding-top:14px;line-height:1.8}
+.foot a{color:var(--ink-60)}
+@media(min-width:720px){.wrap{padding-top:24px}}
+</style>
+</head><body>
+<nav class="gnav" aria-label="사이트">
+<a href="./brief.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="5" width="17.6" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.2 9.6h17.6"/></svg><span>이번 주</span></a>
+<a href="./index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><path d="M8.6 8.9a2.4 2.4 0 0 1 2.4-2.3"/></svg><span>로또</span></a>
+<a href="./pension.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2.1a2 2 0 0 0 0 3.8v2.1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2.1a2 2 0 0 0 0-3.8V8.2Z"/><path d="M9.3 6.4v11.3" stroke-dasharray="2.1 2.1"/></svg><span>연금</span></a>
+<a href="./rank.html" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="13" width="5" height="7" rx="1"/><rect x="9.5" y="9" width="5" height="11" rx="1"/><rect x="15.5" y="5" width="5" height="15" rx="1"/></svg><span>순위</span></a>
+<a href="./validate.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 19 6v6c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6l7-2.8Z"/><path d="M8.7 12.2 11 14.5l4.3-4.3"/></svg><span>검증</span></a>
+<a href="./record.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.2" y="3" width="15.6" height="18" rx="1.4"/><path d="M7.6 8h8.8M7.6 12h8.8M7.6 16h5.6"/></svg><span>기록</span></a>
+</nav>
+<div class="wrap">
+<header>
+  <div class="eyebrow"><span>일확천금 · 순위</span><button id="themeBtn" class="theme-btn" type="button">시스템</button></div>
+  <h1>당첨 조합, 몇 위였나<small>예상번호를 순위표 끝까지 펼쳐놓고 실제 당첨조합이 그중 몇 위였는지 회차마다 기록합니다</small></h1>
+</header>
+
+<div id="loadingState" class="card empty"><p class="note" style="padding-bottom:0">불러오는 중…</p></div>
+
+<div id="emptyState" class="card empty" hidden>
+  <p><b>아직 계산 전입니다.</b></p>
+  <p class="note" style="padding-bottom:0">회차별 순위는 브리핑 파이프라인이 로또 1000회·연금 100회부터 walk-forward(그 회차 이전 자료만 사용)로 계산해 이 페이지에 쌓습니다. 계산이 끝나면 자동으로 채워집니다.</p>
+</div>
+
+<div id="mainContent" hidden>
+  <p class="lead"><b>추첨이 공정하면 당첨 순위는 순위표 1위~꼴찌에 고르게(균등하게) 흩어집니다.</b> 로또는 814만 5,060개, 연금은 500만 장의 모든 조합에 매 회차 순위를 매기고, 실제 당첨조합이 그중 몇 위였는지를 기록합니다. 이 페이지의 모든 수치 옆에는 그 "우연 기준선"을 함께 둡니다. 사람은 흔히 상위 몇 위 안을 사지만, 실제로 어느 순위권이 당첨되는지는 이 통계로만 압니다.</p>
+  <p class="note">아래 <span class="mono">pop</span>(분배 모델)의 순서는 <b>당첨돼도 나눠 가질 사람이 적은 조합을 우선</b>한 것이지 "더 잘 맞는 순서"가 아닙니다. 어떤 모델도 "이 순위권이 잘 나온다"는 뜻으로 읽으면 안 됩니다 — 아래 χ²·KS 검정은 그 모델의 순위가 우연(균등)과 실제로 다른지를 봅니다.</p>
+
+  <div class="pillrow" id="gameToggle">
+    <button type="button" class="pill" data-game="lotto">로또</button>
+    <button type="button" class="pill" data-game="pension">연금</button>
+  </div>
+
+  <div id="gameEmptyNote" class="card flat" hidden><p class="note" id="gameEmptyText" style="padding-bottom:0"></p></div>
+
+  <div id="gameContent">
+    <h2>모델</h2>
+    <div class="pillrow" id="modelToggle"></div>
+    <p class="note" id="modelDesc" aria-live="polite"></p>
+
+    <div id="popfBlock" class="card flat" hidden></div>
+
+    <h2>요약</h2>
+    <div class="kpi" id="kpiMain"></div>
+    <p class="note">χ²·KS 는 이 모델의 백분위 분포가 균등(우연)과 통계적으로 다른지 보는 검정입니다. p 값이 작다고 "확률이 오른다"는 뜻은 아닙니다 — 게임·모델을 여러 개 한꺼번에 훑어보면 그중 일부는 우연히 작게 나옵니다.</p>
+
+    <div class="card flat">
+      <div class="crosshead" style="font-size:11px;color:var(--ink-40);font-weight:700;padding-bottom:6px">상위 N 안 — 관측(동점 비율 합) vs 기대</div>
+      <div class="crossgrid" id="topGrid"></div>
+    </div>
+
+    <h2>10분위 분포</h2>
+    <div class="card flat">
+      <p class="note">순위표를 위에서부터 10등분한 칸(1분위=최상위 10%, 10분위=최하위 10%)마다 실제 당첨이 몇 번 들어왔는지입니다. 점선은 균등하다면 기대되는 값(회차 수 ÷ 10)입니다.</p>
+      <div id="decileChart"></div>
+    </div>
+
+    <h2>회차별 백분위</h2>
+    <div class="card flat">
+      <p class="note">가로축은 회차(오래된 → 최근), 세로축은 그 회차 당첨조합의 백분위(0%=순위표 맨 위 쪽, 100%=맨 아래 쪽)입니다. 점선은 기대값 50%입니다.</p>
+      <div id="dotChart"></div>
+    </div>
+
+    <h2>회차 표</h2>
+    <div id="roundTable" class="weeklist"><p class="note">불러오는 중…</p></div>
+
+    <h2>구간 전략 (walk-forward)</h2>
+    <div class="card flat" id="bandBlock"></div>
+  </div>
+</div>
+
+<h2>등수별 순위 분포</h2>
+<p class="note">1등 조합 하나가 아니라, 그 회차에 당첨된 모든 등수(로또 2~5등 · 연금 2~7등)의 조합이 순위표의 어디쯤 있었는지 함께 봅니다.</p>
+<section id="tiers"><p class="note">불러오는 중…</p></section>
+
+<h2>무한 순위 탐색기</h2>
+<p class="note">순위표를 1위부터 끝까지 20개씩 넘겨 보거나, 내 번호의 순위를 조회하거나, 상위 N개를 CSV로 내보낼 수 있습니다. 계산량이 있어 데스크톱을 권장합니다.</p>
+<section id="explorer"><p class="note">불러오는 중…</p></section>
+
+<p class="foot">여기 순위는 당첨 확률을 바꾸지 않습니다 — 추첨은 매번 독립이고 공정합니다 → <a href="./validate.html">검증</a><br>
+복권 구매는 감당할 수 있는 범위 안에서. 만 19세 미만은 구매할 수 없습니다.</p>
+</div>
+<script src="./site.js" defer></script>
+<script src="./rank-core.js"></script>
+<script src="./rank-explorer.js" defer></script>
+<script src="./rank-tiers-view.js" defer></script>
+<script>
+"use strict";
+/* ══════════════════ 유틸 ══════════════════ */
+function fetchJSON(url){
+  return fetch(url,{cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+var nf = function(n){ return (n==null||isNaN(n)) ? '—' : Math.round(n).toLocaleString('ko-KR'); };
+// obs/exp(top-N)는 동점 비율 합이라 소수일 수 있고, 상위 10위 안처럼 기대값이 0.0003 같은 작은 수도 나온다.
+// 정수면 정수로, 아니면 크기에 맞춰 소수 자리를 늘려(적응형) "0.0 vs 0.0"처럼 뭉개지지 않게 한다.
+var nf1 = function(n){
+  if(n==null||isNaN(n)) return '—';
+  var r = Math.round(n);
+  if(Math.abs(n-r)<1e-9) return r.toLocaleString('ko-KR');
+  var a = Math.abs(n), d = a<0.01?4 : a<1?3 : a<10?2 : 1;
+  return n.toLocaleString('ko-KR',{minimumFractionDigits:d,maximumFractionDigits:d});
+};
+var fmtPct1 = function(x){ return (x==null||isNaN(x)) ? '—' : (x*100).toFixed(1)+'%'; };
+// 상위/하위 몇 %인지 — 아주 작은 값(상위 0.001% 같은)도 자리수가 뭉개지지 않도록 적응형 소수자리.
+function adaptivePct(x){
+  if(x==null||isNaN(x)) return '—';
+  if(x<0.01) return x.toFixed(4)+'%';
+  if(x<1) return x.toFixed(3)+'%';
+  if(x<10) return x.toFixed(2)+'%';
+  return x.toFixed(1)+'%';
+}
+function sideText(pct01){
+  if(pct01==null||isNaN(pct01)) return '—';
+  var side = pct01<=0.5 ? '상위' : '하위';
+  var d = side==='상위' ? pct01*100 : (1-pct01)*100;
+  return side+' '+adaptivePct(d);
+}
+function fmtP(p){ if(p==null||isNaN(p)) return '—'; return p<0.001 ? '<0.001' : p.toFixed(3); }
+function mmdd(s){ s=String(s||'').replace(/-/g,''); return s.length>=8 ? s.slice(4,6)+'.'+s.slice(6,8) : (s||'—'); }
+// best~worst 가 같으면 mid, 다르면 범위로(동점 구간을 숨기지 않는다).
+function rankRangeTxt(rank){
+  if(rank.best!=null && rank.worst!=null && rank.best!==rank.worst) return nf(rank.best)+'~'+nf(rank.worst)+'위';
+  return nf(rank.mid)+'위';
+}
+
+/* ══════════════════ 당첨번호 표시(copied from record.html ballHTML/ballColor — keep in sync) ══════════════════ */
+var ballColor = function(n){ return n<=10?'var(--b-yellow)':n<=20?'var(--b-blue)':n<=30?'var(--b-red)':n<=40?'var(--b-grey)':'var(--b-green)'; };
+function ballHTML(n){ return '<span class="ball" style="background:'+ballColor(n)+'">'+n+'</span>'; }
+function lottoWinHTML(win, bonus){
+  var balls = (win||[]).map(ballHTML).join('');
+  return '<span class="balls">'+balls+'</span>'+(bonus!=null ? '<span class="wksub" style="padding-left:8px">+보너스 '+bonus+'</span>' : '');
+}
+function pensionWinHTML(win){
+  if(!win) return '<span class="wksub">당첨번호 없음</span>';
+  var num = String(win.num).padStart(6,'0');
+  var dg = num.split('').map(function(c){ return '<span class="dg">'+c+'</span>'; }).join('');
+  return '<span class="tk"><span class="bnd">'+win.band+'</span><span class="bndlabel">조</span>'+dg+'</span>';
+}
+
+/* ══════════════════ 모델 순위 한 줄(백분위 막대) ══════════════════ */
+function modelRowHTML(m, rank, kind){
+  if(!rank){
+    return '<div class="modelrow"><span class="mn" title="'+esc(m.name)+'">'+esc(m.key)+'</span><span class="vv">—</span></div>';
+  }
+  if(rank.excluded){
+    return '<div class="modelrow"><span class="mn" title="'+esc(m.name)+'">'+esc(m.key)+'</span>'+
+      '<span class="bar"></span><span class="vv"><span class="tag noi">필터 제외</span></span></div>';
+  }
+  var leftPct = Math.max(0,Math.min(100,(rank.pct*100))).toFixed(3);
+  var titleExtra = (kind==='pension' && rank.numRank) ? (' · 번호만 순위 '+nf(rank.numRank.mid)+'위/'+nf(rank.numRank.of||1000000)) : '';
+  return '<div class="modelrow"><span class="mn" title="'+esc(m.name)+titleExtra+'">'+esc(m.key)+'</span>'+
+    '<span class="bar"><span class="exp"></span><span class="mid" style="left:'+leftPct+'%"></span></span>'+
+    '<span class="vv">'+rankRangeTxt(rank)+' · '+sideText(rank.pct)+'</span></div>';
+}
+
+/* ══════════════════ 상위 N 안 관측 vs 기대 ══════════════════ */
+function topRowHTML(label, obs, exp){
+  return '<div class="crossrow"><span class="crosslabel">'+label+'</span><span class="crossval">관측 <b>'+nf1(obs)+'</b> · 기대 <b>'+nf1(exp)+'</b></span></div>';
+}
+function renderTopGrid(summary){
+  var el = document.getElementById('topGrid');
+  if(!summary || !summary.top){ el.innerHTML = '<p class="note">데이터가 없습니다.</p>'; return; }
+  var order = ['10','100','1000','1%','10%'];
+  var labelMap = {'10':'상위 10위 안','100':'상위 100위 안','1000':'상위 1,000위 안','1%':'상위 1% 안','10%':'상위 10% 안'};
+  var rows = order.filter(function(k){ return summary.top[k]!=null; })
+    .map(function(k){ return topRowHTML(labelMap[k]||k, summary.top[k], summary.topExp ? summary.topExp[k] : null); }).join('');
+  el.innerHTML = rows || '<p class="note">데이터가 없습니다.</p>';
+}
+
+/* ══════════════════ 10분위 막대 SVG ══════════════════ */
+function buildDecileChart(deciles, expDecile){
+  if(!deciles || !deciles.length) return '<p class="note">데이터가 없습니다.</p>';
+  var W=680,H=180,padL=14,padR=14,padT=10,padB=22, n=10;
+  var maxV = Math.max(expDecile||0, deciles.reduce(function(a,b){ return Math.max(a,b); },0)) * 1.15 || 1;
+  var slot = (W-padL-padR)/n, barW = slot*0.6;
+  var bars = deciles.map(function(v,i){
+    var h=(H-padT-padB)*(v/maxV), x=padL+i*slot+(slot-barW)/2, y=H-padB-h;
+    return '<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)+'" class="dbar"><title>'+(i+1)+'분위 · 관측 '+nf1(v)+'회</title></rect>';
+  }).join('');
+  var labels = deciles.map(function(v,i){
+    var x=padL+i*slot+slot/2;
+    return '<text x="'+x.toFixed(1)+'" y="'+(H-8)+'" class="axtick" text-anchor="middle">'+(i+1)+'</text>';
+  }).join('');
+  var expY = (H-padB-(H-padT-padB)*((expDecile||0)/maxV)).toFixed(1);
+  return '<svg viewBox="0 0 '+W+' '+H+'" class="chart" role="img" aria-label="10분위 분포: 관측 대 기대">'+
+    '<line x1="'+padL+'" y1="'+(H-padB)+'" x2="'+(W-padR)+'" y2="'+(H-padB)+'" class="axis0"/>'+
+    '<line x1="'+padL+'" y1="'+expY+'" x2="'+(W-padR)+'" y2="'+expY+'" class="ln ledger"/>'+
+    bars+labels+
+  '</svg>'+
+  '<div class="legend"><span class="lg"><span class="sw" style="border-top-style:solid"></span>관측</span>'+
+  '<span class="lg"><span class="sw ledger"></span>기대(균등, 1분위당 '+nf1(expDecile)+'회)</span></div>';
+}
+
+/* ══════════════════ 회차별 백분위 점 SVG ══════════════════ */
+/* 성능(perf finding): 회차 수만큼(로또 ~243·연금 ~235) <circle>+<title> 를 각각
+   만들면 DOM 노드가 수백 개가 되어 게임 전환 시 renderGame() 이 메인 스레드를
+   ~100ms 가까이 막는다(.lab/out-sonnet-rankpage/report-BEFORE.json 실측 70~106ms).
+   점 전체를 "굵기=지름, 끝을 둥글게(stroke-linecap:round)" 인 단일 <path> 하나로
+   그려 노드 수를 1개로 줄인다(회차별 개별 <title> 툴팁은 그 대가로 빠짐 — 전체
+   설명은 aria-label 에 범위로 남긴다). */
+function buildDotChart(rowsAsc){
+  var pts = rowsAsc.filter(function(r){ return r.pct!=null; });
+  if(!pts.length) return '<p class="note">데이터가 없습니다.</p>';
+  var W=680,H=170,padL=14,padR=14,padT=10,padB=10, n=pts.length;
+  var xs = function(i){ return n<=1 ? (padL+(W-padL-padR)/2) : padL+(W-padL-padR)*i/(n-1); };
+  var ys = function(p){ return padT+(H-padT-padB)*p; };
+  var midY = ys(0.5).toFixed(1);
+  var d = pts.map(function(r,i){
+    var x=xs(i).toFixed(1), y=ys(r.pct).toFixed(1);
+    return 'M'+x+' '+y+'L'+x+' '+y;
+  }).join('');
+  var lo=0, hi=0;
+  for(var i=1;i<pts.length;i++){ if(pts[i].pct<pts[lo].pct) lo=i; if(pts[i].pct>pts[hi].pct) hi=i; }
+  var skipped = rowsAsc.length - pts.length;
+  return '<svg viewBox="0 0 '+W+' '+H+'" class="chart" role="img" aria-label="회차별 백분위 '+pts.length+'개 점, 기대선 50%, 관측 범위 '+(pts[lo].pct*100).toFixed(1)+'%~'+(pts[hi].pct*100).toFixed(1)+'%">'+
+    '<line x1="'+padL+'" y1="'+midY+'" x2="'+(W-padR)+'" y2="'+midY+'" class="ln ledger"/>'+
+    '<path d="'+d+'" class="dotpath"/>'+
+  '</svg>'+
+  '<div class="legend"><span class="lg"><span class="sw ledger"></span>기대 50%</span></div>'+
+  (skipped>0 ? '<p class="note" style="padding-top:4px">필터 제외 '+skipped+'회차는 이 차트에서 뺐습니다.</p>' : '');
+}
+
+/* ══════════════════ 회차 표(최근 30 + 펼치기) ══════════════════ */
+/* 성능(perf finding): 회차 카드(로또 ~243·연금 ~235장, 카드마다 모델 수만큼
+   modelRow)를 매번 통째로 동기 렌더링하면 renderGame() 의 메인 스레드 점유가
+   커진다. 처음 10장만 동기로 그려 바로 보이게 하고, 나머지(11~30장 + "더 보기"
+   구간)는 requestAnimationFrame 마다 조금씩(CHUNK) 이어붙인다. 같은 (게임,모델)
+   조합을 다시 보면 완성된 DOM 노드를 그대로 재사용(캐시)해 다시 만들지 않는다 —
+   ROUND_TOKEN 으로 전환 중 남은 이전 조합의 청크는 무시한다. */
+function cardHTML(r, kind, models){
+  var ticket = kind==='lotto' ? lottoWinHTML(r.win, r.bonus) : pensionWinHTML(r.win);
+  var mrows = models.map(function(m){ return modelRowHTML(m, r.ranks ? r.ranks[m.key] : null, kind); }).join('');
+  return '<div class="weekcard"><div class="whead"><div><div class="wk">'+r.round+'회</div><div class="wksub">'+mmdd(r.date)+'</div></div></div>'+
+    '<div style="padding-bottom:6px">'+ticket+'</div>'+mrows+'</div>';
+}
+var ROUND_POOL = {}, ROUND_DONE = {}, ROUND_CUR_KEY = null, ROUND_TOKEN = 0;
+function renderRoundTable(container, rowsDesc, kind, models, cacheKey){
+  var token = ++ROUND_TOKEN; // invalidate any still-running chunk loop from a previous (game,model)
+  if(ROUND_CUR_KEY!=null && ROUND_CUR_KEY!==cacheKey && ROUND_DONE[ROUND_CUR_KEY] && container.firstChild){
+    var frag = document.createDocumentFragment();
+    while(container.firstChild) frag.appendChild(container.firstChild);
+    ROUND_POOL[ROUND_CUR_KEY] = frag; // park the fully-built subtree for a cheap instant revisit later
+  }
+  ROUND_CUR_KEY = cacheKey;
+  if(ROUND_POOL[cacheKey]){
+    container.replaceChildren(ROUND_POOL[cacheKey]);
+    delete ROUND_POOL[cacheKey];
+    return;
+  }
+  container.replaceChildren();
+  if(!rowsDesc.length){ container.innerHTML = '<p class="note">회차 데이터가 없습니다.</p>'; ROUND_DONE[cacheKey] = true; return; }
+  var HEAD = Math.min(30, rowsDesc.length), FIRST = Math.min(10, HEAD), CHUNK = 15;
+  container.insertAdjacentHTML('beforeend', rowsDesc.slice(0,FIRST).map(function(r){ return cardHTML(r,kind,models); }).join(''));
+  var rest = rowsDesc.slice(30), detailsEl = null;
+  if(rest.length){
+    detailsEl = document.createElement('details'); detailsEl.className = 'more';
+    detailsEl.innerHTML = '<summary>더 보기 ('+rest.length+'회차)</summary>';
+    container.appendChild(detailsEl);
+  }
+  var idx = FIRST, restIdx = 0;
+  function step(){
+    if(token !== ROUND_TOKEN) return; // superseded — user already switched away
+    if(idx < HEAD){
+      var slice = rowsDesc.slice(idx, Math.min(idx+CHUNK, HEAD));
+      var html = slice.map(function(r){ return cardHTML(r,kind,models); }).join('');
+      if(detailsEl) detailsEl.insertAdjacentHTML('beforebegin', html); else container.insertAdjacentHTML('beforeend', html);
+      idx += CHUNK; requestAnimationFrame(step); return;
+    }
+    if(restIdx < rest.length){
+      var rslice = rest.slice(restIdx, restIdx+CHUNK);
+      detailsEl.insertAdjacentHTML('beforeend', rslice.map(function(r){ return cardHTML(r,kind,models); }).join(''));
+      restIdx += CHUNK; requestAnimationFrame(step); return;
+    }
+    ROUND_DONE[cacheKey] = true;
+  }
+  if(idx < HEAD || restIdx < rest.length) requestAnimationFrame(step); else ROUND_DONE[cacheKey] = true;
+}
+
+/* 회차별 백분위 점 SVG 도 같은 (게임,모델) 캐시로 재사용(빌드 자체는 단일 <path>
+   라 이미 싸지만, 반복 왕복에서 재계산조차 건너뛴다). */
+var DOT_HTML_CACHE = {};
+function renderDotChart(container, rowsAsc, cacheKey){
+  if(DOT_HTML_CACHE[cacheKey]!=null){ container.innerHTML = DOT_HTML_CACHE[cacheKey]; return; }
+  var html = buildDotChart(rowsAsc);
+  container.innerHTML = html;
+  DOT_HTML_CACHE[cacheKey] = html;
+}
+
+/* ══════════════════ 구간 전략(walk-forward) ══════════════════ */
+function renderBand(band){
+  var el = document.getElementById('bandBlock');
+  if(!el) return;
+  if(!band){ el.innerHTML = '<p class="note">이 모델은 아직 구간 전략 결과가 없습니다(준비 구간 미달 등).</p>'; return; }
+  el.innerHTML =
+    '<p class="note">직전 회차까지 10분위 중 당첨이 가장 많이 몰렸던 칸을 고르고, 그 다음 회차 실제 당첨이 그 칸에 들어갔는지를 준비 구간 '+band.warmup+'회를 뺀 '+band.n+'개 회차에 반복했습니다.</p>'+
+    '<div class="kpi" style="margin-bottom:10px">'+
+      '<div><div class="k">적중</div><div class="v">'+nf(band.hits)+'/'+nf(band.n)+'</div><div class="s">관측 '+fmtPct1(band.rate)+'</div></div>'+
+      '<div><div class="k">기대</div><div class="v">'+fmtPct1(band.exp!=null?band.exp:0.1)+'</div><div class="s">칸 10개 · 균등하면 10%</div></div>'+
+      '<div><div class="k">p값</div><div class="v">'+fmtP(band.p)+'</div><div class="s">이항검정</div></div>'+
+    '</div>'+
+    '<p class="note" style="padding-bottom:0"><b>다중검정 주의:</b> 게임·모델·지표를 여러 개 한꺼번에 훑어보면 그중 일부는 우연히 유의해 보입니다. 이 구간 전략 하나(또는 어느 한 p값)만으로 "된다"고 결론 내리지 마세요 — 그리고 이 전략은 다음에 어느 칸이 나올지 보장하지 않습니다.</p>';
+}
+
+/* ══════════════════ popf(필터 통과) 요약 ══════════════════ */
+function renderPopfBlock(popfSummary, NF, N){
+  var el = document.getElementById('popfBlock');
+  if(!el) return;
+  if(!popfSummary){ el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = '<h3>주간 필터 통과 여부 <span class="mono" style="font-weight:400;color:var(--ink-40)">(popf)</span></h3>'+
+    '<p class="note" style="padding-bottom:0"><span class="mono">popf</span> 모델은 그 주 추천 필터(합계·홀짝·연속·구간분포 등)를 통과한 조합만 순위를 매깁니다. '+
+    '지금까지 <b>실제 당첨 조합</b>이 그 필터를 통과한 적이 '+nf(popfSummary.passed)+'/'+nf(popfSummary.n)+'회('+fmtPct1(popfSummary.rate)+')입니다 — '+
+    '필터를 통과하는 조합은 전체의 '+fmtPct1(popfSummary.exp)+'입니다(모집단 '+nf(NF)+' / '+nf(N)+').</p>';
+}
+
+/* ══════════════════ 모델 선택 UI ══════════════════ */
+function renderModelPills(models, activeKey){
+  document.getElementById('modelToggle').innerHTML = models.map(function(m){
+    var claimTxt = m.claims==='hit' ? '적중 주장 · 검정 대상' : '분배 순서(주장 없음)';
+    return '<button type="button" class="pill" data-model="'+esc(m.key)+'" aria-pressed="'+(m.key===activeKey?'true':'false')+'">'+esc(m.name)+'<span class="claim">'+claimTxt+'</span></button>';
+  }).join('');
+}
+function renderModelDesc(models, activeKey){
+  var m = models.filter(function(x){ return x.key===activeKey; })[0];
+  var el = document.getElementById('modelDesc');
+  if(!m){ el.textContent=''; return; }
+  var claimNote = m.claims==='hit'
+    ? '이 모델은 특정 조합이 더 잘 나온다고 주장합니다(검정 대상) — 아래 평균 백분위·χ²·KS 로 그 주장이 사실인지 확인하세요. 적중을 보장하지 않습니다.'
+    : '이 모델은 적중을 주장하지 않습니다 — 당첨돼도 나눠 가질 사람이 적은 조합을 우선하는 "추천 순서"일 뿐입니다.';
+  el.innerHTML = (m.desc ? esc(m.desc)+' ' : '') + claimNote;
+}
+
+/* ══════════════════ KPI ══════════════════ */
+function renderKPIMain(data, summary){
+  var el = document.getElementById('kpiMain');
+  if(!summary){ el.innerHTML=''; return; }
+  var n = summary.n!=null ? summary.n : ((data.rows||[]).length);
+  var range = (data.from!=null && data.latest!=null) ? (data.from+'~'+data.latest+'회') : '';
+  var items = [
+    ['회차', n+'회', range],
+    ['평균 백분위', fmtPct1(summary.meanPct), '기대 50.0%'+(summary.meanCI ? (' · CI '+fmtPct1(summary.meanCI[0])+'~'+fmtPct1(summary.meanCI[1])) : '')],
+    ['중앙값 백분위', fmtPct1(summary.medianPct), '기대 50%'],
+    ['최고 순위', summary.best ? (summary.best.round+'회') : '—', summary.best ? (nf(summary.best.best)+'위 · '+sideText(summary.best.pct)) : ''],
+    ['χ² 검정', summary.chi2 ? fmtP(summary.chi2.p) : '—', summary.chi2 ? ('df='+summary.chi2.df+' · stat='+summary.chi2.stat.toFixed(1)) : ''],
+    ['KS 검정', summary.ks ? fmtP(summary.ks.p) : '—', summary.ks ? ('D='+summary.ks.D.toFixed(3)) : '']
+  ];
+  el.innerHTML = items.map(function(it){ return '<div><div class="k">'+it[0]+'</div><div class="v">'+it[1]+'</div><div class="s">'+it[2]+'</div></div>'; }).join('');
+}
+
+/* ══════════════════ 상태·라우팅 ══════════════════ */
+var DATA = {lotto:null, pension:null};
+var STATE = {game:'lotto', model:{lotto:null, pension:null}};
+
+function setGameFromHash(){
+  var h = (location.hash||'').replace('#','');
+  STATE.game = h==='pension' ? 'pension' : 'lotto';
+}
+function updateGamePills(){
+  var btns = document.querySelectorAll('#gameToggle button');
+  for(var i=0;i<btns.length;i++) btns[i].setAttribute('aria-pressed', btns[i].getAttribute('data-game')===STATE.game ? 'true' : 'false');
+}
+function gameEmptyText(game){
+  return (game==='lotto'?'로또':'연금')+' 데이터가 아직 계산 전입니다. 브리핑 파이프라인이 '+(game==='lotto'?'1000':'100')+'회부터 순위를 채우면 여기 자동으로 나타납니다.';
+}
+
+function renderGame(){
+  updateGamePills();
+  var data = DATA[STATE.game];
+  var content = document.getElementById('gameContent');
+  var emptyNote = document.getElementById('gameEmptyNote');
+  if(!data){
+    content.hidden = true;
+    emptyNote.hidden = false;
+    document.getElementById('gameEmptyText').textContent = gameEmptyText(STATE.game);
+    return;
+  }
+  emptyNote.hidden = true;
+  content.hidden = false;
+
+  var models = data.models || [];
+  if(!STATE.model[STATE.game] || !models.some(function(m){ return m.key===STATE.model[STATE.game]; })){
+    STATE.model[STATE.game] = models.length ? models[0].key : null;
+  }
+  var mk = STATE.model[STATE.game];
+  renderModelPills(models, mk);
+  renderModelDesc(models, mk);
+
+  var summary = (data.summary && data.summary.models) ? data.summary.models[mk] : null;
+  renderKPIMain(data, summary);
+  renderTopGrid(summary);
+  document.getElementById('decileChart').innerHTML = summary ? buildDecileChart(summary.deciles, summary.expDecile) : '<p class="note">데이터가 없습니다.</p>';
+
+  var cacheKey = STATE.game+'|'+mk;
+  var rows = data.rows || [];
+  var rowsAsc = rows.slice().sort(function(a,b){ return a.round-b.round; }).map(function(r){
+    var rk = r.ranks && r.ranks[mk];
+    return {round:r.round, pct: (rk && !rk.excluded) ? rk.pct : null};
+  });
+  renderDotChart(document.getElementById('dotChart'), rowsAsc, cacheKey);
+
+  var rowsDesc = rows.slice().sort(function(a,b){ return b.round-a.round; });
+  renderRoundTable(document.getElementById('roundTable'), rowsDesc, STATE.game, models, cacheKey);
+
+  renderBand(summary && summary.band);
+
+  if(STATE.game==='lotto' && mk==='popf'){ renderPopfBlock(data.summary && data.summary.popf, data.NF, data.N); }
+  else { var pb=document.getElementById('popfBlock'); if(pb) pb.hidden=true; }
+}
+
+function wireToggles(){
+  document.getElementById('gameToggle').addEventListener('click', function(e){
+    var btn = e.target.closest ? e.target.closest('button[data-game]') : null;
+    if(!btn) return;
+    location.hash = btn.getAttribute('data-game');
+  });
+  window.addEventListener('hashchange', function(){ setGameFromHash(); renderGame(); });
+  document.getElementById('modelToggle').addEventListener('click', function(e){
+    var btn = e.target.closest ? e.target.closest('button[data-model]') : null;
+    if(!btn) return;
+    STATE.model[STATE.game] = btn.getAttribute('data-model');
+    renderGame();
+  });
+}
+
+/* ══════════════════ 메인 ══════════════════ */
+function boot(){
+  try{ if(window.SITE && SITE.theme && SITE.theme.mount) SITE.theme.mount('#themeBtn'); }catch(e){}
+  setGameFromHash();
+  wireToggles();
+  Promise.all([fetchJSON('./brief/rank-lotto.json'), fetchJSON('./brief/rank-pension.json')]).then(function(res){
+    DATA.lotto = res[0]; DATA.pension = res[1];
+    document.getElementById('loadingState').hidden = true;
+    if(!DATA.lotto && !DATA.pension){
+      document.getElementById('emptyState').hidden = false;
+      return;
+    }
+    document.getElementById('mainContent').hidden = false;
+    renderGame();
+  }).catch(function(){
+    document.getElementById('loadingState').hidden = true;
+    document.getElementById('emptyState').hidden = false;
+  });
+}
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+</body></html>
