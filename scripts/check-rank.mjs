@@ -31,9 +31,11 @@
 
    동점 정의(PLAN3 §1·STATUS-core): 같은 점수 = 같은 순위 구간 [best,worst]. pop/popf 는 z 가 부동소수로 정확히 같음.
      hot/cold 는 점수가 Σ log w 라서 «수학적으로 같은 점수»(정수 밑의 곱이 같음 — 2·6=3·4 포함)가 동점이다. 이 검증기는
-     w 에서 정수 밑(hot: max(1,freq52) = w^(1/2.2), cold: 1+gap = w^(1/1.6))을 역산·왕복 확인해 정수 곱으로 정확히 센다
+     w 에서 정수 밑(hot: max(1,freq52) = w^(1/2.2), cold: 1+gap = w^(1/1.6))을 역산해 정수 곱으로 정확히 센다
      (부동소수 합으로 세면 같은 곱의 조합이 1ulp 씩 갈라져 동점 구간이 쪼개진다 — 그런 기록은 ::error).
-     역산이 안 되면(가중치 정의가 바뀐 경우) 왼→오 부동소수 합으로 세고 차이는 ::warning 으로 낮춘다.
+     역산은 b = round(w^(1/e)) 를 b^e 와 w 가 4 ulp 이내면 받는다: 가중치는 브라우저(CI 는 Playwright Chromium)의 Math.pow, 검증은 Node 의
+     Math.pow 라 1ulp 다를 수 있다(비트 단위로 다른 개수는 ::notice 한 줄). 역산이 정말 안 되면(가중치 정의가 바뀐 경우) ::warning 을 내고
+     STATUS-core 계약의 정수화(q = round(log w·2^46), 동점 |Δ| ≤ 6, 구간 안 index 오름차순)로 센다. 부동소수 합 «순서»로 대조하는 일은 없다.
 
    CLI: node scripts/check-rank.mjs --root . [--dir <brief 의 부모 폴더, 기본 root>] [--cache <lab-data.json>]
                                    [--no-page] [--samples-only] [--lotto-samples 1100,1200] [--pension-samples 150,200,300]
@@ -75,6 +77,7 @@ function warn(scope, msg) {
   WARN++; const l = scope + ' ' + msg; warnList.push(l);
   if (warnList.length <= MAXPRINT) console.log('::warning title=check-rank 경고::' + esc(l));
 }
+function notice(scope, msg) { console.log('::notice title=check-rank 참고::' + esc(scope + ' ' + msg)); }
 const isNum = x => typeof x === 'number' && isFinite(x);
 const near = (a, b, eps) => isNum(a) && isNum(b) && Math.abs(a - b) <= eps;
 /* 기록 요약은 소수 6자리 반올림(r6)일 수 있다 → 통계 허용 오차 = 반올림 반 칸(5e-7) + 부동소수 여유. 정수 필드는 정확히. */
@@ -343,34 +346,91 @@ function fieldsOf(codes) {                   // 코드 배열 → 일괄 z 용 �
   for (let i = 0; i < n; i++) { const x = codes[i]; F.i4[i] = ((F_C31(x) * 7 + F_C12(x)) * 256 + F_SUM(x)) * 6 + F_CONS(x); F.same[i] = F_SAME(x); F.rng[i] = F_RNG(x); F.dec[i] = F_DEC(x); }
   return F;
 }
-/* hot/cold — w 에서 정수 밑 역산(hot: w=max(1,f)^2.2, cold: w=(1+gap)^1.6). 왕복이 정확하면 exact 동점 비교 가능 */
-function intBases(w, kind) {
-  const ex = kind === 'hot' ? 2.2 : 1.6, b = new Array(46).fill(0);
+/* hot/cold 가중치 → 정확한 비교 기준(«가산 모델 M»). 부동소수 합 순서로는 절대 대조하지 않는다(같은 곱의 조합이 반올림 잡음으로 갈라진다).
+   1순위 exact: 정수 밑 역산 b = round(w^(1/e)) (hot: e=2.2·밑 max(1,freq52) · cold: e=1.6·밑 1+gap), b^e 와 w 가 INV_MAXULP(4) ulp 이내면 채택 → 정수 곱으로 센다.
+     왕복이 비트 단위로 같을 필요는 없다: 가중치는 브라우저(CI 는 Playwright 의 Chromium)의 Math.pow, 검증은 Node 의 Math.pow 라 1ulp 다를 수 있다
+     (2026-09 CI 에서 실제 발생 — 엄격 비교(===)가 실패해 부동소수 순서로 떨어지며 거짓 ::error). 이웃 정수 밑의 b^e 는 상대 ≥ e/(b+1)(≳ 1%) 떨어져 있어
+     밑을 잘못 고를 수는 없다. 허용을 ulp 로 좁게 두는 이유: 계약 점수는 q = round(log w·2^46) 이라 w 의 상대 오차 ε 는 q 를 ε·2^46 단위 움직인다 —
+     4 ulp(ε ≤ 8.9e-16)면 가중치당 ≤ 0.06 단위, 한 쌍의 조합(12항)에 ≤ 0.75 단위라 «같은 곱 = 같은 동점 구간»(실측 퍼짐 ≤ 4 < ATOL 6)이 그대로 성립한다.
+     그보다 크게 어긋나면(예: 1e-12 상대면 가중치당 70 단위) 정수 곱과 계약 정수화가 갈릴 수 있으므로 아래 quant 로 센다(밑은 원자료 대조용으로만 남김).
+   2순위 quant: 역산이 정말 안 되면(가중치 정의가 바뀐 경우) STATUS-core 계약 그대로 — q[n] = round(log w[n]·2^bits)(bits 46, 6·max|log w|·2^bits ≥ 2^53 이면 낮춤),
+     점수 Σq(정확한 정수), 동점 = |Δ| ≤ ATOL(6), 탐색 = 동점 구간 내림차순·구간 안 index 오름차순. 동점 사슬(구간 폭 > ATOL)이면 계약상 정의 불가(rank-core 도 throw)
+     → ::warning 후 그 대조만 생략. 정수화 자체는 rank-core L.quantize 와 같은지 대조한다(::error).
+   M = { mode, mul(곱/합), atol(0/6), key[46](밑 또는 q), lw[46](Node Math.log — next.top 의 s 대조용), bases? } — 같은 가중치 배열은 한 번만 만든다. */
+const ADD_ATOL = 6, ADD_BITS = 46, INV_RTOL = 1e-12, INV_MAXULP = 4;
+const addStat = { models: 0, tolerantModels: 0, weights: 0, tolerant: 0, maxUlp: 0, quant: [], chain: [] };
+const addCache = new WeakMap();
+const ulpBuf = new Float64Array(1), ulpInt = new BigInt64Array(ulpBuf.buffer);
+function ulpDist(a, b) { ulpBuf[0] = a; const x = ulpInt[0]; ulpBuf[0] = b; const d = x - ulpInt[0]; return Number(d < 0n ? -d : d); }
+function intBases(w, kind) {                 // → { bases, tol(비트 단위로 다른 개수), maxUlp } | null(어느 하나라도 1e-12 상대 밖 = 정수 밑이 아님)
+  const ex = kind === 'hot' ? 2.2 : 1.6, b = new Array(46).fill(0); let tol = 0, mu = 0;
   for (let n = 1; n <= 45; n++) {
-    const g = Math.round(Math.pow(w[n], 1 / ex));
-    if (!(g >= 1) || Math.pow(g, ex) !== w[n]) return null;
+    const x = +w[n]; if (!(x > 0) || !isFinite(x)) return null;
+    const g = Math.round(Math.pow(x, 1 / ex)); if (!(g >= 1)) return null;
+    const y = Math.pow(g, ex);
+    if (y !== x) { if (!(Math.abs(y - x) <= INV_RTOL * x)) return null; tol++; mu = Math.max(mu, ulpDist(x, y)); }
     b[n] = g;
   }
-  return b;
+  return { bases: b, tol, maxUlp: mu };
 }
-/* 수학적(정수 곱) 순위: 번호를 밑 값으로 동치류로 묶어 6개 고르는 모든 다중집합을 센다 */
-function exactAdditiveRank(bases, win) {
-  const cls = new Map(); for (let n = 1; n <= 45; n++) cls.set(bases[n], (cls.get(bases[n]) || 0) + 1);
+function quantMine(lw) {                     // STATUS-core 계약의 정수화(내 구현)
+  let mx = 0; for (let n = 1; n <= 45; n++) mx = Math.max(mx, Math.abs(lw[n]));
+  let bits = ADD_BITS; while (bits > 0 && 6 * mx * Math.pow(2, bits) >= 9007199254740992) bits--;
+  const scale = Math.pow(2, bits), q = new Float64Array(46); for (let n = 1; n <= 45; n++) q[n] = Math.round(lw[n] * scale);
+  return { q, bits };
+}
+function addModel(w, kind, where) {
+  if (w && typeof w === 'object' && addCache.has(w)) return addCache.get(w);
+  const lw = new Float64Array(46); for (let n = 1; n <= 45; n++) lw[n] = Math.log(w[n]);
+  const inv = intBases(w, kind); let M;
+  addStat.models++;
+  if (inv && inv.maxUlp <= INV_MAXULP) {
+    M = { mode: 'exact', mul: true, atol: 0, key: Float64Array.from(inv.bases), bases: inv.bases, lw };
+    addStat.weights += 45; addStat.tolerant += inv.tol; if (inv.tol) addStat.tolerantModels++; addStat.maxUlp = Math.max(addStat.maxUlp, inv.maxUlp);
+  } else {
+    const Q = quantMine(lw);
+    M = { mode: 'quant', mul: false, atol: ADD_ATOL, key: Q.q, bits: Q.bits, lw, ...(inv ? { bases: inv.bases } : {}) };
+    addStat.quant.push(where + ' ' + kind + (inv ? `(정수 밑 근처지만 최대 ${inv.maxUlp} ulp)` : ''));
+    const L = RC && RC.lotto;
+    if (L && typeof L.quantize === 'function' && typeof L.logw === 'function') {
+      try {
+        const cq = L.quantize(L.logw(kind, w)); let nb = 0;
+        for (let n = 1; n <= 45; n++) if (cq[n] !== Q.q[n]) nb++;
+        if (nb || (cq.bits != null && cq.bits !== Q.bits)) err(`core.quantize ${where} ${kind}`, `정수화가 계약(q=round(log w·2^${Q.bits}))과 다름 ${nb}개 (core bits ${cq.bits})`);
+      } catch (e) { err(`core.quantize ${where} ${kind}`, '호출 실패: ' + e.message); }
+    }
+  }
+  if (w && typeof w === 'object') addCache.set(w, M);
+  return M;
+}
+const addKey = (M, c) => { const K = M.key; let v = M.mul ? 1 : 0; for (const n of c) v = M.mul ? v * K[n] : v + K[n]; return v; };
+const addModeTxt = M => M.mode === 'exact' ? '수학적 동점 — 정수 곱' : `계약 정수화 ±${ADD_ATOL}`;
+/* 순위(동치류 세기): 번호를 key 값으로 동치류로 묶어 6개 고르는 모든 다중집합을 센다. exact = 곱이 같음, quant = 합이 ±ATOL 안.
+   quant 는 창 [kw−6, kw+6] 안의 폭과 창 밖 이웃까지 봐서 사슬이면 chain:true(계약상 정의 불가 — 대조 생략). */
+function classRank(M, win) {
+  const K = M.key, A = M.atol, mul = M.mul;
+  const cls = new Map(); for (let n = 1; n <= 45; n++) cls.set(K[n], (cls.get(K[n]) || 0) + 1);
   const vals = [...cls.keys()].sort((a, b) => a - b), mult = vals.map(v => cls.get(v));
-  let Pw = 1; for (const n of win) Pw *= bases[n];
-  let gt = 0, eq = 0, tot = 0;
-  const rec = (i, left, prod, cnt) => {
-    if (left === 0) { tot += cnt; if (prod > Pw) gt += cnt; else if (prod === Pw) eq += cnt; return; }
+  const kw = addKey(M, win), hi = kw + A, lo = kw - A;
+  let gt = 0, eq = 0, tot = 0, loW = kw, hiW = kw, mxB = -Infinity, mnA = Infinity;
+  const rec = (i, left, acc, cnt) => {
+    if (left === 0) {
+      tot += cnt;
+      if (acc > hi) { gt += cnt; if (acc < mnA) mnA = acc; }
+      else if (acc >= lo) { eq += cnt; if (acc < loW) loW = acc; if (acc > hiW) hiW = acc; }
+      else if (acc > mxB) mxB = acc;
+      return;
+    }
     if (i >= vals.length) return;
-    let p = prod;
+    let p = acc;
     for (let k = 0; k <= Math.min(left, mult[i]); k++) {
       rec(i + 1, left - k, p, cnt * BIN[mult[i]][k]);
-      p *= vals[i];
+      p = mul ? p * vals[i] : p + vals[i];
     }
   };
-  rec(0, 6, 1, 1);
-  if (tot !== LN) err('exactAdditive', `조합 수 합 ${tot} ≠ ${LN}`);
-  return { best: gt + 1, worst: gt + eq };
+  rec(0, 6, mul ? 1 : 0, 1);
+  if (tot !== LN) err('classRank', `조합 수 합 ${tot} ≠ ${LN}`);
+  return { best: gt + 1, worst: gt + eq, chain: A > 0 && (hiW - loW > A || mxB >= loW - A || mnA <= hiW + A) };
 }
 /* 로또 한 회차 전수 무차별 대입 — 8,145,060 조합 각각의 z(페이지식)·hot/cold 합(float)·정수 곱(exact)을 평가해 센다 */
 function bruteLottoRound(R, prm, wi, wonBefore) {
@@ -388,22 +448,26 @@ function bruteLottoRound(R, prm, wi, wonBefore) {
     popf: (flag[wi] && !wonBefore.has(wi)) ? { best: ltF + 1, worst: leF, of: ofF, pos: ltF + 1 + eqBF } : { excluded: true, of: ofF } };
   const c = lexCombo(wi);
   for (const kind of ['hot', 'cold']) {
-    const w = prm[kind], lw = new Float64Array(46); for (let n = 1; n <= 45; n++) lw[n] = Math.log(w[n]);
-    const bases = intBases(w, kind), bs = bases || new Array(46).fill(1);
+    /* ref = 계약 기준(가산 모델 M: exact 정수 곱 / quant ±ATOL) · float = 왼→오 부동소수 합(진단용 — «동점이 쪼개진 값» 판별에만 씀) */
+    const M = addModel(prm[kind], kind, R), lw = M.lw, K = M.key, mul = M.mul, A = M.atol;
     let sw = lw[c[0]] + lw[c[1]]; sw = sw + lw[c[2]]; sw = sw + lw[c[3]]; sw = sw + lw[c[4]]; sw = sw + lw[c[5]];
-    let pw = 1; for (const n of c) pw *= bs[n];
-    let gt = 0, ge = 0, pgt = 0, pge = 0, peqB = 0, i = 0;
-    for (let a = 1; a <= 40; a++) { const s1 = lw[a], p1 = bs[a];
-      for (let b = a + 1; b <= 41; b++) { const s2 = s1 + lw[b], p2 = p1 * bs[b];
-        for (let cc = b + 1; cc <= 42; cc++) { const s3 = s2 + lw[cc], p3 = p2 * bs[cc];
-          for (let d = cc + 1; d <= 43; d++) { const s4 = s3 + lw[d], p4 = p3 * bs[d];
-            for (let e = d + 1; e <= 44; e++) { const s5 = s4 + lw[e], p5 = p4 * bs[e];
+    const kw = addKey(M, c), hi = kw + A, lo = kw - A;
+    let gt = 0, ge = 0, pgt = 0, peq = 0, peqB = 0, i = 0, loW = kw, hiW = kw, mxB = -Infinity, mnA = Infinity;
+    for (let a = 1; a <= 40; a++) { const s1 = lw[a], p1 = K[a];
+      for (let b = a + 1; b <= 41; b++) { const s2 = s1 + lw[b], p2 = mul ? p1 * K[b] : p1 + K[b];
+        for (let cc = b + 1; cc <= 42; cc++) { const s3 = s2 + lw[cc], p3 = mul ? p2 * K[cc] : p2 + K[cc];
+          for (let d = cc + 1; d <= 43; d++) { const s4 = s3 + lw[d], p4 = mul ? p3 * K[d] : p3 + K[d];
+            for (let e = d + 1; e <= 44; e++) { const s5 = s4 + lw[e], p5 = mul ? p4 * K[e] : p4 + K[e];
               for (let f = e + 1; f <= 45; f++) {
-                const s = s5 + lw[f], p = p5 * bs[f];
-                if (s > sw) gt++; if (s >= sw) ge++; if (p > pw) pgt++; if (p >= pw) { pge++; if (p === pw && i < wi) peqB++; }
+                const s = s5 + lw[f], p = mul ? p5 * K[f] : p5 + K[f];
+                if (s > sw) gt++; if (s >= sw) ge++;
+                if (p > hi) { pgt++; if (p < mnA) mnA = p; }
+                else if (p >= lo) { peq++; if (i < wi) peqB++; if (p < loW) loW = p; else if (p > hiW) hiW = p; }
+                else if (p > mxB) mxB = p;
                 i++;
               } } } } } }
-    out[kind] = { float: { best: gt + 1, worst: ge, of: LN }, exact: bases ? { best: pgt + 1, worst: pge, of: LN, pos: pgt + 1 + peqB } : null, sw, lw, bases };
+    const chain = A > 0 && (hiW - loW > A || mxB >= loW - A || mnA <= hiW + A);
+    out[kind] = { float: { best: gt + 1, worst: ge, of: LN }, ref: { best: pgt + 1, worst: pgt + peq, of: LN, pos: pgt + 1 + peqB, mode: M.mode, chain }, sw, lw, M };
   }
   return out;
 }
@@ -804,16 +868,14 @@ function coreTable() {
   if (coreT.T || !RC || !RC.lotto || typeof RC.lotto.buildTable !== 'function') return coreT.T;
   const t = performance.now(); coreT.T = RC.lotto.buildTable({}); TM.coreBuildTable = Math.round(performance.now() - t); return coreT.T;
 }
-/* hot/cold: 계약(STATUS-core) = 수학적 동점(정수 곱이 같음). 밑 역산이 되면 exact 와 정확히 같아야 하고,
-   안 되면(가중치 정의가 바뀐 경우) float 과 비교 — 이때는 동점 경계가 다를 수 있어 경고로 낮춘다. */
+/* hot/cold: 계약(STATUS-core) = 수학적 동점(정수 곱이 같음). 밑 역산(허용 오차)이 되면 정수 곱 전수와, 정말 안 되면 계약 정수화(±ATOL) 전수와
+   정확히 같아야 한다(::error). 부동소수 합 결과는 «동점이 쪼개진 값인지» 진단 문구에만 쓴다. 동점 사슬이면 정의 불가 → 생략(경고는 모아서 한 번). */
 function cmpAdditive(sc, rec, mine) {
   if (!rec) return;
-  if (mine.exact) {
-    if (!eqRange(rec, mine.exact)) err(sc, `기록 [${rec.best},${rec.worst}] ≠ 전수(수학적 동점) [${mine.exact.best},${mine.exact.worst}]` +
-      (eqRange(rec, mine.float) ? ' — 부동소수 합으로 동점이 쪼개진 값과 같음' : ` (float 합 [${mine.float.best},${mine.float.worst}])`));
-    return;
-  }
-  if (!eqRange(rec, mine.float)) warn(sc, `정수 밑 역산 불가 — 기록 [${rec.best},${rec.worst}] vs 전수 float [${mine.float.best},${mine.float.worst}]`);
+  const ref = mine.ref;
+  if (ref.chain) { addStat.chain.push(sc); return; }
+  if (!eqRange(rec, ref)) err(sc, `기록 [${rec.best},${rec.worst}] ≠ 전수(${addModeTxt(mine.M)}) [${ref.best},${ref.worst}]` +
+    (eqRange(rec, mine.float) ? ' — 부동소수 합으로 동점이 쪼개진 값과 같음' : ` (float 합 [${mine.float.best},${mine.float.worst}])`));
 }
 await timed('bruteLotto', async () => {
   for (const R of LS) {
@@ -828,7 +890,8 @@ await timed('bruteLotto', async () => {
     else if (!eqRange(K.popf, b.popf)) err(sc + ' popf', `기록 [${K.popf && K.popf.best},${K.popf && K.popf.worst}] ≠ 전수 [${b.popf.best},${b.popf.worst}]`);
     if (K.popf && K.popf.of != null && K.popf.of !== b.popf.of) err(sc + ' popf.of', `${K.popf.of} ≠ 전수 ${b.popf.of}`);
     cmpAdditive(sc + ' hot', K.hot, b.hot); cmpAdditive(sc + ' cold', K.cold, b.cold);
-    summary.lotto['brute' + R] = { pop: b.pop, popf: b.popf, hot: b.hot.exact || b.hot.float, hotFloat: b.hot.float, cold: b.cold.exact || b.cold.float, coldFloat: b.cold.float, ms: Math.round(performance.now() - t) };
+    const refOf = x => ({ best: x.ref.best, worst: x.ref.worst, of: LN, mode: x.ref.mode, ...(x.ref.chain ? { chain: true } : {}) });
+    summary.lotto['brute' + R] = { pop: b.pop, popf: b.popf, hot: refOf(b.hot), hotFloat: b.hot.float, cold: refOf(b.cold), coldFloat: b.cold.float, ms: Math.round(performance.now() - t) };
     // rank-core 직접 비교(같은 회차) — 탐색기 «당첨번호 위치로 이동»이 쓰는 함수
     if (RC && RC.lotto && typeof RC.lotto.rankPop === 'function') {
       try {
@@ -840,6 +903,7 @@ await timed('bruteLotto', async () => {
         if (b.popf.excluded ? !cf.excluded : !eqRange(cf, b.popf)) err(sc + ' core.rankPop(filter)', `${JSON.stringify(cf)} ≠ 전수 ${JSON.stringify(b.popf)}`);
         if (cf.of != null && cf.of !== b.popf.of) err(sc + ' core.rankPop(filter).of', `${cf.of} ≠ ${b.popf.of}`);
         for (const kind of ['hot', 'cold']) {
+          if (b[kind].ref.chain) { addStat.chain.push(sc + ' core.rankAdditive ' + kind); continue; }   // 사슬이면 rank-core 도 throw(계약)
           const ca = L.rankAdditive(L.logw ? L.logw(kind, prm[kind]) : b[kind].lw, d.n);
           cmpAdditive(sc + ' core.rankAdditive ' + kind, ca, b[kind]);
         }
@@ -853,12 +917,12 @@ await timed('bruteLotto', async () => {
         } else warn(sc + ' core.posPop', '없음 — 탐색기가 동점 구간을 훑는 느린 경로를 씀');
         if (typeof L.posAdditive === 'function') {
           for (const kind of ['hot', 'cold']) {
-            if (!b[kind].exact) continue;
+            const ref = b[kind].ref; if (ref.chain) continue;
             pos[kind] = L.posAdditive(L.logw(kind, prm[kind]), d.n);
-            if (pos[kind] !== b[kind].exact.pos) err(sc + ' core.posAdditive ' + kind, `${pos[kind]} ≠ 전수 위치 ${b[kind].exact.pos} (구간 [${b[kind].exact.best},${b[kind].exact.worst}])`);
+            if (pos[kind] !== ref.pos) err(sc + ' core.posAdditive ' + kind, `${pos[kind]} ≠ 전수 위치 ${ref.pos} (구간 [${ref.best},${ref.worst}], ${addModeTxt(b[kind].M)})`);
           }
         } else warn(sc + ' core.posAdditive', '없음 — 탐색기가 동점 구간을 훑는 느린 경로를 씀');
-        summary.lotto['pos' + R] = { pop: b.pop.pos, popf: b.popf.pos ?? null, hot: b.hot.exact && b.hot.exact.pos, cold: b.cold.exact && b.cold.exact.pos, core: pos };
+        summary.lotto['pos' + R] = { pop: b.pop.pos, popf: b.popf.pos ?? null, hot: b.hot.ref.chain ? null : b.hot.ref.pos, cold: b.cold.ref.chain ? null : b.cold.ref.pos, core: pos };
       } catch (e) { err(sc + ' core', '호출 실패: ' + e.message); }
     }
     log('로또 전수', R, (performance.now() - t).toFixed(0) + 'ms', JSON.stringify(summary.lotto['brute' + R]));
@@ -916,19 +980,21 @@ await timed('allLotto', async () => {
     if (K.popf && K.popf.of !== ofF) { bad++; err(sc + ' popf.of', `${K.popf.of} ≠ ${ofF}`); }
     const mineB = hotColdBasesMine(R), leakB = hotColdBasesMine(R + 1);
     for (const kind of ['hot', 'cold']) {
-      const bases = intBases(prm[kind], kind);
-      if (!bases) { warn(sc + ' ' + kind, 'w 에서 정수 밑 역산 실패 — exact 재계수 생략'); continue; }
-      const same = (A, Bb) => A.every((v, i) => i === 0 || v === Bb[i]);
-      if (!same(bases, mineB[kind])) {
-        if (same(bases, leakB[kind])) err(sc + ' ' + kind, '미래 누설: params 가중치가 R 회차 자신의 추첨까지 넣어 센 값과 같다(walk-forward 위반)');
-        else { drift++; if (drift <= 5) warn(sc + ' ' + kind, `params 가중치의 밑 ≠ 원자료로 센 값 (${JSON.stringify(bases.slice(1))} vs ${JSON.stringify(mineB[kind].slice(1))})`); }
+      const M = addModel(prm[kind], kind, R);
+      if (M.bases) {                              // 밑을 원자료로 센 값과 대조(역산이 안 되면 이 대조는 불가 — 끝에 모아서 ::warning)
+        const bases = M.bases, same = (A, Bb) => A.every((v, i) => i === 0 || v === Bb[i]);
+        if (!same(bases, mineB[kind])) {
+          if (same(bases, leakB[kind])) err(sc + ' ' + kind, '미래 누설: params 가중치가 R 회차 자신의 추첨까지 넣어 센 값과 같다(walk-forward 위반)');
+          else { drift++; if (drift <= 5) warn(sc + ' ' + kind, `params 가중치의 밑 ≠ 원자료로 센 값 (${JSON.stringify(bases.slice(1))} vs ${JSON.stringify(mineB[kind].slice(1))})`); }
+        }
       }
-      const ex = exactAdditiveRank(bases, d.n), rec = K[kind];
+      const ex = classRank(M, d.n), rec = K[kind];
       if (!rec) continue;
+      if (ex.chain) { addStat.chain.push(sc + ' ' + kind); continue; }
       if (eqRange(rec, ex)) continue;
       bad++;
-      if (rec.best >= ex.best && rec.worst <= ex.worst) { split++; err(sc + ' ' + kind, `기록 [${rec.best},${rec.worst}] ⊂ 수학적 동점 [${ex.best},${ex.worst}] (동점 구간이 쪼개짐)`); }
-      else err(sc + ' ' + kind, `기록 [${rec.best},${rec.worst}] ≠ 수학적 [${ex.best},${ex.worst}]`);
+      if (rec.best >= ex.best && rec.worst <= ex.worst) { split++; err(sc + ' ' + kind, `기록 [${rec.best},${rec.worst}] ⊂ 동점(${addModeTxt(M)}) [${ex.best},${ex.worst}] (동점 구간이 쪼개짐)`); }
+      else err(sc + ' ' + kind, `기록 [${rec.best},${rec.worst}] ≠ ${addModeTxt(M)} [${ex.best},${ex.worst}]`);
     }
     n++;
     if (n % 40 === 0) await yieldLoop();
@@ -938,27 +1004,39 @@ await timed('allLotto', async () => {
 log('로또 전 회차 재계수', JSON.stringify(summary.lotto.allRows || {}));
 
 /* ── 6f. 로또 다음 회차 top-20 (전수 정렬) + rank-core 탐색기 함수 깊은 offset ── */
-/* 한 모델의 «브라우징 순서» 자료: vals(오름차순 기준값; 우주 밖 = +Inf), sorted(전체 정렬), uni(우주 크기),
-   hot/cold 는 exact(정수 곱) 이 기준이고 float(왼→오 합) 대안을 필요할 때만 만든다. 한 번에 한 모델만 메모리에 둔다. */
-function lottoOrder(k, prm, Z, wonB) {
+/* 한 모델의 «브라우징 순서» 자료: vals(오름차순 기준값; 우주 밖 = +Inf), sorted(전체 정렬), uni(우주 크기).
+   hot/cold 는 가산 모델 M 기준(exact: −정수 곱 · quant: −Σq 를 ATOL 사슬로 묶은 «동점 구간 대표값») — 부동소수 합 순서는 쓰지 않는다.
+   score(i) = 왼→오 부동소수 합(next.top 의 s 대조용, 상대 1e-12). quant 에서 사슬 폭 > ATOL 이면 chain:true(계약상 정의 불가 → 호출자가 생략).
+   한 번에 한 모델만 메모리에 둔다. */
+function lottoOrder(k, prm, Z, wonB, R) {
   if (k === 'pop') return { vals: Z, sorted: Z.slice().sort(), uni: LN, score: i => Z[i] };
   if (k === 'popf') {
     const V = new Float64Array(LN); let uni = 0;
     for (let i = 0; i < LN; i++) { if (E.flag[i] && !wonB.has(i)) { V[i] = Z[i]; uni++; } else V[i] = Infinity; }
     return { vals: V, sorted: V.slice().sort(), uni, score: i => Z[i] };
   }
-  const w = prm[k], lw = new Float64Array(46); for (let n = 1; n <= 45; n++) lw[n] = Math.log(w[n]);
-  const bases = intBases(w, k), bs = bases || new Array(46).fill(1);
-  const F = new Float64Array(LN), X = bases ? new Float64Array(LN) : null; let i = 0;
-  for (let a = 1; a <= 40; a++) { const s1 = lw[a], p1 = bs[a];
-    for (let b = a + 1; b <= 41; b++) { const s2 = s1 + lw[b], p2 = p1 * bs[b];
-      for (let c = b + 1; c <= 42; c++) { const s3 = s2 + lw[c], p3 = p2 * bs[c];
-        for (let d = c + 1; d <= 43; d++) { const s4 = s3 + lw[d], p4 = p3 * bs[d];
-          for (let e = d + 1; e <= 44; e++) { const s5 = s4 + lw[e], p5 = p4 * bs[e];
-            for (let f = e + 1; f <= 45; f++) { F[i] = -(s5 + lw[f]); if (X) X[i] = -(p5 * bs[f]); i++; } } } } } }
-  const o = { lw, uni: LN, score: j => -F[j], exact: !!X };
-  if (!X) warn('next.lotto.' + k, '정수 밑 역산 불가 — 부동소수 합 순서로 대조(동점 경계가 다를 수 있음)');
-  o.vals = X || F; o.sorted = o.vals.slice().sort();
+  const M = addModel(prm[k], k, R), lw = M.lw, K = M.key, mul = M.mul;
+  const X = new Float64Array(LN); let i = 0;
+  for (let a = 1; a <= 40; a++) { const p1 = K[a];
+    for (let b = a + 1; b <= 41; b++) { const p2 = mul ? p1 * K[b] : p1 + K[b];
+      for (let c = b + 1; c <= 42; c++) { const p3 = mul ? p2 * K[c] : p2 + K[c];
+        for (let d = c + 1; d <= 43; d++) { const p4 = mul ? p3 * K[d] : p3 + K[d];
+          for (let e = d + 1; e <= 44; e++) { const p5 = mul ? p4 * K[e] : p4 + K[e];
+            for (let f = e + 1; f <= 45; f++) X[i++] = -(mul ? p5 * K[f] : p5 + K[f]); } } } } }
+  const score = j => { const c = lexCombo(j); let s = lw[c[0]] + lw[c[1]]; s = s + lw[c[2]]; s = s + lw[c[3]]; s = s + lw[c[4]]; return s + lw[c[5]]; };
+  const o = { lw, uni: LN, score, mode: M.mode, M, chain: false, vals: X, sorted: X.slice().sort() };
+  if (M.mode === 'quant') {                    // 서로 ATOL 이내로 이어진 값 = 한 동점 구간 → 구간의 첫(가장 높은 점수) 값으로 바꾼다(단조 사상이라 정렬 유지)
+    const s = o.sorted, dv = [], rep = [];
+    let g0 = s[0];
+    for (let q = 0; q < LN; q++) {
+      if (q && s[q] === s[q - 1]) continue;
+      if (q && s[q] - s[q - 1] > ADD_ATOL) g0 = s[q];
+      if (s[q] - g0 > ADD_ATOL) o.chain = true;
+      dv.push(s[q]); rep.push(g0);
+    }
+    const DV = Float64Array.from(dv), RP = Float64Array.from(rep), map = v => { let lo = 0, hi = DV.length - 1; while (lo < hi) { const m = (lo + hi) >>> 1; if (DV[m] < v) lo = m + 1; else hi = m; } return RP[lo]; };
+    for (let q = 0; q < LN; q++) { X[q] = map(X[q]); s[q] = map(s[q]); }
+  }
   return o;
 }
 /* 전체 탐색 순서(기대값) — 정렬된 값에서 그룹(같은 값)마다 시작 위치를 알고, 열거(index 오름차순)를 돌며 제자리에 넣는다
@@ -1003,8 +1081,8 @@ await timed('nextLotto', async () => {
   if (!rL || !rL.next) return;
   const prm = lottoParams(LNEXT); if (!prm) { err('next.lotto', `params ${LNEXT} 없음`); return; }
   { const mb = hotColdBasesMine(LNEXT);
-    for (const kind of ['hot', 'cold']) { const bs = intBases(prm[kind], kind);
-      if (bs && bs.some((v, i) => i > 0 && v !== mb[kind][i])) warn('next.lotto.params ' + kind, 'params 가중치의 밑 ≠ 원자료로 센 값'); } }
+    for (const kind of ['hot', 'cold']) { const M = addModel(prm[kind], kind, LNEXT);
+      if (M.bases && M.bases.some((v, i) => i > 0 && v !== mb[kind][i])) warn('next.lotto.params ' + kind, 'params 가중치의 밑 ≠ 원자료로 센 값'); } }
   const wonB = wonBeforeSet(LNEXT), zf = zMaker(prm.pop);
   const Z = new Float64Array(LN); for (let i = 0; i < LN; i++) Z[i] = zf(E.code[i]);
   const top = rL.next.top || {}, TOPK = 20;
@@ -1015,8 +1093,9 @@ await timed('nextLotto', async () => {
   const deep = {};
   for (const k of LKEYS) {
     const t = performance.now();
-    const O = lottoOrder(k, prm, Z, wonB);
+    const O = lottoOrder(k, prm, Z, wonB, LNEXT);
     if (k === 'popf') summary.lotto.next.popfOf = O.uni;
+    if (O.chain) { addStat.chain.push('next.lotto.' + k + ' R=' + LNEXT); deep[k] = { skipped: 'ATOL 사슬' }; await yieldLoop(); continue; }   // 계약상 순서 정의 불가(rank-core 도 throw)
     // (1) next.top 20 = 전수 정렬
     const rec = top[k];
     if (!Array.isArray(rec)) err('next.lotto.' + k, 'top 없음');
@@ -1099,7 +1178,8 @@ await timed('pastOrder', async () => {
   for (const R of LS) {
     const prm = lottoParams(R); if (!prm) continue;
     for (const kind of ['hot', 'cold']) {
-      const O = lottoOrder(kind, prm), lwc = L.logw(kind, prm[kind]);
+      const O = lottoOrder(kind, prm, null, null, R), lwc = L.logw(kind, prm[kind]);
+      if (O.chain) { addStat.chain.push(`core.order.${kind} R=${R}`); res[R + kind] = { skipped: 'ATOL 사슬' }; continue; }
       res[R + kind] = cmpOrderWindows(`core.order.${kind} R=${R}`, fullOrder(O), O.uni, (off, kk) => L.pageAdditive(lwc, off, kk));
       await yieldLoop();
     }
@@ -1378,6 +1458,14 @@ if (pg) {
   }
 } else if (!NOPAGE && !ROOT_MISSING.length) err('page', '페이지 결과 없음');
 
+/* hot/cold 가산 모델 요약 — 허용 오차 역산(정상: 브라우저 libm 차이)은 참고, 역산 불가·동점 사슬은 경고(모아서 한 번씩) */
+{
+  const A = addStat, ex = xs => xs.slice(0, 6).join(' · ') + (xs.length > 6 ? ` … (+${xs.length - 6})` : '');
+  summary.lotto.additive = { models: A.models, weights: A.weights, tolerantWeights: A.tolerant, tolerantModels: A.tolerantModels, maxUlp: A.maxUlp, quantModels: A.quant.length, chainSkipped: A.chain.length };
+  if (A.tolerant) notice('lotto.hotcold', `가중치 ${A.tolerant}/${A.weights}개(${A.tolerantModels}/${A.models - A.quant.length} 모델-회차)가 Node Math.pow(b,e) 와 비트 단위로 다름(최대 ${A.maxUlp} ulp — 가중치를 계산한 브라우저의 libm 차이) → ${INV_MAXULP} ulp 허용으로 정수 밑을 역산해 정수 곱으로 대조함`);
+  if (A.quant.length) warn('lotto.hotcold', `w 에서 정수 밑 역산 불가(또는 ${INV_MAXULP} ulp 초과) ${A.quant.length} 모델-회차(${ex(A.quant)}) — hot/cold 가중치 정의(max(1,freq52)^2.2 · (1+gap)^1.6)가 바뀌었거나 가중치를 계산한 환경의 Math.pow 가 크게 다름. 정수 곱 대신 계약 정수화(q=round(log w·2^46), 동점 |Δ| ≤ ${ADD_ATOL}, 구간 안 index 오름차순)로 대조함`);
+  if (A.chain.length) warn('lotto.hotcold', `동점 사슬(구간 폭 > ATOL ${ADD_ATOL}) — 계약상 순위·탐색 순서가 정의되지 않아 대조 생략 ${A.chain.length}건: ${ex(A.chain)}`);
+}
 TM.total = Math.round(performance.now() - T0);
 try { summary.maxRssMB = Math.round(process.resourceUsage().maxRSS / 1024); } catch (e) {}
 summary.ok = ERR === 0;
