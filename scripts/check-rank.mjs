@@ -11,7 +11,10 @@
      C. 페이지 동등성(Playwright, index.html): 무작위 3,000 조합(+ 경계·당첨 조합)의 페이지 popFeat·zOf vs
         rank-core popFeat·popModelZ(1e-12) vs 내 z(비트 단위 기대) — 다음 회차(전체 DB) + 표본 2회차(DB 를 R−1 로 자름).
         같은 회차들의 fitPop A/B/bounds · weightsFor(hot/cold) 와 pension.html currentScores(5모델)·predSettings().model 이
-        rank-params-*.json 과 같은지.
+        rank-params-*.json 과 같은지(저장 행은 예전 실행의 브라우저가 만든 값이라 libm ulp 차이는 허용 — 6h': 기록 순위를 정하는 것,
+        즉 hot/cold 정수 밑 · fitPop 의 z 순서·동점 · 연금 자리별 순위 점수가 같으면 ::notice 한 줄, 그것이 달라 기록이 바뀌면 ::error). 연금 점수는 원자료로 다시 만든 내 currentScores 와도 대조(params 전 행 + 페이지) —
+        점수 상대 1e-12 이내 + 자리별 순위 점수 동일이면 허용 일치(recent 의 Math.pow libm ulp 차이, ::notice 한 줄),
+        1e-12 안인데 순위 점수가 다르면 ::warning(재구현 points 로 기록이 바뀌면 ::error), 1e-12 밖은 ::warning.
      D. 무차별 대입(표본): 로또 표본 2회차 × pop/popf/hot/cold 를 8,145,060 조합 전부 내 코드로 평가해 [best,worst] 일치.
         연금 표본 3회차 × 6모델을 5,000,000장 전부(번호 순위 10^6 포함) 평가해 일치.
      E. 전 회차 재계수(내 코드, 표본 밖 행까지): 로또 pop/popf = 내 전수 열거로 만든 특징 히스토그램 × 페이지식 z,
@@ -939,9 +942,11 @@ function hotColdBasesMine(R) {               // 원자료로 직접: hot = max(1
   for (let n = 1; n <= 45; n++) { hot[n] = Math.max(1, f[n]); cold[n] = 1 + (last[n] ? (R - 1) - last[n] : (R - 1)); }
   return { hot, cold };
 }
-await timed('allLotto', async () => {
-  if (!ALLROWS || !rL) return;
-  /* 내 전수 열거의 (특징 코드, 필터) 히스토그램 — 키 = 코드·2 + 필터 를 정렬해 묶는다 */
+/* 내 전수 열거의 (특징 코드, 필터) 히스토그램 — 키 = 코드·2 + 필터 를 정렬해 묶는다. z 는 특징 코드만의 함수라 튜플 = z 동치류의 단위.
+   전 회차 재계수와 페이지↔params fitPop 순서 동치 검사가 같이 쓴다(한 번만 만든다). */
+let TUPLES = null;
+function tuples() {
+  if (TUPLES) return TUPLES;
   const KEY = new Uint32Array(LN); for (let i = 0; i < LN; i++) KEY[i] = E.code[i] * 2 + E.flag[i];
   KEY.sort();
   let K = 0; for (let i = 0; i < LN; i++) if (i === 0 || (KEY[i] >>> 1) !== (KEY[i - 1] >>> 1)) K++;
@@ -950,7 +955,11 @@ await timed('allLotto', async () => {
   let tc = 0, tf = 0; for (let i = 0; i < hk.length; i++) { tc += hc[i]; tf += hf[i]; }
   if (tc !== LN || tf !== E.NF) err('hist', `히스토그램 합 ${tc}/${tf} ≠ ${LN}/${E.NF}`);
   summary.lotto.tuples = hk.length;
-  const FD = fieldsOf(hk), zT = new Float64Array(hk.length);
+  return (TUPLES = { hk, hc, hf, FD: fieldsOf(hk) });
+}
+await timed('allLotto', async () => {
+  if (!ALLROWS || !rL) return;
+  const { hk, hc, hf, FD } = tuples(), zT = new Float64Array(hk.length);
   { const zc = zMaker(lottoParams(rr(lRows[0])).pop), zb = zBatch(lottoParams(rr(lRows[0])).pop, FD, new Float64Array(hk.length)); let nb = 0;
     for (let i = 0; i < hk.length; i++) if (zc(hk[i]) !== zb[i]) nb++;
     if (nb) err('zBatch', `일괄 z 가 단건 z 와 비트 단위로 다름 ${nb}건`); }
@@ -1008,14 +1017,14 @@ log('로또 전 회차 재계수', JSON.stringify(summary.lotto.allRows || {}));
    hot/cold 는 가산 모델 M 기준(exact: −정수 곱 · quant: −Σq 를 ATOL 사슬로 묶은 «동점 구간 대표값») — 부동소수 합 순서는 쓰지 않는다.
    score(i) = 왼→오 부동소수 합(next.top 의 s 대조용, 상대 1e-12). quant 에서 사슬 폭 > ATOL 이면 chain:true(계약상 정의 불가 → 호출자가 생략).
    한 번에 한 모델만 메모리에 둔다. */
-function lottoOrder(k, prm, Z, wonB, R) {
+function lottoOrder(k, prm, Z, wonB, R, Mgiven) { // Mgiven: 가산 모델을 직접 줄 때(페이지 가중치 — addStat 에 섞지 않음)
   if (k === 'pop') return { vals: Z, sorted: Z.slice().sort(), uni: LN, score: i => Z[i] };
   if (k === 'popf') {
     const V = new Float64Array(LN); let uni = 0;
     for (let i = 0; i < LN; i++) { if (E.flag[i] && !wonB.has(i)) { V[i] = Z[i]; uni++; } else V[i] = Infinity; }
     return { vals: V, sorted: V.slice().sort(), uni, score: i => Z[i] };
   }
-  const M = addModel(prm[k], k, R), lw = M.lw, K = M.key, mul = M.mul;
+  const M = Mgiven || addModel(prm[k], k, R), lw = M.lw, K = M.key, mul = M.mul;
   const X = new Float64Array(LN); let i = 0;
   for (let a = 1; a <= 40; a++) { const p1 = K[a];
     for (let b = a + 1; b <= 41; b++) { const p2 = mul ? p1 * K[b] : p1 + K[b];
@@ -1206,6 +1215,86 @@ function pensionScoresMine(E2, model, upto) { // pension.html currentScores 재�
   return { pos, band };
 }
 const sameArr = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((v, i) => Array.isArray(v) ? sameArr(v, b[i]) : v === b[i]);
+/* 재구현 대조는 «허용 비교»로 한다(2026-09 CI: recent 에서 매 실행 거짓 ::warning — params 행 전부 + 페이지 4 회차).
+   recent 점수 Σ 0.5^(경과/52) 는 Math.pow 라, 점수를 만든 브라우저(CI 는 Playwright Chromium)와 이 검증기(Node)의 libm 이 마지막 몇 ulp 다를 수 있다.
+   순위에 쓰이는 것은 점수 값이 아니라 자리별 순위 점수(points: 내림차순 10…1점 · 조 5…1점, 동점 평균)다. 그래서
+     ① 모든 점수가 상대 SC_RTOL(1e-12 ≈ 4,500 ulp) 이내  ② 두 쪽 points 가 정확히 같음  → «허용 일치»(끝에 ::notice 한 줄로 모음).
+   실측(연금 100~334회 params): recent 의 서로 다른 두 점수 사이 최소 상대 간격 1.2e-5 · 동점 0 → 1e-12 흔들림으로는 순서가 바뀔 수 없다.
+   ①은 맞는데 ②가 틀리면(동점이 ulp 로 갈라짐 · 극단적 근접 동점) 순위가 계산 환경에 달렸다는 뜻 → 자세히 ::warning,
+   재구현 points 로 기록(rows[].ranks · next.top)이 바뀌면 ::error. ① 밖(정의 자체가 다름 — 예: 반감기 변경)은 종전대로 경고 수준. */
+const SC_RTOL = 1e-12;
+const scStat = { sets: 0, scores: 0, maxUlp: 0, maxRel: 0, models: new Set(), where: { params: 0, page: 0, pageParams: 0 }, ptsDiff: 0, ptsWarned: 0, ptsSeen: new Set() };
+const scShape = x => !!x && Array.isArray(x.pos) && x.pos.length === 6 && x.pos.every(r => Array.isArray(r) && r.length === 10) && Array.isArray(x.band) && x.band.length === 5;
+const scLabel = (g, i) => g < 6 ? `자리${g + 1}[${i}]` : `조[${i + 1}]`;
+function scoreCmp(mine, S, lab = ['재구현', '기록']) {               // → { exact, tol(①), n(다른 점수 수), maxUlp(① 안), maxRel, worstAt, ptsSame(②), pm, ptsDiff(설명) }
+  if (!scShape(mine) || !scShape(S)) return { exact: false, tol: false, n: NaN, maxUlp: 0, maxRel: Infinity, worstAt: '모양(pos 6×10 · band 5)이 다름', ptsSame: false, ptsDiff: '비교 불가' };
+  const r = { exact: true, tol: true, n: 0, maxUlp: 0, maxRel: 0, worstAt: '' };
+  const A = [...mine.pos, mine.band], B = [...S.pos, S.band];
+  for (let g = 0; g < 7; g++) for (let i = 0; i < A[g].length; i++) {
+    const x = A[g][i], y = B[g][i]; if (x === y) continue;
+    r.exact = false; r.n++;
+    const rel = isNum(x) && isNum(y) ? Math.abs(x - y) / Math.max(Math.abs(x), Math.abs(y)) : Infinity;
+    if (rel <= SC_RTOL) r.maxUlp = Math.max(r.maxUlp, ulpDist(x, y)); else r.tol = false;
+    if (!(rel <= r.maxRel)) { r.maxRel = rel; r.worstAt = `${scLabel(g, i)} ${lab[0]} ${x} · ${lab[1]} ${y} (상대 ${rel.toPrecision(3)})`; }
+  }
+  if (r.exact) return { ...r, ptsSame: true };
+  const pm = pensionPoints(mine), ps = pensionPoints(S), dg = [];
+  for (let g = 0; g < 7; g++) { const u = g < 6 ? pm.pos[g] : pm.band, v = g < 6 ? ps.pos[g] : ps.band;
+    if (!sameArr(u, v)) dg.push(`${g < 6 ? '자리' + (g + 1) : '조'} ${lab[0]} [${u}] · ${lab[1]} [${v}]`); }
+  return { ...r, pm, ptsSame: !dg.length, ptsDiff: dg.slice(0, 2).join(' / ') + (dg.length > 2 ? ` … (+${dg.length - 2})` : '') };
+}
+function ranksWouldChange(E2, m, pm) {       // 재구현 points 로 계산하면 기록(행 순위 · next.top)이 바뀌나 → 설명 | null
+  const prm = pParams(E2), keys = [m, ...(prm && prm.site === m ? ['site'] : [])], out = [];
+  const row = pRowsJ.find(x => rr(x) === E2), d = pByEp.get(E2);
+  if (row && d) { const b = dpPension(pm, d);
+    for (const k of keys) { const rec = row.ranks && row.ranks[k];
+      if (rec && (!eqRange(rec, b) || !eqRange(rec.numRank, b.numRank))) out.push(`ranks.${k} 기록 [${rec.best},${rec.worst}] → [${b.best},${b.worst}] (num ${b.numRank.best}–${b.numRank.worst})`); } }
+  if (E2 === PNEXT && rP && rP.next && rP.next.top) { let ex = null;
+    for (const k of keys) { const rec = rP.next.top[k]; if (!Array.isArray(rec) || !rec.length) continue;
+      ex = ex || pensionBrowse(pensionUnits(pm), 0, rec.length);
+      if (!rec.every((e, i) => ex[i] && e.r === ex[i].r && +e.band === ex[i].band && String(e.num) === ex[i].num)) out.push(`next.top.${k} 기록 ${JSON.stringify(rec.slice(0, 2))} → ${JSON.stringify(ex.slice(0, 2))}`); } }
+  return out.length ? out.join(' / ') : null;
+}
+/* 한 모델-회차 판정 → { kind: 'exact' | 'tol'(허용 일치 — 모아서 notice) | 'pts'(①만 맞음 — 여기서 보고) | 'drift'(① 밖 — 호출자가 처리), c } */
+function judgeScores(scope, src, E2, m, mine, S) {
+  const c = scoreCmp(mine, S);
+  if (c.exact) return { kind: 'exact', c };
+  if (c.tol && c.ptsSame) {
+    scStat.sets++; scStat.where[src]++; scStat.scores += c.n; scStat.models.add(m);
+    scStat.maxUlp = Math.max(scStat.maxUlp, c.maxUlp); scStat.maxRel = Math.max(scStat.maxRel, c.maxRel);
+    return { kind: 'tol', c };
+  }
+  if (c.tol) {                               // 같은 점수(params 와 페이지가 같으면 한 번만 보고)
+    const key = E2 + '|' + m + '|' + JSON.stringify([S.pos, S.band]);
+    if (scStat.ptsSeen.has(key)) return { kind: 'pts', c };
+    scStat.ptsSeen.add(key); scStat.ptsDiff++;
+    const msg = `재구현 점수와 상대 ${c.maxRel.toPrecision(3)}(최대 ${c.maxUlp} ulp) 차이뿐인데 자리별 순위 점수(points)가 다름 — 동점이 미세 차이로 갈라졌거나 극단적 근접 동점(순위가 계산 환경에 달림): ${c.ptsDiff}`;
+    const ch = ranksWouldChange(E2, m, c.pm);
+    if (ch) err(scope, `${msg} → 재구현 points 로는 기록이 바뀜: ${ch}`);
+    else if (++scStat.ptsWarned <= 8) warn(scope, `${msg} (기록 순위·top 은 그대로)`);
+    return { kind: 'pts', c };
+  }
+  return { kind: 'drift', c };
+}
+const driftMsg = c => `다른 점수 ${c.n}개, 최대 ${c.worstAt}` + (c.ptsSame ? ' · 자리별 순위 점수는 같음' : ` · 순위 점수도 다름: ${c.ptsDiff}`);
+/* 페이지(이번 실행의 브라우저) currentScores ↔ rank-params-pension.json(저장된 행은 append-only — 예전 실행의 브라우저가 만든 값).
+   Playwright(playwright@1 은 매 실행 최신)·러너 이미지가 바뀌면 recent 의 Math.pow 가 몇 ulp 달라질 수 있다 → 같은 기준:
+   상대 1e-12 + points 같음 = 허용 일치(notice 합계) · points 같지만 1e-12 밖 = ::warning(순위는 그대로) ·
+   points 다름 = 페이지 points 로 기록(행 순위 · next.top)이 바뀌면 ::error, 아니면 ::warning. */
+function judgePagePension(E2, m, pageS, S) {
+  const sc = 'page.pension ep=' + E2 + ' ' + m;
+  if (!S) { err(sc, 'rank-params-pension.json 에 없음'); return false; }
+  const c = scoreCmp(pageS, S, ['페이지', 'params']);
+  if (c.exact) return true;
+  if (!scShape(pageS) || !scShape(S)) { err(sc, `currentScores ≠ rank-params-pension.json (${c.worstAt})`); return false; }
+  if (c.ptsSame) {
+    if (c.tol) { scStat.sets++; scStat.where.pageParams++; scStat.scores += c.n; scStat.models.add(m); scStat.maxUlp = Math.max(scStat.maxUlp, c.maxUlp); scStat.maxRel = Math.max(scStat.maxRel, c.maxRel); return true; }
+    warn(sc, `currentScores 가 params 와 상대 ${SC_RTOL} 밖으로 다름(자리별 순위 점수는 같아 기록 순위는 그대로) — ${driftMsg(c)}`); return true;
+  }
+  const ch = ranksWouldChange(E2, m, c.pm);
+  if (ch) { err(sc, `currentScores ≠ params(상대 ${c.maxRel.toPrecision(3)}) · 자리별 순위 점수 다름 → 페이지 값으로는 기록이 바뀜: ${ch} — ${c.ptsDiff}`); return false; }
+  warn(sc, `currentScores ≠ params(상대 ${c.maxRel.toPrecision(3)}) · 자리별 순위 점수 다름(기록 순위·top 은 그대로) — ${c.ptsDiff}`); return true;
+}
 await timed('brutePension', async () => {
   for (const E2 of PS) {
     const row = pRowsJ.find(x => rr(x) === E2), prm = pParams(E2), d = pByEp.get(E2);
@@ -1242,16 +1331,16 @@ await timed('allPension', async () => {
     const E2 = rr(row), prm = pParams(E2), d = pByEp.get(E2); if (!prm || !d) continue;
     for (const m of PKEYS) {
       const key = m === 'site' ? prm.site : m, S = prm.S && prm.S[key]; if (!S) { err('all.pension ep=' + E2, `S.${key} 없음`); continue; }
-      if (m !== 'site') { const mine = pensionScoresMine(E2, m); if (!sameArr(mine.pos, S.pos) || !sameArr(mine.band, S.band)) {
-        const lk = pensionScoresMine(E2, m, E2 + 1);
-        if (m !== 'rand' && sameArr(lk.pos, S.pos) && sameArr(lk.band, S.band)) err(`all.pension ep=${E2} ${m}`, '미래 누설: params S 가 ep 회차 자신의 추첨까지 넣은 값과 같다(walk-forward 위반)');
-        else { drift++; if (drift <= 5) warn(`all.pension ep=${E2} ${m}`, 'params S ≠ 원자료로 재구현한 currentScores'); } } }
+      if (m !== 'site') { const j = judgeScores(`all.pension ep=${E2} ${m}`, 'params', E2, m, pensionScoresMine(E2, m), S); if (j.kind === 'drift') {
+        if (m !== 'rand' && scoreCmp(pensionScoresMine(E2, m, E2 + 1), S).tol) err(`all.pension ep=${E2} ${m}`, '미래 누설: params S 가 ep 회차 자신의 추첨까지 넣은 값과 같다(walk-forward 위반)');
+        else { drift++; if (drift <= 5) warn(`all.pension ep=${E2} ${m}`, 'params S ≠ 원자료로 재구현한 currentScores — ' + driftMsg(j.c)); } } }
       const b = dpPension(pensionPoints(S), d), rec = row.ranks && row.ranks[m];
       if (!rec || !eqRange(rec, b) || !eqRange(rec.numRank, b.numRank)) { bad++; err(`all.pension ep=${E2} ${m}`, `기록 [${rec && rec.best},${rec && rec.worst}] ≠ DP [${b.best},${b.worst}] (num ${b.numRank.best}–${b.numRank.worst})`); }
     }
     n++;
   }
-  summary.pension.allRows = { n, bad, paramDrift: drift };
+  if (drift > 5) warn('all.pension', `params S ≠ 재구현(상대 ${SC_RTOL} 밖) 모두 ${drift} 모델-회차 — 위 5건만 개별 표시. pension.html 점수 정의(currentScores/scoreDigits)가 바뀌었으면 pensionScoresMine 을 맞출 것`);
+  summary.pension.allRows = { n, bad, paramDrift: drift, paramTolerant: scStat.where.params };
 });
 await timed('nextPension', async () => {
   if (!rP || !rP.next || !rP.next.top) { if (rP && rP.next) warn('next.pension', 'next.top 없음 — 대조 생략'); return; }
@@ -1399,6 +1488,79 @@ await timed('stats', async () => {
   } else if (rP) err('pension.summary', '없음');
 });
 
+/* ── 6h'. 로또 페이지(이번 실행의 브라우저) ↔ rank-params-lotto.json(저장된 행은 append-only — 예전 실행의 브라우저가 만든 값).
+   playwright@1(매 실행 최신)·러너 이미지가 바뀌면 Math.pow 등 libm 이 몇 ulp 달라질 수 있다. 기록 순위를 정하는 것만 본다:
+   hot/cold = 정수 밑(4 ulp 역산)이 같으면 허용 일치 · 다르면 ::error. 역산이 안 되면 계약 정수화로 행 순위·next.top 이 바뀌면 ::error, 아니면 ::warning.
+   fitPop = 값이 상대 1e-12 안이고 모든 특징 튜플의 z 순서·동점이 같으면 허용 일치 · 순서/동점이 바뀌면 ::error · 1e-12 밖인데 순서는 같으면 ::warning.
+   (실측: 1000~1243회 params 를 ±1·±8 ulp 흔들어도 z 순서·동점 변화 0 — 서로 다른 z 사이 최소 간격 1.1e-9) */
+const pgL = { w: { sets: 0, n: 0, maxUlp: 0 }, pop: { sets: 0, n: 0, maxUlp: 0, maxRel: 0 } };
+function popOrderSame(P1, P2) {               // 모든 특징 튜플에서 z 순서·동점이 같은가 — z 는 특징 코드만의 함수라 튜플 동치 = 8,145,060 조합 전체 동치
+  const { hk, FD } = tuples(), n = hk.length;
+  const z1 = zBatch(P1, FD, new Float64Array(n)), z2 = zBatch(P2, FD, new Float64Array(n));
+  const idx = new Uint32Array(n); for (let i = 0; i < n; i++) idx[i] = i;
+  idx.sort((a, b) => z1[a] - z1[b] || a - b);
+  for (let q = 1; q < n; q++) { const a = idx[q - 1], b = idx[q];
+    if (z1[a] === z1[b] ? z2[a] !== z2[b] : !(z2[a] < z2[b]))
+      return { same: false, first: `특징 [${featOfCode(hk[a])}] · [${featOfCode(hk[b])}]: 페이지 z ${z1[a]} ${z1[a] === z1[b] ? '=' : '<'} ${z1[b]} 인데 params z ${z2[a]} · ${z2[b]}` }; }
+  return { same: true };
+}
+function judgePagePop(R, pp, sp) {
+  const sc = `page.lotto R=${R} fitPop`;
+  const flat = P => { if (!P || !P.A || !Array.isArray(P.A.beta) || !Array.isArray(P.bounds)) return null;
+    const v = [...P.A.beta.map((x, j) => ['A.beta' + j, x]), ['A.predMean', P.A.predMean], ['A.predSD', P.A.predSD]];
+    if (P.B) v.push(...P.B.beta.map((x, j) => ['B.beta' + j, x]), ['B.predMean', P.B.predMean], ['B.predSD', P.B.predSD]);
+    P.bounds.forEach((b, j) => v.push(['bounds' + j + '.lo', b && b[0]], ['bounds' + j + '.hi', b && b[1]])); return v; };
+  const a = flat(pp), b = flat(sp);
+  if (!a || !b || a.length !== b.length || !pp.B !== !sp.B || a.some((x, i) => x[0] !== b[i][0])) { err(sc, 'A/B/bounds 모양 ≠ rank-params-lotto.json'); return false; }
+  let n = 0, mu = 0, mr = 0, worst = '';
+  a.forEach(([k, x], i) => { const y = b[i][1]; if (x === y) return; n++;
+    const rel = isNum(x) && isNum(y) ? Math.abs(x - y) / Math.max(Math.abs(x), Math.abs(y)) : Infinity;
+    if (rel <= SC_RTOL) mu = Math.max(mu, ulpDist(x, y));
+    if (!(rel <= mr)) { mr = rel; worst = `${k} 페이지 ${x} · params ${y} (상대 ${rel.toPrecision(3)})`; } });
+  if (!n) return true;
+  const o = popOrderSame(pp, sp);
+  if (!o.same) { err(sc, `A/B/bounds ≠ params(다른 값 ${n}개, 최대 ${worst}) → z 순서/동점이 바뀜 — 기록 순위·탐색 순서가 이 페이지의 zOf 와 다름: ${o.first}`); return false; }
+  if (mr <= SC_RTOL) { pgL.pop.sets++; pgL.pop.n += n; pgL.pop.maxUlp = Math.max(pgL.pop.maxUlp, mu); pgL.pop.maxRel = Math.max(pgL.pop.maxRel, mr); return true; }
+  warn(sc, `A/B/bounds 가 params 와 상대 ${SC_RTOL} 밖으로 다름(다른 값 ${n}개, 최대 ${worst}) — 모든 특징 튜플의 z 순서·동점은 같아 기록 순위·top 은 그대로`); return true;
+}
+function lottoAddChange(R, kind, M) {         // 가산 모델 M(페이지 가중치)로 계산하면 기록(행 순위 · next.top)이 바뀌나 → { changed:[], skipped:[] }
+  const out = { changed: [], skipped: [] };
+  const row = lRows.find(x => rr(x) === R), d = draws.get(R), rec = row && row.ranks && row.ranks[kind];
+  if (rec && d) { const ex = classRank(M, d.n);
+    if (ex.chain) out.skipped.push(`ranks.${kind}: 동점 사슬(계약상 정의 불가)`);
+    else if (!eqRange(rec, ex)) out.changed.push(`ranks.${kind} 기록 [${rec.best},${rec.worst}] → [${ex.best},${ex.worst}]`); }
+  const top = R === LNEXT && rL && rL.next && rL.next.top && rL.next.top[kind];
+  if (Array.isArray(top) && top.length) {
+    const O = lottoOrder(kind, null, null, null, R, M);
+    if (O.chain) out.skipped.push(`next.top.${kind}: 동점 사슬`);
+    else { const ex = browseFromSorted(O.vals, O.sorted, O.uni, 0, top.length);
+      if (!(ex.length === top.length && top.every((e, i) => e.r === ex[i].r && lexIndex(Array.from(e.c || [])) === ex[i].idx)))
+        out.changed.push(`next.top.${kind} 기록 ${JSON.stringify(top.slice(0, 2).map(e => (e.c || []).join('-')))} → ${JSON.stringify(ex.slice(0, 2).map(e => lexCombo(e.idx).join('-')))}`); }
+  }
+  return out;
+}
+function judgePageWeights(R, kind, pw, sw) {
+  const sc = `page.lotto R=${R} weightsFor('${kind}')`;
+  if (sameArr(pw, sw)) return true;
+  if (!Array.isArray(pw) || !Array.isArray(sw) || pw.length !== 46 || sw.length !== 46) { err(sc, '≠ params (길이 46 아님)'); return false; }
+  let n = 0, mu = 0, mr = 0;
+  for (let i = 0; i <= 45; i++) { const x = pw[i], y = sw[i]; if (x === y) continue; n++;
+    const rel = isNum(x) && isNum(y) ? Math.abs(x - y) / Math.max(Math.abs(x), Math.abs(y)) : Infinity; mr = Math.max(mr, rel); if (rel <= SC_RTOL) mu = Math.max(mu, ulpDist(x, y)); }
+  const ip = intBases(pw, kind), is = intBases(sw, kind), okP = !!ip && ip.maxUlp <= INV_MAXULP, okS = !!is && is.maxUlp <= INV_MAXULP;
+  if (okP && okS) {
+    const diff = []; for (let i = 1; i <= 45; i++) if (ip.bases[i] !== is.bases[i]) diff.push(`${i}번 ${ip.bases[i]}≠${is.bases[i]}`);
+    if (!diff.length) { pgL.w.sets++; pgL.w.n += n; pgL.w.maxUlp = Math.max(pgL.w.maxUlp, mu); return true; }
+    err(sc, `≠ params — 정수 밑(페이지≠params)이 다름: ${diff.slice(0, 8).join(', ')}${diff.length > 8 ? ` … (+${diff.length - 8})` : ''} → 정수 곱 순위가 바뀜`); return false;
+  }
+  /* 역산 불가(가중치 정의가 바뀌었거나 libm 이 크게 다름) → 페이지 가중치의 계약 기준(역산되면 정수 곱, 아니면 정수화 ±ATOL)으로 기록이 바뀌는지 */
+  const lw = new Float64Array(46); for (let i = 1; i <= 45; i++) lw[i] = Math.log(pw[i]);
+  let M; if (okP) M = { mode: 'exact', mul: true, atol: 0, key: Float64Array.from(ip.bases), lw };
+  else { const Q = quantMine(lw); M = { mode: 'quant', mul: false, atol: ADD_ATOL, key: Q.q, lw }; }
+  const ch = lottoAddChange(R, kind, M), what = `≠ params(다른 값 ${n}개, 최대 상대 ${mr.toPrecision(3)}) — ${okS ? '페이지' : 'params'} 가중치에서 정수 밑 역산 불가(${INV_MAXULP} ulp 초과)`;
+  if (ch.changed.length) { err(sc, `${what} → 페이지 가중치(${addModeTxt(M)})로는 기록이 바뀜: ${ch.changed.join(' / ')}`); return false; }
+  warn(sc, `${what} — 페이지 가중치(${addModeTxt(M)})로도 기록 순위·top 은 그대로${ch.skipped.length ? ' (생략: ' + ch.skipped.join(' / ') + ')' : ''}`); return true;
+}
+
 /* ── 6i. 페이지 결과 대조 ── */
 const pg = await timed('pageWait', async () => pagePromise);
 if (pg) {
@@ -1419,11 +1581,10 @@ if (pg) {
       if (pr.dbLatest !== R - 1 && !(R === LNEXT && pr.dbLatest === LATEST)) err('page.lotto R=' + R, `DB.latest=${pr.dbLatest}`);
       const prm = lottoParams(R);
       if (!prm) { err('page.lotto R=' + R, 'params 없음'); continue; }
-      // fitPop · weightsFor 가 params 와 같은가(정확히)
-      const sameM = (a, b) => (!a && !b) || (a && b && sameArr(a.beta, b.beta) && a.predMean === b.predMean && a.predSD === b.predSD);
-      if (!sameM(pr.pop.A, prm.pop.A) || !sameM(pr.pop.B, prm.pop.B) || !sameArr(pr.pop.bounds, prm.pop.bounds)) err('page.lotto R=' + R, 'fitPop A/B/bounds ≠ rank-params-lotto.json');
-      if (!sameArr(pr.hot, prm.hot)) err('page.lotto R=' + R, `weightsFor('hot') ≠ params`);
-      if (!sameArr(pr.cold, prm.cold)) err('page.lotto R=' + R, `weightsFor('cold') ≠ params`);
+      // fitPop · weightsFor 가 params 와 같은가 — 비트 단위가 아니면 기록 순위를 정하는 것(z 순서·동점 / 정수 밑)이 같은지(위 6h' 설명)
+      judgePagePop(R, pr.pop, prm.pop);
+      judgePageWeights(R, 'hot', pr.hot, prm.hot);
+      judgePageWeights(R, 'cold', pr.cold, prm.cold);
       const zfMine = zMaker(pr.pop);
       pageCombos.forEach((c, i) => {
         const zp = pr.z[i]; if (zp == null) return;
@@ -1449,9 +1610,9 @@ if (pg) {
       if (x.site !== prm.site) { bad++; err('page.pension ep=' + E2, `predSettings().model=${x.site} ≠ params.site=${prm.site}`); }
       for (const m of ['freq', 'cold', 'recent', 'gap', 'rand']) {
         const a = x.S[m], b = prm.S && prm.S[m];
-        if (!b || !sameArr(a.pos, b.pos) || !sameArr(a.band, b.band)) { bad++; err('page.pension ep=' + E2 + ' ' + m, 'currentScores ≠ rank-params-pension.json'); }
-        const mine = pensionScoresMine(E2, m);
-        if (!sameArr(mine.pos, a.pos) || !sameArr(mine.band, a.band)) warn('page.pension ep=' + E2 + ' ' + m, '내 currentScores 재구현이 페이지와 다름(재구현 대조는 경고 수준)');
+        if (!judgePagePension(E2, m, a, b)) bad++;
+        const j = judgeScores('page.pension ep=' + E2 + ' ' + m, 'page', E2, m, pensionScoresMine(E2, m), a);   // 허용 비교(위 SC_RTOL 설명)
+        if (j.kind === 'drift') warn('page.pension ep=' + E2 + ' ' + m, '내 currentScores 재구현이 페이지와 다름(재구현 대조는 경고 수준) — ' + driftMsg(j.c));
       }
     }
     summary.page.pension = { eps: [PNEXT, ...PS], bad };
@@ -1465,6 +1626,16 @@ if (pg) {
   if (A.tolerant) notice('lotto.hotcold', `가중치 ${A.tolerant}/${A.weights}개(${A.tolerantModels}/${A.models - A.quant.length} 모델-회차)가 Node Math.pow(b,e) 와 비트 단위로 다름(최대 ${A.maxUlp} ulp — 가중치를 계산한 브라우저의 libm 차이) → ${INV_MAXULP} ulp 허용으로 정수 밑을 역산해 정수 곱으로 대조함`);
   if (A.quant.length) warn('lotto.hotcold', `w 에서 정수 밑 역산 불가(또는 ${INV_MAXULP} ulp 초과) ${A.quant.length} 모델-회차(${ex(A.quant)}) — hot/cold 가중치 정의(max(1,freq52)^2.2 · (1+gap)^1.6)가 바뀌었거나 가중치를 계산한 환경의 Math.pow 가 크게 다름. 정수 곱 대신 계약 정수화(q=round(log w·2^46), 동점 |Δ| ≤ ${ADD_ATOL}, 구간 안 index 오름차순)로 대조함`);
   if (A.chain.length) warn('lotto.hotcold', `동점 사슬(구간 폭 > ATOL ${ADD_ATOL}) — 계약상 순위·탐색 순서가 정의되지 않아 대조 생략 ${A.chain.length}건: ${ex(A.chain)}`);
+}
+/* 연금 currentScores 재구현 허용 대조 요약 — 허용 일치(정상: 브라우저 libm 차이)는 notice 한 줄, points 다름 경고가 많으면 한 줄로 합계 */
+{
+  const C = scStat;
+  summary.pension.scoreCmp = { rtol: SC_RTOL, tolerantSets: C.sets, params: C.where.params, page: C.where.page, pageParams: C.where.pageParams, scores: C.scores, maxUlp: C.maxUlp, maxRel: C.maxRel, models: [...C.models], pointsDiffer: C.ptsDiff };
+  if (C.sets) notice('pension.currentScores', `비트 단위로 다른 점수 ${C.scores}개 · ${C.sets} 모델-회차(재구현↔params ${C.where.params} · 재구현↔페이지 ${C.where.page} · 페이지↔params ${C.where.pageParams} · 모델 ${[...C.models].join('·')}) — 최대 ${C.maxUlp} ulp(상대 ${C.maxRel.toPrecision(2)}): 점수를 만든 브라우저(버전)·Node 사이 Math.pow(0.5, 경과/52) libm 차이 → 상대 ${SC_RTOL} 허용 + 자리별 순위 점수(points) 정확히 같음으로 일치 처리`);
+  const W = pgL.w, Pp = pgL.pop;
+  summary.page.lottoParamsTol = { weights: W, fitPop: Pp };
+  if (W.sets || Pp.sets) notice('page.lotto', `페이지↔params 허용 일치 — ${[W.sets ? `hot/cold 가중치 ${W.n}개(${W.sets} 모델-회차, 최대 ${W.maxUlp} ulp): 정수 밑 동일(${INV_MAXULP} ulp 역산)` : '', Pp.sets ? `fitPop 값 ${Pp.n}개(${Pp.sets} 회차, 최대 ${Pp.maxUlp} ulp · 상대 ${Pp.maxRel.toPrecision(2)}): 모든 특징 튜플의 z 순서·동점 동일` : ''].filter(Boolean).join(' · ')} — 이번 실행의 브라우저와 params 를 만든 브라우저의 libm 차이, 기록 순위·탐색 순서는 그대로`);
+  if (C.ptsWarned > 8) warn('pension.currentScores', `상대 ${SC_RTOL} 안인데 자리별 순위 점수가 다른 모델-회차 ${C.ptsDiff}건 — 기록이 그대로인 ${C.ptsWarned}건은 8건만 개별 표시(기록이 바뀌는 것은 모두 ::error)`);
 }
 TM.total = Math.round(performance.now() - T0);
 try { summary.maxRssMB = Math.round(process.resourceUsage().maxRSS / 1024); } catch (e) {}
