@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { id: 'brief',    file: 'brief.html',    label: '이번 주', icon: 'calendar' },
   { id: 'index',    file: 'index.html',    label: '로또',    icon: 'ball' },
   { id: 'pension',  file: 'pension.html',  label: '연금',    icon: 'ticket' },
+  { id: 'rank',     file: 'rank.html',     label: '순위',    icon: 'stairs' },
   { id: 'validate', file: 'validate.html', label: '검증',    icon: 'check-shield' },
   { id: 'record',   file: 'record.html',   label: '기록',    icon: 'ledger' }
 ];
@@ -27,6 +28,7 @@ const NAV_ICONS = {
   calendar: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="5" width="17.6" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.2 9.6h17.6"/></svg>',
   ball: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><path d="M8.6 8.9a2.4 2.4 0 0 1 2.4-2.3"/></svg>',
   ticket: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2.1a2 2 0 0 0 0 3.8v2.1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2.1a2 2 0 0 0 0-3.8V8.2Z"/><path d="M9.3 6.4v11.3" stroke-dasharray="2.1 2.1"/></svg>',
+  stairs: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="13" width="5" height="7" rx="1"/><rect x="9.5" y="9" width="5" height="11" rx="1"/><rect x="15.5" y="5" width="5" height="15" rx="1"/></svg>',
   'check-shield': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 19 6v6c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6l7-2.8Z"/><path d="M8.7 12.2 11 14.5l4.3-4.3"/></svg>',
   ledger: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.2" y="3" width="15.6" height="18" rx="1.4"/><path d="M7.6 8h8.8M7.6 12h8.8M7.6 16h5.6"/></svg>'
 };

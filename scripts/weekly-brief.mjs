@@ -451,6 +451,39 @@ function simCarryoverLine(sim, kind, lastRound){
   }catch(e){ return null; }
 }
 
+// pct(0=순위표 맨 위/1위, 1=맨 아래/꼴찌)를 "상위 X%"/"하위 X%"로 방향까지 맞춰 표기.
+// rank.html sideText()/adaptivePct(), record.html sideText()(§13-2 에서 이미 같은 버그를 고친 자리)와 같은 로직 —
+// keep in sync. pct<=0.5 면 상위권이라 그대로, pct>0.5 면 하위권이므로 (1-pct)를 "하위"에 붙인다.
+function rankSideText(pct){
+  if(pct==null||isNaN(pct)) return '—';
+  const side = pct<=0.5 ? '상위' : '하위';
+  return side+' '+pctS(side==='상위'?pct:1-pct,1);
+}
+
+/* 「전주 반영」 무한 순위 한 줄 — brief/rank-lotto.json · brief/rank-pension.json
+   (Opus-A scripts/rank-track.mjs 산출물, PLAN3 §3) 의 마지막 행에서 지난 회차 당첨번호가
+   무한 순위표의 몇 위였는지 한 줄로 뽑는다. 로또는 pop(분배 모델), 연금은 site(그 시점 사이트 설정 모델 별칭).
+   우연 기준선 문구("추첨이 공정하면 평균 상위 50%")·site 모델 이름("사이트 설정 모델")은 rank-track.mjs 의 표준
+   용어를 그대로 따른다(Sonnet-8 정직성·용어 리뷰, .lab/review-copy.md §1 반영 — 다른 파일도 같은 용어로 통일 중).
+   파일이 아직 없거나(순위 파이프라인이 이 스크립트보다 늦게/독립적으로 돌 수 있다) 마지막 행 회차가
+   이번 브리핑의 최신 회차와 안 맞으면(스테일) 조용히 건너뛴다 — validation.json/sim-*.json 과 같은
+   fs try/catch 관례(readHonestyG/readSimLedger 참고), ROOT 기준(다른 brief/*.json 읽기와 동일). */
+function readRankLine(kind, expectRound, modelKey, modelLabel){
+  try{
+    const p=path.join(ROOT,'brief',`rank-${kind}.json`);
+    if(!fs.existsSync(p)) return null;
+    const o=JSON.parse(fs.readFileSync(p,'utf8'));
+    if(!o || o.kind!==kind || !Array.isArray(o.rows) || !o.rows.length) return null;
+    const row=o.rows[o.rows.length-1];
+    if(!row) return null;
+    const rr = row.round!=null ? row.round : row.ep;
+    if(rr!==expectRound) return null;
+    const r=row.ranks && row.ranks[modelKey];
+    if(!r || r.excluded || r.mid==null || r.pct==null) return null;
+    return `지난 회차 당첨번호: ${modelLabel} 순위 ${fmt(r.mid)}위(${rankSideText(r.pct)}) · 추첨이 공정하면 평균 상위 50%`;
+  }catch(e){ return null; }
+}
+
 function median(arr){
   if(!arr.length) return null;
   const s=arr.slice().sort((a,b)=>a-b);
@@ -615,6 +648,8 @@ function carryoverSection(L,P,simLotto,simPension){
   const w1flag = P.w1===0 ? ' <b>(1등 미판매 — 그 조합을 아무도 사지 않았습니다)</b>' : '';
   const simLottoLine = simCarryoverLine(simLotto,'lotto',L.last.r);
   const simPensionLine = simCarryoverLine(simPension,'pension',P.last.ep);
+  const rankLottoLine = readRankLine('lotto', L.last.r, 'pop', '분배 모델');
+  const rankPensionLine = readRankLine('pension', P.last.ep, 'site', '사이트 설정 모델');
   return `
 <section>
   <h2>전주 반영</h2>
@@ -625,12 +660,14 @@ function carryoverSection(L,P,simLotto,simPension){
     <p class="note">이번 주 추천과 직전 당첨번호의 겹침 <b>${L.overlapK}개</b><br>
       직전 번호를 따르거나 피하는 규칙은 확률을 바꾸지 않습니다.</p>
     ${simLottoLine?`<p class="note">${simLottoLine}</p>`:''}
+    ${rankLottoLine?`<p class="note">${rankLottoLine} → <a href="./rank.html#lotto" style="color:inherit">순위</a></p>`:''}
   </div>
   <div class="card flat">
     <h3>연금 · ${P.last.ep}회</h3>
     <p class="note">1등 ${P.w1!=null?P.w1+'매':'—'} · 2등 ${P.w2!=null?P.w2+'매':'—'} · 보너스 ${P.wB!=null?P.wB+'매':'—'}${w1flag}<br>
       추정 판매 ${P.sold?pctS(P.sold/1e7,0):'—'}</p>
     ${simPensionLine?`<p class="note">${simPensionLine}</p>`:''}
+    ${rankPensionLine?`<p class="note">${rankPensionLine} → <a href="./rank.html#pension" style="color:inherit">순위</a></p>`:''}
   </div>
 </section>`;
 }
