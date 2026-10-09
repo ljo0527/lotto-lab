@@ -3,7 +3,7 @@
 "from":1000,
 "to":1245,
 "latest":1244,
-"generated":"2026-10-08T19:01:16.519Z",
+"generated":"2026-10-09T04:11:57.939Z",
 "rule":{"name":"portfolio@1243","from":1243,"opts":{"n":5,"maxOv":1,"dz":0.15,"N":1500,"carry":false}},
 "games":5,
 "ticket":1000,
