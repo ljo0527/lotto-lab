@@ -3,7 +3,7 @@
 "from":100,
 "to":338,
 "latest":337,
-"generated":"2026-10-16T02:48:43.280Z",
+"generated":"2026-10-18T03:59:27.616Z",
 "rule":{"name":"spread@334","from":334,"mode":"spread","settings":{"model":"gap","K":3,"J":2},"seed":"ep*7919"},
 "games":5,
 "ticket":1000,
