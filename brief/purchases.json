@@ -1,6 +1,6 @@
 {
  "v": 1,
- "updated": "2026-10-23T03:01:49.868Z",
+ "updated": "2026-10-24T16:53:04.336Z",
  "config": {
   "lottoGames": 5,
   "pensionTickets": 5
@@ -265,13 +265,56 @@
   {
    "kind": "lotto",
    "round": 1247,
-   "date": null,
+   "date": "20261024",
    "picks": [
     "13,18,21,22,44,45",
     "14,19,20,25,42,43",
     "12,23,27,28,41,44",
     "1,24,26,31,38,39",
     "3,22,29,30,35,40"
+   ],
+   "spend": 5000,
+   "status": "done",
+   "rule": "portfolio",
+   "result": [
+    {
+     "hit": 3,
+     "bonus": false,
+     "grade": 5
+    },
+    {
+     "hit": 2,
+     "bonus": false,
+     "grade": 0
+    },
+    {
+     "hit": 0,
+     "bonus": false,
+     "grade": 0
+    },
+    {
+     "hit": 0,
+     "bonus": true,
+     "grade": 0
+    },
+    {
+     "hit": 1,
+     "bonus": false,
+     "grade": 0
+    }
+   ],
+   "return": 5000
+  },
+  {
+   "kind": "lotto",
+   "round": 1248,
+   "date": null,
+   "picks": [
+    "6,27,28,29,31,43",
+    "3,18,19,20,41,44",
+    "2,26,27,35,40,44",
+    "14,15,24,30,42,43",
+    "1,16,32,33,39,45"
    ],
    "spend": 5000,
    "status": "pending",
