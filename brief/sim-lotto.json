@@ -3,7 +3,7 @@
 "from":1000,
 "to":1248,
 "latest":1247,
-"generated":"2026-10-24T16:53:37.802Z",
+"generated":"2026-10-25T04:07:27.461Z",
 "rule":{"name":"portfolio@1243","from":1243,"opts":{"n":5,"maxOv":1,"dz":0.15,"N":1500,"carry":false}},
 "games":5,
 "ticket":1000,
@@ -26,7 +26,7 @@
   }
  },
  "determinism": {
-  "compared": 247,
+  "compared": 248,
   "mismatch": [
    1006,
    1008,
@@ -174,8 +174,8 @@
   "ruleChanged": [],
   "regrade": []
  },
- "kept": 247,
- "added": 2
+ "kept": 248,
+ "added": 1
 },
 "rows":[
 {"round":1000,"date":"20220129","status":"done","rule":"portfolio@1243","picks":["14,18,20,36,37,45","13,23,25,26,42,44","14,27,29,30,31,40","15,16,21,22,28,39","16,19,32,33,34,41"],"result":[{"hit":0,"bonus":false,"rank":0},{"hit":1,"bonus":false,"rank":0},{"hit":0,"bonus":false,"rank":0},{"hit":1,"bonus":true,"rank":0},{"hit":2,"bonus":false,"rank":0}],"ret":0,"carry":[2,0,1,1,0],"prevHit":null,"cum":{"weeks":1,"spend":5000,"ret":0,"net":-5000,"roi":0,"ranks":{"1":0,"2":0,"3":0,"4":0,"5":0},"anyWeeks":0,"lastPrizeRound":null,"bestRank":0},"cross":{"pairs":0,"n":{"3":0,"4":0,"5":0,"6":0,"5b":0},"any":0,"exp":0,"top":[]}},
