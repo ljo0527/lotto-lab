@@ -828,7 +828,7 @@ async function runLotto(pension, lotto, RC, ENG){
   /* 결정성 — 기존 행과 비교 */
   const det={compared:0, mismatch:[]};
   for(const [R,res] of fresh){ const s=kept.get(R); if(!s) continue; det.compared++; if(!same(rowKey(s),rowKey(stripRow(res)))) det.mismatch.push(R); }
-  if(det.mismatch.length) warn('등수 분포 결정성(lotto)', `기존 행과 다시 계산한 값이 다릅니다: ${det.mismatch.join(', ')} — 기존 행을 그대로 둡니다`);
+  if(det.mismatch.length) warn('등수 분포 결정성(lotto)', `기존 행과 다시 계산한 값이 다릅니다: ${det.mismatch.join(', ')} — 기존 행을 그대로 둡니다(자료가 바로잡힌 경우면 docs/bugfix-log.md 의 수리 절차 — 행만 지우지 말고 직전 판으로 되돌림)`);
   /* rank-core 대조 */
   const ver=verifyLotto(RC, ENG, checks);
   const rows=[]; for(const R of want){ if(kept.has(R)) rows.push(kept.get(R)); else if(fresh.has(R)) rows.push(stripRow(fresh.get(R))); }
