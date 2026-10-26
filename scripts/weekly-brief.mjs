@@ -21,6 +21,7 @@
 import fs from 'fs';
 import path from 'path';
 import http from 'http';
+import { lottoApiWindow, assertLottoRows, assertPageDb } from './data-guard.mjs';
 import { siteCSS, siteJS, gnav as sharedGnav, FOOT } from './site-shared.mjs';
 
 const arg=(k,d)=>{ const i=process.argv.indexOf(k); return i>0?process.argv[i+1]:d; };
@@ -105,11 +106,12 @@ async function getData(){
     try{
       const o=JSON.parse(fs.readFileSync(cache,'utf8'));
       if(o.pension&&o.pension.length&&o.lotto&&o.lotto.rows&&o.lotto.rows.length){
-        console.error('      데이터 캐시 사용: '+cache); return [o.pension,o.lotto];
+        assertLottoRows(o.lotto,'데이터 캐시'); console.error('      데이터 캐시 사용: '+cache); return [o.pension,o.lotto];
       }
     }catch(e){ console.error('      캐시 읽기 실패, 새로 받습니다: '+e.message); }
   }
   const [pension, lotto] = await Promise.all([getPension(), getLotto()]);
+  assertLottoRows(lotto,'동행복권 수집');   // 1..latest 연속성 — 구멍이 있으면 여기서 실패 (data-guard.mjs)
   if(cache){ try{ fs.writeFileSync(cache, JSON.stringify({at:new Date().toISOString(),pension,lotto})); }catch(e){} }
   return [pension, lotto];
 }
@@ -151,7 +153,7 @@ async function mockRoutes(ctx, pension, lotto){
     }
     if(u.includes('selectPstLt645InfoNew')){
       const c=+(u.match(/srchLtEpsd=(\d+)/)||[])[1];
-      let l=lotto.rows.filter(x=>+x.ltEpsd>=c-5 && +x.ltEpsd<=c+4);
+      let l=lottoApiWindow(lotto.rows,c);   // 실 API 처럼 하한(1회)에서 창을 위로 민다 (data-guard.mjs)
       if(!l.length) l=lotto.rows.slice(-10);
       return json({data:{list:l.slice().sort((a,b)=>b.ltEpsd-a.ltEpsd)}});
     }
@@ -250,6 +252,7 @@ async function readLotto(browser, base, pension, lotto){
   await p.waitForFunction(()=>typeof DB!=='undefined'&&DB.latest>100
     &&DB.draws&&DB.draws[DB.latest],{timeout:120000});
   await p.waitForTimeout(2000);
+  await assertPageDb(p, lotto, 'weekly-brief');   // 페이지 DB 1..latest 연속·최신 일치 단언 (data-guard.mjs)
   const r=await p.evaluate(()=>{
     /* [2026-09-03] index.html 이 캐시를 DB.rev 로 무효화하도록 바뀌었다.
        rows(0) 결과를 담는 ROWS_CACHE 가 새로 생겼는데 이 함수는 그걸 모른다 →
@@ -534,7 +537,7 @@ function lottoBuyCard(L, meta, honesty){
   </div>
   <details><summary>예비 F~J — A~E 중 마음에 안 드는 줄 대신</summary><div class="slip">${spareRows}</div></details>
   <p class="honest">1등 확률은 1/8,145,060 그대로입니다. 바뀌는 건 당첨 시 나눠 갖는 인원이며,
-    300주 walk-forward 실측 효과는 <b>${honesty.label}</b>입니다 → <a href="./validate.html">검증</a>.
+    검증 보드 walk-forward 실측 효과는 <b>${honesty.label}</b>입니다 → <a href="./validate.html">검증</a>.
     ${L.degraded?'<span class="tag sig">주의 · 이번 주는 다양성 제약을 일부 완화했습니다</span>':''}</p>
   <details><summary>결과 분포</summary>${distHTML}</details>
 </section>`;
@@ -827,6 +830,7 @@ ${summaryStrip(L,P,meta)}
 ${staleBannerPlaceholder()}
 
 <div class="cards2" data-cards>${cardLotto}${cardPension}</div>
+<section class="card" id="tradeTip" hidden data-round="${L.target}" style="margin-top:12px"></section>
 
 <h2>지난주 결과</h2>
 <div class="cards2">${lastWeekLotto(L)}${lastWeekPension(P)}</div>
@@ -847,7 +851,7 @@ ${carryoverSection(L,P,simLotto,simPension)}
   번호 선택은 «어떻게 흩어지는지»만 바꿉니다. 이 설정의 백테스트 적중률 ${pctS(P.bt.rate)} · 우연 기준선 ${pctS(P.bt.base,0)} (p=${P.bt.p.toFixed(3)}).
 </div>
 <div class="verdict">
-  <b>로또</b> — 여기서는 «분배 인원»만 바꿀 수 있습니다. 1등 확률은 고정이고, 효과는 300주 walk-forward 실측으로 <b>${honesty.label}</b>입니다 → <a href="./validate.html">검증</a>.
+  <b>로또</b> — 여기서는 «분배 인원»만 바꿀 수 있습니다. 1등 확률은 고정이고, 효과는 검증 보드 walk-forward 실측으로 <b>${honesty.label}</b>입니다 → <a href="./validate.html">검증</a>.
 </div>
 
 <div class="foot">
@@ -956,6 +960,121 @@ try{
       if(SITE.share) SITE.share(title, text);
     });
   });
+
+  // 이번엔 이거? 카드(§5.5) — CI 가 남긴 brief/trade-lotto.json 의 «다음 회차 제시»를 런타임에 채운다.
+  // 파일 없음 · 낡음(window.next.t ≠ data-round) · 깨짐 · 아카이브 호(경로가 달라 404)는 전부 조용히 숨긴 채 둔다.
+  (function tradeTip(){
+    var box = document.getElementById('tradeTip');
+    if(!box || typeof fetch!=='function') return;
+    var round = +box.getAttribute('data-round');
+    var NAME = {pat:'패턴', hot:'자주 나온 번호', cold:'오래 쉰 번호', rand:'무작위'};
+    var ORDER = ['pat','hot','cold','rand'];
+    function isNum(x){ return typeof x==='number' && isFinite(x); }
+    function pad2(n){ return n<10 ? '0'+n : String(n); }
+    function won(n){ return n.toLocaleString('ko-KR')+'원'; }
+    function ballVar(n){ return n<=10?'var(--b-yellow)':n<=20?'var(--b-blue)':n<=30?'var(--b-red)':n<=40?'var(--b-grey)':'var(--b-green)'; }
+    function ball(n){ return '<span class="ball" style="background:'+ballVar(n)+';">'+n+'</span>'; }
+    // 무작위 20벌 같은 사후값의 가운데(§13-3): 오름차순(null=끝) 정렬 뒤 두 가운데 값. 가운데가 null 이면 없음.
+    function middle(a){
+      var s = a.slice().sort(function(x,y){ return (x==null?1e9:x)-(y==null?1e9:y); });
+      var lo = s[Math.floor((s.length-1)/2)], hi = s[Math.floor(s.length/2)];
+      if(lo==null || hi==null) return null;
+      return lo===hi ? String(lo) : lo+'~'+hi;
+    }
+    function build(j){
+      var N = j && j.window && j.window.next;
+      if(!N || !isFinite(round) || +N.t!==round) return null;
+      var picks = N.picks5;
+      if(!Array.isArray(picks) || !picks.length) return null;
+      for(var i=0;i<picks.length;i++){
+        var p = picks[i];
+        if(!p || !NAME[p.s] || !Array.isArray(p.c) || p.c.length!==6) return null;
+        for(var k=0;k<6;k++) if(!isNum(p.c[k]) || p.c[k]<1 || p.c[k]>45) return null;
+      }
+      var cf = j.conf || {};
+      var W = +cf.WINDOW || 50, W10 = +cf.WARM || 10, K0 = +cf.K0 || picks.length, prev = round-1;
+
+      // 비중 — 일지 행(같은 회차)의 w, 없으면 점수에서 (sc+1)/Σ(sc+1) (표시 전용, §3.5)
+      var w = null, rows = (j.journal && j.journal.rows) || [];
+      for(var q=0;q<rows.length;q++) if(rows[q] && rows[q].r===round && Array.isArray(rows[q].w) && rows[q].w.length===4) w = rows[q].w;
+      if(!w && Array.isArray(N.sc) && N.sc.length===4){
+        var tot = 0; N.sc.forEach(function(x){ tot += x+1; });
+        w = N.sc.map(function(x){ return (x+1)/tot*100; });
+      }
+      var cnt = {}, seen = {};
+      picks.forEach(function(p){ cnt[p.s] = (cnt[p.s]||0)+1; });
+      var slip = picks.map(function(p){
+        seen[p.s] = (seen[p.s]||0)+1;
+        var wi = w ? w[ORDER.indexOf(p.s)] : null;
+        var meta = isNum(wi) ? '비중 '+wi.toFixed(1)+'%'+(cnt[p.s]>1 ? ' · '+cnt[p.s]+'장 중 '+seen[p.s]+'번째' : '') : '';
+        return '<div class="slip-row"><span class="tag'+(p.s==='rand'?' noi':'')+'">'+NAME[p.s]+'</span>'+
+          '<span class="balls">'+p.c.map(ball).join('')+'</span>'+(meta ? '<span class="slip-meta mono">'+meta+'</span>' : '')+'</div>';
+      }).join('');
+
+      // 힌트 7줄 — 각 줄: 제시 · 같은 규칙으로 지난 W회 냈다면 몇 번 · 기준선
+      var v = N.hint && N.hint.v, st = (N.hint && N.hint.stat) || {}, bt = st.bt || {}, ba = st.base || {};
+      var nb = Array.isArray(ba.numBand) && ba.numBand.length ? ba.numBand.slice().sort(function(a,b){ return a-b; }) : null;
+      function same(key){ return isNum(bt[key]) ? ' · 같은 규칙으로 지난 '+W+'회 매번 냈다면 '+bt[key]+'번 맞음' : ''; }
+      function numBase(){ return nb ? ' (무작위 번호 '+nb.length+'벌 '+nb[0]+'~'+nb[nb.length-1]+'번)' : ''; }
+      function allBase(key){ var b = ba[key]; return Array.isArray(b) && isNum(b[0]) && isNum(b[1]) ? ' (전체 역사 '+b[0]+'/'+b[1]+')' : ''; }
+      var hint = '';
+      if(v){
+        var hl = [];
+        if(isNum(v.carry)) hl.push(['재출현 개수', '직전 '+prev+'회 번호 중 '+v.carry+'개가 다시 나오는 모양(최근 '+W+'회에서 가장 흔한 값)'+same('carry')+allBase('carry')]);
+        if(isNum(v.rep)) hl.push(['재출현 번호', '직전 '+prev+'회 번호 중 최근 '+W10+'회 가장 많이 나온 '+v.rep+' → 이번엔 '+v.rep+'?'+same('rep')+numBase()]);
+        if(isNum(v.gap)) hl.push(['오래 쉰 번호', v.gap+(isNum(st.gapOf) ? '('+st.gapOf+'회 연속 안 나옴)' : '')+same('gap')+numBase()]);
+        if(isNum(v.heat)) hl.push(['자주 나온 번호', v.heat+(isNum(st.heatOf) ? '(최근 '+W10+'회 중 '+st.heatOf+'번)' : '')+same('heat')+numBase()]);
+        if(Array.isArray(v.sum) && isNum(v.sum[0]) && isNum(v.sum[1])) hl.push(['합계', v.sum[0]+'~'+v.sum[1]+'(최근 '+W+'회 가운데 절반이 이 범위)'+same('sum')+allBase('sum')]);
+        if(isNum(v.cons)) hl.push(['연속 번호', v.cons+'쌍(최근 '+W+'회에서 가장 흔한 값)'+same('cons')+allBase('cons')]);
+        if(isNum(v.odd)) hl.push(['홀수 개수', v.odd+'개(최근 '+W+'회에서 가장 흔한 값)'+same('odd')+allBase('odd')]);
+        if(hl.length) hint = '<details><summary>과거가 이랬으니 이번엔? — 근거 '+hl.length+'줄</summary>'+
+          hl.map(function(x){ return '<div class="dist-row"><b>'+x[0]+'</b> — '+x[1]+'</div>'; }).join('')+
+          '<div class="dist-row">‘맞음’은 지난 회차를 그 시점 자료만으로 다시 채점한 결과입니다. 무작위와 비슷하면 규칙이 한 일은 없는 것입니다.</div></details>';
+      }
+
+      // 돌아보면 — 최근 W회 K0장씩 / 미리 정한 장수 사다리 (모두 가정, 무작위 20벌과 나란히)
+      var sK = j.summary && j.summary.K && j.summary.K[K0], bK = j.band && j.band.K, back = '';
+      if(sK && sK.cnt){
+        var n4 = 0; ['1','2','3','4'].forEach(function(g){ n4 += +sK.cnt[g] || 0; });
+        var b0 = bK && bK[K0] && Array.isArray(bK[K0].n4) ? bK[K0].n4 : null;
+        back += '<div class="dist-row">돌아보면 — 최근 '+W+'회 매 회차 '+K0+'장씩 샀다면 4등(5만원) 이상 '+n4+'번'+
+          (b0 ? ' (무작위 '+K0+'장씩 '+b0.length+'벌 중 '+b0.filter(function(x){ return x>0; }).length+'벌은 1번 이상)' : '')+'</div>';
+        var sy = sK.story;
+        if(sy && (sy.tier==='K' || sy.tier==='ladder') && isNum(sy.k) && isNum(sy.t) && isNum(sy.week)){
+          var f4 = bK && bK[sy.k] && Array.isArray(bK[sy.k].first4) ? bK[sy.k].first4 : null, md = f4 ? middle(f4) : null;
+          back += '<div class="dist-row">'+(sy.tier==='K' ? '' : '미리 정한 장수를 늘려 ')+'회차당 '+sy.k+'장이면 '+sy.t+'회('+sy.week+'주째)에 첫 5만원'+
+            (isNum(sy.spent) && isNum(sy.got) ? ' · 쓴 돈 '+won(sy.spent)+' · 받은 돈 '+won(sy.got) : '')+
+            (f4 ? ' (무작위 '+sy.k+'장씩 '+f4.length+'벌: '+f4.filter(function(x){ return x!=null; }).length+'벌이 '+W+'회 안에 첫 5만원, 가운데 '+(md ? md+'회' : '없음')+')' : '')+'</div>';
+        }
+      }
+
+      // 번호 복사 문구
+      var d = String(N.date || ''), when = '';
+      if(d.length===8 && !isNaN(+d)) when = ' ('+d.slice(4,6)+'.'+d.slice(6,8)+' '+'일월화수목금토'.charAt(new Date(Date.UTC(+d.slice(0,4), +d.slice(4,6)-1, +d.slice(6,8))).getUTCDay())+')';
+      var text = ['로또 6/45 제'+round+'회'+when+' 매매 일지(재미용)'].concat(picks.map(function(p){
+        return NAME[p.s]+' '+p.c.map(pad2).join(' ');
+      })).join('\\n');
+
+      return {text:text, html:
+        '<div class="card-head"><div><b>매매 일지</b> · 제'+round+'회 제시</div><span class="chip">재미용</span></div>'+
+        '<p class="note">종목 4개가 직전 회차까지의 당첨번호만 보고 낸 줄입니다. 지난 '+W10+'회 성적에 따라 '+picks.length+'장을 나눠 샀다고 가정합니다. 무작위는 아무 규칙 없는 대조 종목입니다.</p>'+
+        '<div class="slip-hd mono">'+picks.length+'장 · '+won(picks.length*1000)+' (가정)</div><div class="slip">'+slip+'</div>'+
+        '<div class="actions"><button class="btn" type="button" data-act="trade-copy">번호 복사</button>'+
+        '<a class="btn" href="./record.html#trade">기록 › 매매 일지</a></div>'+
+        hint+back+
+        '<p class="honest">위 A~E 와 별개인 재미용 모의 매매입니다. 어느 줄이든 당첨 확률은 같고, 과거 모양이 다음 추첨을 바꾸지는 않습니다.</p>'};
+    }
+    fetch('./brief/trade-lotto.json').then(function(r){ if(!r.ok) throw new Error('http'); return r.json(); }).then(function(j){
+      var out = build(j);
+      if(!out) return;
+      box.innerHTML = out.html;
+      box.hidden = false;
+      var btn = box.querySelector('[data-act="trade-copy"]');
+      if(btn) btn.addEventListener('click', function(){
+        if(SITE.copy){ SITE.copy(out.text); btn.textContent='복사됨'; setTimeout(function(){ btn.textContent='번호 복사'; },1200); }
+      });
+    }).catch(function(){ /* 조용히 숨김 유지 */ });
+  })();
 
   // 샀어요 토글 — C2: isBought/unmark 도 item-aware(같은 items 를 markBought 와 동일하게 넘긴다)
   // [라운드3 fixer] 배치 꼬리표: 브리핑이 만든 행만 브리핑이 지운다. 로또는 'brief:lotto:<round>',

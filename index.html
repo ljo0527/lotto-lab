@@ -229,9 +229,8 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
   <button data-t="stat">번호 통계</button>
   <button data-t="order">추첨순서</button>
   <button data-t="gen">조합 생성</button>
-  <button data-t="sim">시뮬레이터</button>
+  <button data-t="sim">백테스트</button>
   <button data-t="mine">내 기록</button>
-  <button data-t="ledger">300주 재현</button>
   <button data-t="data">데이터</button>
 </nav>
 
@@ -304,7 +303,7 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
   </div>
 
   <h2>미출현 기간 (GAP)</h2>
-  <p class="note">한 번호가 한 회차에 나올 확률은 6/45 = 13.33%. 재출현까지 평균 7.5회가 걸립니다. 아래 P값은 "우연히 이만큼 안 나올 확률"입니다 — 작을수록 이례적입니다.</p>
+  <p class="note">한 번호가 한 회차에 나올 확률은 6/45 = 13.33%. 아래 P값은 "우연히 이만큼 안 나올 확률"입니다 — 작을수록 이례적입니다.</p>
   <div class="card flat"><div class="scroll"><table id="gapTbl"></table></div></div>
 
   <h2>동반 출현 상위 쌍</h2>
@@ -405,22 +404,8 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
   <div id="genAudit"></div>
 </section>
 
-<!-- ══════════ 시뮬레이터 ══════════ -->
+<!-- ══════════ 백테스트 (탭 id: sim) ══════════ -->
 <section class="panel" id="p-sim">
-  <div class="card">
-    <h3>이 시뮬레이터가 답하는 질문</h3>
-    <p class="note" style="padding:8px 0 0">"매주 N게임씩 사면 4등은 언제쯤 보나? 3등은? 1등은 얼마나 걸리나? 그동안 얼마를 잃나?" —
-    실제 등수별 확률로 몬테카를로를 돌려 <b>중앙값과 분포</b>를 보여줍니다. 평균은 극단값에 휘둘리므로 중앙값을 기준으로 읽으세요.</p>
-  </div>
-
-  <div class="row">
-    <label class="fld">주당 게임수 <input type="number" id="simGames" value="5" min="1" max="100" style="width:90px"></label>
-    <label class="fld">기간(년) <input type="number" id="simYears" value="30" min="1" max="200" style="width:90px"></label>
-    <label class="fld">반복 횟수 <select id="simIter"><option value="2000">2,000</option><option value="10000" selected>10,000</option><option value="50000">50,000</option></select></label>
-    <button class="btn" id="simBtn">시뮬레이션</button>
-  </div>
-  <div class="card" id="simOut"><span style="font-size:12px;color:var(--ink-60)">실행 전입니다.</span></div>
-
   <h2>백테스트 — 내 조합으로 전 회차를 다 샀다면</h2>
   <p class="note">현재 <b>조합 생성</b> 탭에서 만든 조합(또는 아래에 직접 입력한 조합)을 1회차부터 최신 회차까지 전부 대입합니다. 실제 회차의 실제 당첨금으로 손익을 계산합니다.</p>
   <div class="row">
@@ -431,8 +416,8 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
   </div>
   <div class="card" id="btOut"><span style="font-size:12px;color:var(--ink-60)">실행 전입니다.</span></div>
 
-  <h2>등수 첫 도달까지 — 이론값</h2>
-  <div class="card flat"><div class="scroll"><table id="firstHitTbl"></table></div></div>
+  <h2>등수 첫 도달까지</h2>
+  <div class="card flat"><p class="note" style="padding:0">이론값 표는 없앴습니다. 최근 50회를 실제로 사 봤다면 몇 장·몇 회차에 첫 5만원이었는지는 → <a href="./record.html#trade" style="color:inherit;font-weight:700">기록 › 매매 일지</a></p></div>
 </section>
 
 <!-- ══════════ 내 기록 ══════════ -->
@@ -457,37 +442,6 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
   <div class="card flat"><div class="scroll"><table id="myTbl"></table></div></div>
   <h2>등급 달성 현황</h2>
   <div class="card flat"><div class="grid3" id="myBadges"></div></div>
-</section>
-
-<!-- ══════════ 원장 ══════════ -->
-<section class="panel" id="p-ledger">
-  <p class="note">「매주 추천 상위 5게임(용지 한 장, 5,000원)을 산다」를 과거로 되돌려 그대로 굴린 장부입니다.
-    각 회차의 추천은 <b>그 회차 직전까지의 데이터로만</b> 다시 계산합니다 — 미래 정보를 쓰지 않습니다.
-    새 회차가 나오면 한 줄씩 덧붙습니다.</p>
-  <div class="card">
-    <div class="row">
-      <button class="btn" id="ledRun">원장 계산 · 갱신</button>
-      <button class="btn ghost" id="ledReset">지우고 다시</button>
-      <span class="mono" id="ledMeta" style="font-size:11px;color:var(--ink-60);align-self:center"></span>
-    </div>
-    <div id="ledProgWrap" style="display:none;padding-top:6px">
-      <div class="prog"><i id="ledProg" style="width:0%"></i></div>
-      <div class="mono" id="ledProgTxt" style="font-size:10.5px;color:var(--ink-60);padding-top:4px"></div>
-    </div>
-  </div>
-  <div class="kpi" id="kpiLed"></div>
-
-  <h2>이게 실력인가, 우연인가</h2>
-  <div class="card flat" id="ledChance"></div>
-
-  <h2>등수별 — 관측 vs 기대</h2>
-  <div class="card flat"><div class="scroll"><table id="ledRankTbl"></table></div></div>
-
-  <h2>모델은 실제로 무엇을 맞히나</h2>
-  <div class="card flat" id="ledModel"></div>
-
-  <h2>회차별 내역</h2>
-  <div class="card flat"><div class="scroll"><table id="ledTbl"></table></div></div>
 </section>
 
 <!-- ══════════ 데이터 ══════════ -->
@@ -516,10 +470,9 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 
 <div class="disclaimer">
   각 회차는 독립 시행입니다. 이 도구는 예측 도구가 아니라 <b>관측 도구</b>입니다.
-  로또의 기대 환급률은 판매액의 약 50%이며, 장기적으로 구매액의 절반가량은 반드시 사라집니다.
   감당할 수 있는 금액만, 재미의 범위 안에서.
 </div>
-<div class="foot"><span>Prepared by 이재오</span><span id="footN">—</span></div>
+<div class="foot"><span>Prepared by 잼족</span><span id="footN">—</span></div>
 </div>
 <script>
 "use strict";
@@ -814,10 +767,21 @@ async function detectLatest(){
   }
   return best;
 }
-async function fetchRange(from, to, onProg){
-  const pages=[]; for(let e=to; e>=from+7; e-=10) pages.push(e);
-  pages.push(Math.max(from,1)); if(from<=1) pages.push(1);
-  const uniq=[...new Set(pages)];
+/* 센터 배치 — API 는 center-5..center+4 (10건)를 주고, 하한(1회)에서는 창을 위로 밀어 항상 10건을 준다.
+   [2026-10-26 버그 수정] 예전 배치는 to 에서 10씩 «내려오며» 깔고 맨 아래에 센터 1 만 따로 얹었다.
+   최신 회차 끝자리가 7(1247, 1257, …)이면 마지막 센터가 17(12~21)이라 11회가 어느 창에도 들지 않는다.
+   센터 1 이 1~10 을 주는 실 API 에서는 누락 재시도 1번이 11 을 채워 티가 안 났지만, 1~5 만 주던 모의 API(CI 스크립트)에서는
+   재시도(센터 6 → 1~10)로도 11 이 남아 «11회 없는 자료» 로 추천·순위·검증이 계산됐다(docs/bugfix-log.md).
+   지금은 from 에서 위로 10씩 올라가며 창을 빈틈없이 깔고(하한 밀림에 기대지 않는다), 마지막 센터만 to 로 눌러
+   «아직 없는 회차»를 센터로 부르지 않는다. 처리 순서는 예전처럼 최신 쪽부터. */
+function rangeCenters(from, to){
+  const out=[]; from=Math.max(1,from);
+  for(let c=from+5; c-5<=to; c+=10) out.push(Math.min(c,to));
+  return [...new Set(out)].reverse();
+}
+async function fetchRange(from, to, onProg){ return fetchCenters(rangeCenters(from,to), onProg); }
+async function fetchCenters(centers, onProg){
+  const uniq=[...new Set(centers)];
   let done=0, errs=0;
   const worker = async () => {
     while(uniq.length){
@@ -876,10 +840,26 @@ async function syncData(full){
     }
     const errs = await fetchRange(from, latest, x=>setProg(x));
     setProg(null);
-    const miss=[]; for(let i=1;i<=latest;i++) if(!DB.draws[i]) miss.push(i);
+    /* [2026-10-26] 누락 재시도는 한 번뿐이었고, 그 한 번도 «가장 작은 빠진 회차 ~ 가장 큰 빠진 회차» 한 덩어리만 불렀다.
+       이제는 빈 회차가 없어질 때까지 빠진 구간별로 다시 받는다(진전이 없으면 멈춤, 최대 4번).
+       끝내 남으면 «동기화됨» 이라고 말하지 않는다 — 구멍 난 자료로 추천을 내면 과거 추천까지 달라진다. */
+    const holes=()=>{ const m=[]; for(let i=1;i<=latest;i++) if(!DB.draws[i]) m.push(i); return m; };
+    let miss=holes();
+    for(let pass=0; miss.length && pass<4; pass++){
+      log('누락 '+miss.length+'회차 재시도 ('+(pass+1)+'/4)');
+      const centers=[];
+      for(let i=0; i<miss.length; ){ let j=i; while(j+1<miss.length && miss[j+1]===miss[j]+1) j++;
+        centers.push(...rangeCenters(miss[i],miss[j])); i=j+1; }
+      if(pass) await new Promise(r=>setTimeout(r,300*pass));
+      await fetchCenters(centers);
+      const left=holes(), stuck=left.length>=miss.length; miss=left;
+      if(stuck && pass>=1) break;
+    }
     if(miss.length){
-      log('누락 '+miss.length+'회차 재시도');
-      await fetchRange(Math.min(...miss), Math.max(...miss));
+      saveDB();
+      log('오류: 끝내 받지 못한 회차 '+miss.length+'개 — '+miss.slice(0,12).join(', ')+(miss.length>12?' …':''));
+      setStatus('빠진 회차 '+miss.length+'개 — 추천을 믿을 수 없습니다 (데이터 탭에서 전체 재수집)','err');
+      return false;
     }
     DB.source='동행복권 공식 API'; DB.loadedAt=Date.now();
     saveDB();
@@ -1034,12 +1014,12 @@ function renderDash(){
     nd.getFullYear()+'.'+String(nd.getMonth()+1).padStart(2,'0')+'.'+String(nd.getDate()).padStart(2,'0')+' 토요일 '+DRAW_HM+' 추첨'+
     (days>=0?' · <b style="color:var(--ink)">D-'+days+'</b>':' · 발표 대기')+'</div></div>';
 
-  const t=$('#oddsTbl'); const G=5;
-  t.innerHTML='<tr><th>등수</th><th>조건</th><th class="num">경우의 수</th><th class="num">확률</th><th class="num">주 '+G+'게임 기준 평균 대기</th></tr>'+
+  const t=$('#oddsTbl');
+  t.innerHTML='<tr><th>등수</th><th>조건</th><th class="num">경우의 수</th><th class="num">확률</th></tr>'+
     [[1,'6개 일치'],[2,'5개 + 보너스'],[3,'5개 일치'],[4,'4개 일치'],[5,'3개 일치']].map(([r,c])=>{
-      const p=PROB[r], weeks=1/(p*G), yrs=weeks/52;
+      const p=PROB[r];
       return '<tr><td><b>'+r+'등</b></td><td>'+c+'</td><td class="num">'+nf(WAYS[r])+'</td>'+
-        '<td class="num">1 / '+nf(1/p)+'</td><td class="num">'+(yrs>=1?yrs.toFixed(yrs>=10?0:1)+'년':Math.round(weeks)+'주')+'</td></tr>';
+        '<td class="num">1 / '+nf(1/p)+'</td></tr>';
     }).join('');
   renderWeekly();
   $('#footN').textContent='N='+rs.length+' rounds';
@@ -1074,7 +1054,7 @@ function portfolioOptsFor(target){
   for(const r of PORTFOLIO_RULES) if(r.from<=target) opts=r.opts;
   return opts;
 }
-const PORTFOLIO = PORTFOLIO_RULES[PORTFOLIO_RULES.length-1].opts;  // 하위호환 별칭 = 최신 규칙(원장이 가정하는 규칙)
+const PORTFOLIO = PORTFOLIO_RULES[PORTFOLIO_RULES.length-1].opts;  // 하위호환 별칭 = 최신 규칙
 const PORTFOLIO_FROM = PORTFOLIO_RULES[0].from;                    // 하위호환 별칭 = 첫 규칙 시작 회차
 /* 겹침 o개인 두 줄이 같은 추첨에서 «둘 다 3개 이상» 맞는 경우의 수 (/C456).
    Q[o] = Σ C(o,s)·C(6−o,x)·C(6−o,y)·C(33+o,6−s−x−y)  (s+x≥3, s+y≥3) — 닫힌 식으로 검산됨 */
@@ -1112,7 +1092,7 @@ function pAnyApprox(masks){
 }
 /* 정확 계산: 8,145,060 가지 추첨 전부를 센다. 줄마다 일치 개수를 3비트씩 한 정수에 모아
    (줄 ≤ 6개면) 상태 히스토그램 한 번의 증가로 끝낸다 — 데스크톱 수십 ms.
-   UI·브리핑 전용. ledBuild·validate 루프 안에서는 부르지 않는다.
+   UI·브리핑 전용. validate 루프 안에서는 부르지 않는다.
    → { n, rawAny, rawAny4, rawBig, pAny, pAny4, pBig, nWin[0..n], fixedHist:[[원,p]], fixedMean, ms } */
 function coverExact(lines){
   const L = (lines||[]).map(x => Array.isArray(x) ? x : x.c);
@@ -1161,14 +1141,6 @@ function coverExact(lines){
            pAny:rawAny/C456, pAny4:rawAny4/C456, pBig:rawBig/C456,
            nWin:nWin.map(c=>c/C456), fixedHist, fixedMean, ms:Math.round(now()-t0) };
 }
-let COVER=null, COVER_KEY='';
-function coverKey_(lines){ return lines.map(c=>(Array.isArray(c)?c:c.c).join(',')).join('|'); }
-function coverExactCached(lines){
-  const key = coverKey_(lines);
-  if(COVER && COVER_KEY===key) return COVER;
-  COVER = coverExact(lines); COVER_KEY = key;
-  return COVER;
-}
 /* 조합의 결합 z (판매 기준 A, 구매방식 기준 B 의 표준화 점수 평균). 정본 — validate 도 같은 식.
    낮을수록 나눠 갖는 사람이 적을 것으로 추정된다. 모델이 없으면 null. */
 function zOf(c){
@@ -1195,14 +1167,13 @@ function carryOf(c, prevN){
   return k;
 }
 /* ₩ 기대값 계산 맥락. calib(보정 a,b)은 «표시 전용» — 선택에는 절대 쓰지 않는다.
-   우선순위: 인자 → 이 기기의 원장(ledCalib) → ./brief/validation.json → 없음(null → "—") */
+   우선순위: 인자 → ./brief/validation.json → 없음(null → "—") */
 function lottoEVctx(calib){
   const gs=rows(52).map(d=>d.s/TICKET).filter(v=>v>0).sort((a,b)=>a-b);
   /* G = 최근 52회 판매 게임 수의 중앙값(짝수 개면 위쪽 값 — D1 의 121,085,706 과 같은 정의).
      EV 에서 G 는 Π/λ 로 거의 상쇄돼 정의 차이의 영향은 0.01원 미만이다. */
   const G = gs.length ? gs[gs.length>>1] : null;
   let C = calib || null;
-  if(!C){ try{ const L=ledCalibCached(); if(L && L.ready) C={ a:L.a, b:L.b, r2:L.r2, n:L.n, src:'원장' }; }catch(e){} }
   if(!C && VAL_CALIB) C=VAL_CALIB;
   const last=DB.draws[DB.latest];
   return { G, calib:C, zFloor:zFloorOf(), prevN:last?last.n:null };
@@ -1386,7 +1357,7 @@ function carryFit(){
 }
 /* ./brief/validation.json 의 보정값 (₩ 표시 전용). 한 번만 시도하고, 받으면 onDone 을 부른다.
    같은 fetch 로 lotto.per[…].payoutGain(«검증 보드 실측» — 300주 walk-forward, 모든 방문자가 보는
-   같은 값)도 같이 받아둔다. 이 기기의 원장(ledCalib)과는 다른 수치이므로 절대 섞어 쓰지 않는다. */
+   같은 값)도 같이 받아둔다. */
 let VAL_CALIB=null, VAL_CALIB_ST=0, VAL_PER=null, VAL_LOTTO_CURRENT=null;
 function loadValCalib(onDone){
   if(VAL_CALIB_ST) return;
@@ -1410,8 +1381,7 @@ function loadValCalib(onDone){
 /* «검증 보드 실측» — validation.json 의 lotto.per[lotto.current || 'portfolio'].payoutGain.
    전략 키가 아직 없으면(옛 validation.json, 또는 current 가 비어 있으면) portfolio → minshare 순으로
    물러난다. 반환 { v:비율(0.069=+6.9%), key:실제로 쓴 전략 이름 } 또는 아직 못 받았으면 null.
-   이 수치는 «모든 방문자가 같은 값을 보는» 사이트 전체 계산이고, ledCalibCached() 의 이 기기 원장
-   실측과는 다른 정의이므로 화면에 같이 쓸 때는 항상 라벨로 구분한다. */
+   이 수치는 «모든 방문자가 같은 값을 보는» 사이트 전체 계산이다. */
 function valPayoutGain(){
   if(!VAL_PER) return null;
   const want = VAL_LOTTO_CURRENT || 'portfolio';
@@ -1419,25 +1389,6 @@ function valPayoutGain(){
   if(!key) return null;
   const rec = VAL_PER[key];
   return (rec && typeof rec.payoutGain==='number' && isFinite(rec.payoutGain)) ? { v:rec.payoutGain, key } : null;
-}
-/* 이번 주 5게임의 요약 수치 — 카드·브리핑이 같은 값을 쓰도록 한 곳에서 계산한다.
-   opt.exact 면 coverExact(수십 ms), 아니면 캐시가 있을 때만 정확값. opt.calib 로 보정값을 넘길 수 있다. */
-function weeklyStats(opt){
-  opt = opt || {};
-  const W = weeklyPicks(), buy = W.combos.slice(0,5);
-  const ctx = lottoEVctx(opt.calib);
-  const zs = buy.map(c=>zOf(c));
-  const evs = buy.map((c,i)=>lineEV(zs[i], carryOf(c, ctx.prevN), ctx));
-  const ev5 = (evs.length && evs.every(v=>v!=null)) ? evs.reduce((a,b)=>a+b,0) : null;
-  const ms = buy.map(c=>lineMask(c)), ov=[];
-  for(let i=0;i<ms.length;i++) for(let j=i+1;j<ms.length;j++) ov.push(ovMask(ms[i],ms[j]));
-  const ex = opt.exact ? coverExactCached(buy) : ((COVER && COVER_KEY===coverKey_(buy)) ? COVER : null);
-  return { round:W.round, rule:W.rule||'legacy', ev5, evs, evRandom:5*500,
-           calib: ctx.calib ? { a:ctx.calib.a, b:ctx.calib.b, r2:ctx.calib.r2, src:ctx.calib.src||null } : null,
-           G:ctx.G, zFloor:ctx.zFloor, z:zs, overlaps:ov,
-           pAnyApprox:pAnyApprox(ms), pAny: ex ? ex.pAny : null, pAny4: ex ? ex.pAny4 : null, exact:!!ex,
-           pAnyRandom:1-Math.pow(1-P_LINE,5), expectedWins:5*P_LINE, pFirst:5/C456,
-           degraded: !!(W.portfolio && W.portfolio.degraded) };
 }
 
 /* ═══ 이번주 추천 조합 ═══
@@ -1530,30 +1481,21 @@ function renderWeekly(){
   nd.setDate(nd.getDate()+7);
   const PF = W.rule==='portfolio' ? W.portfolio : null;
   const buy=W.combos.slice(0,5), spare=W.combos.slice(5);
-  /* ── 이번 주 5게임의 수치: ₩ 기대 수령(보정값이 있을 때만) · 한 장이라도 당첨(정확 계산) · 1등 확률 ──
-     새 확률 수치는 반드시 무작위 기준선과 나란히 보여준다. */
-  let st=null; try{ st=weeklyStats(); }catch(e){ st=null; }
-  /* 보정값(₩ 표시용)을 한 번 받아 오면 카드를 다시 그린다. 원장 계산 중(DB 가 잘린 상태)에는 건드리지 않는다. */
-  if(!VAL_CALIB_ST) loadValCalib(()=>{ if($('#weeklyCard') && !LED_BUSY) renderWeekly(); });
+  /* validation.json 보정값은 화면에 쓰지 않지만 한 번 받아 둔다 — CI(weekly-brief.mjs)가 인자 없이 부르는 lottoEVctx() 가 이 값(VAL_CALIB)을 읽는다. 카드를 다시 그리지는 않는다. */
+  if(!VAL_CALIB_ST) loadValCalib();
+  /* ── 이번 주 5게임의 수치: 1등 확률(규칙 사실)만 둔다. 기대 수령·한 장이라도 당첨 % 같은 이론값은 화면에서 뺐다(trade-1). ── */
   /* 한 줄 = 왼쪽(무엇·기준선) / 오른쪽(값). 폭에 상관없이 빈 칸 없이 쌓인다. */
   const cell=(k,v,s,id,first)=>'<div class="wk-stat" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 12px;'+(first?'':'border-top:1px solid var(--ink-12);')+'">'+
     '<div style="min-width:0"><div class="mono" style="font-size:10.5px;letter-spacing:.06em;color:var(--ink-60)">'+k+'</div>'+
     '<div style="font-size:12px;color:var(--ink-60);padding-top:2px;line-height:1.4">'+s+'</div></div>'+
     '<div'+(id?' id="'+id+'"':'')+' style="flex:none;font-family:\'Big Shoulders Display\',sans-serif;font-weight:900;font-size:24px;line-height:1.1;white-space:nowrap;text-align:right">'+v+'</div></div>';
-  const evTxt = st && st.ev5!=null ? nf(st.ev5)+'원' : '—';
-  const evSub = '무작위 자동 '+nf(st?st.evRandom:2500)+'원'+
-    (st && st.ev5!=null ? ' · 보수적 추정' : ' · 보정값 없음');
-  const anyTxt = st && st.pAny!=null ? pct(st.pAny,2) : (st ? '≈'+pct(st.pAnyApprox,2) : '—');
-  const anyBase = pct(st ? st.pAnyRandom : 1-Math.pow(1-P_LINE,5), 2);
   const stats =
     '<div class="wk-stats" style="background:var(--paper-2);border:1px solid var(--ink-12);margin:0 0 12px">'+
-      cell('5,000원당 기대 수령', evTxt, evSub, 'wkEV', true)+
-      cell('한 장이라도 당첨 (5등+)', anyTxt, '무작위 5게임 '+anyBase, 'wkAny')+
-      cell('1등 확률 (5게임)', '5 / 8,145,060', '모든 조합 동일')+
+      cell('1등 확률 (5게임)', '5 / 8,145,060', '모든 조합 동일', '', true)+
     '</div>';
   const flag = (PF && PF.degraded)
     ? '<div class="verdict" style="border-color:var(--b-yellow);margin-top:0"><b>주의</b> — 이번 주 후보로는 «두 줄 겹침 '+PORTFOLIO.maxOv+'개 이하»를 다 지키지 못해 '+
-      PF.maxOv+'개까지 허용했습니다. 확률·기대값 계산은 실제 겹침 그대로 반영돼 있습니다.</div>' : '';
+      PF.maxOv+'개까지 허용했습니다.</div>' : '';
   const ruleTag = W.rule==='portfolio'
     ? '<span class="tag ok" title="PORTFOLIO_FROM='+PORTFOLIO_FROM+'">규칙 · 포트폴리오</span>'
     : '<span class="tag noi">규칙 · 구 주간규칙</span>';
@@ -1583,27 +1525,10 @@ function renderWeekly(){
         '· <b>A~E 다섯 줄이 실제로 살 용지</b>이고, F~J 는 예비(옛 규칙으로 고른 대체 후보)입니다<br>'
       : '· 그중 <b>분배 인원 모델 점수가 가장 낮은</b> 것들을, 서로 겹치는 번호가 적도록 <b>10줄</b> 골랐습니다<br>'+
         '· <b>A~E 다섯 줄이 실제로 살 용지</b>이고, F~J 는 예비입니다 — 앞이 마음에 안 들면 다음으로 넘어가세요<br>')+
-    (st && st.ev5!=null
-      ? '· 기대 수령은 분배지수를 실측 하한(z '+st.zFloor.toFixed(2)+')에서 자르고 4·5등 기울기를 1·2·3등에도 쓴 <b>보수적 추정</b>입니다 '+
-        '(보정: '+(st.calib.src||'—')+(st.calib.r2!=null?' · R² '+st.calib.r2.toFixed(3):'')+'). 4·5등 정액은 누구나 같고, 달라지는 건 1·2·3등 분배금입니다<br>'
-      : '· 기대 수령(₩)은 보정값(검증 데이터 또는 원장)이 있어야 표시합니다<br>')+
     (F.agree!=null?'· 모델 교차검증 상관 '+F.agree.toFixed(3)+' (판매 기준 × 구매방식 기준)<br>':'')+
     '· 회차 번호를 시드로 고정했습니다 — <b>새로고침해도 같은 조합</b>이고, 회차가 넘어가면 자동으로 새로 뽑힙니다<br>'+
     '<span style="color:var(--ink-40)">1등 확률은 여전히 줄마다 1/8,145,060 입니다. 바뀌는 건 당첨 시 나눠 갖는 인원, 그리고 다섯 줄이 덜 겹쳐 '+
-    '당첨이 한 주에 몰리지 않고 흩어지는 모양뿐입니다 — 기대 당첨 장수(주 '+(5*P_LINE).toFixed(3)+'장)는 어떤 5게임이든 같습니다.</span></div>';
-
-  /* 정확한 «한 장이라도» 확률은 8,145,060 가지를 세야 한다(수십 ms). 첫 화면을 막지 않도록 뒤로 미루고,
-     같은 조합이면 캐시를 쓴다. */
-  if(st && st.pAny==null){
-    const key=coverKey_(buy);
-    setTimeout(()=>{
-      try{
-        if(LED_BUSY || coverKey_(weeklyPicks().combos.slice(0,5))!==key) return;
-        const r=coverExactCached(buy), el=document.getElementById('wkAny');
-        if(r && el) el.textContent=pct(r.pAny,2);
-      }catch(e){}
-    }, 60);
-  }
+    '당첨이 한 주에 몰리지 않고 흩어지는 모양뿐입니다.</span></div>';
 }
 
 function renderPinned(){
@@ -1694,6 +1619,9 @@ function renderStat(){
         '<td class="num">'+(p.z>=0?'+':'')+p.z.toFixed(2)+'σ</td><td>'+sigTag(p.p)+'</td></tr>';
     }).join('');
 
+  /* [3단 보류 — 소유자 판단 전] 이 구간의 이론값 문장은 일부러 남겼다: 번호 합계 «이론값은 평균 138·표준편차»,
+     이월수 «이론 기대값 0.8개». 번호 통계 탭(σ 열·동반쌍 기대 횟수와 같은 화면)이라 3단 목록에 묶는다.
+     이미 지운 2단 이론값과 같은 범주이니 3단 때 함께 정한다 — ROADMAP 4-1, CLAUDE.md 규칙 9. */
   const S=structOf(win);
   const histo=(box,labels,vals,note)=>{
     const M=Math.max(...vals), t=vals.reduce((a,b)=>a+b,0);
@@ -1737,6 +1665,8 @@ function renderOrder(){
      (2026-09-24 리뷰: 예전엔 ORD_SUSPECT 만 세서 4개가 누락됐었다). */
   const stillBad=[]; for(const [a,b] of ORD_BAD_RANGE) for(let r=a;r<=b;r++) if(orderTrust(r)==='bad') stillBad.push(r);
   const allSuspect=[]; for(let r=1;r<=orderMaxEff();r++) if(orderTrust(r)==='suspect') allSuspect.push(r);
+  /* [3단 보류 — 소유자 판단 전] 추첨순서 탭의 «이론 1/6 = 16.7%»·«이론 22/45 = 48.9%»·«이론 기대 N회» 와
+     χ²·p값 표는 같은 이유로 남겼다(번호 통계 탭과 같은 검정 화면). ROADMAP 4-1, CLAUDE.md 규칙 9. */
   renderKPI('#kpiOrder',[
     ['신뢰 가능 회차', nf(O.N), '1~328회 원본단독(집합·보너스만) · 329~'+ORDER_MAX+'회 lottospecial 순서대조(불일치 4회 제외) · '+(ORDER_MAX+1)+'회~ 두 출처 일치'],
     ['신뢰 불가 구간(원본)', stillBad.length?nf(stillBad.length)+'회':'0회',
@@ -1955,38 +1885,18 @@ function popScore(n){
   return F.A.predMean + F.A.predSD*(za+zb)/2;   // A 스케일로 되돌린 통합 지수
 }
 
-/* 조합 하나의 분배 지표를 한 줄 태그로 */
-/* 원장에 쌓인 walk-forward 기록으로 구한 재보정 계수. 없으면 null. */
-let LED_CALIB=null, LED_CALIB_AT=null;
-function ledCalibCached(){
-  const led = LEDGER || (LEDGER=ledLoad());
-  if(!led || !led.recs || !led.recs.length){ LED_CALIB=null; return null; }
-  if(LED_CALIB && LED_CALIB_AT===led.at) return LED_CALIB;
-  const C=ledCalib(led.recs);
-  LED_CALIB_AT=led.at;
-  return (LED_CALIB = C.ready ? C : null);
-}
 /* 조합의 결합 z (분배지수의 표준화 값). 낮을수록 나눠 갖는 사람이 적다. */
 function shareZ(c){ return zOf(c); }             // 정본은 zOf (포트폴리오 블록)
+/* 조합 하나의 분배 지표를 한 줄 태그로 */
 function shareTag(c){
   const F=fitPop(); if(!F.ok) return '';
-  const z=popScore(c), a=popScoreA(c), b=popScoreB(c), zz=shareZ(c);
+  const z=popScore(c), a=popScoreA(c), b=popScoreB(c);
   const col = z<F.A.predMean-0.4*F.A.predSD ? 'var(--ok)'
             : z>F.A.predMean+0.4*F.A.predSD ? 'var(--sig)' : 'var(--ink)';
-  /* 원장이 쌓였으면 «재보정된» 값을 앞세운다.
-     원본 예측은 방향은 맞지만 폭이 과해 out-of-sample R² 가 음수였다.
-     선형 재보정은 순서를 바꾸지 않으므로 추천 순위는 그대로다 — 숫자만 정직해진다. */
-  const C=ledCalibCached();
-  let t;
-  if(C && zz!=null){
-    const cal=C.a + C.b*zz;
-    t=' · <b style="color:'+col+'">분배지수 '+cal.toFixed(3)+'</b>'
-     +' <span style="color:var(--ink-40)">(원장 '+C.n+'주 재보정 · 원값 '+z.toFixed(3)+')</span>';
-  } else {
-    t=' · <b style="color:'+col+'">분배지수 '+z.toFixed(3)+'</b>'
+  /* 판매 기준 분배지수와 수동 편차. 이 기기 원장으로 재보정해 보이던 분기는 원장 탭과 함께 삭제했다(trade-1). */
+  const t=' · <b style="color:'+col+'">분배지수 '+z.toFixed(3)+'</b>'
      +' <span style="color:var(--ink-40)">(판매 '+a.toFixed(3)
      +(b!=null?' · 수동편차 '+(b>=0?'+':'')+(b*100).toFixed(1)+'%p':'')+')</span>';
-  }
   return t;
 }
 
@@ -2049,22 +1959,13 @@ function renderPopModel(){
   html += '<div class="verdict sig"><b>결론</b> — 이것이 이 도구 전체에서 <b>유일하게 실증되는 신호</b>입니다. '+
     '빈도·미출현·동반쌍·추첨순서는 전부 잡음이었지만 이건 다릅니다. '+
     '확률을 바꾸는 게 아니라 <b>분배 인원</b>을 바꾸기 때문입니다.<br>'+
-    /* [2026-09] 효과 수치는 정의가 다른 두 개를 나란히 보여준다 — 섞어 부르지 않는다.
-       ① 검증 보드 실측 = validation.json(walk-forward 300주). 모든 방문자가 같은 값을 본다.
-       ② 이 기기 원장 실측 = 이 브라우저의 ledCalib() 재보정 기울기로 «이번 주 A~E»만 잰 값.
+    /* [2026-09] 효과 수치는 검증 보드 실측(정의를 밝힌 값)으로만 보여준다.
+       검증 보드 실측 = validation.json(walk-forward 300주). 모든 방문자가 같은 값을 본다.
        옛 "약 +7%"는 재보정 전 계수로 계산한 과대평가였다 — 이제 정의를 밝힌 실측치로 대체한다. */
     (()=>{ const VG=valPayoutGain();
-      return '<b>검증 보드 실측 '+(VG?((VG.v>=0?'+':'')+pct(VG.v,1)):'—')+'</b> — 300주 walk-forward'+(VG?'(전략 «'+VG.key+'»)':'')+
+      return '<b>검증 보드 실측 '+(VG?((VG.v>=0?'+':'')+pct(VG.v,1)):'—')+'</b> — 검증 보드 walk-forward'+(VG?'(전략 «'+VG.key+'»)':'')+
         ', 모든 방문자가 같은 값을 봅니다 → <a href="./validate.html" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ink-30)">검증</a><br>'; })()+
-    (()=>{ const C=ledCalibCached();
-      if(!C) return '이 기기 원장 실측은 아직 없습니다 — 「원장」 탭에서 walk-forward 를 한 번 돌리면 이번 주 A~E 기준으로 여기 표시됩니다.</div>';
-      const zs=(()=>{ try{ const F=fitPop(), W=weeklyPicks();
-        return W.combos.slice(0,5).map(c=>shareZ(c)); }catch(e){ return null; } })();
-      if(!zs) return '이 기기 원장 실측은 「원장」 탭을 참고하세요.</div>';
-      const zb=zs.reduce((a,b)=>a+b,0)/zs.length;
-      const eff=-zb*C.b;
-      return '<b>이번 주 A~E 기대 수령액 대비 무작위 '+(eff>=0?'+':'')+pct(eff,1)+'</b> — 이 기기 원장('+C.n+'주 재보정)으로 이번 주 추천 5게임만 따로 잰 값입니다. '+
-        '1등 당첨금이 20억이라면 '+won(2e9*eff)+' 남짓 차이입니다. 그 이상은 아닙니다.</div>'; })();
+    '</div>';
   box.innerHTML=html;
 }
 
@@ -2218,90 +2119,6 @@ function generate(){
     '전략이 실제로 바꾸는 것은 확률이 아니라 <b>당첨 시 몇 명과 나눠 갖는가</b>뿐입니다.</div>';
 }
 
-/* ════════════════ 시뮬레이터 ════════════════
-   근거 정리
-   1) 등수별 1게임 당첨확률은 조합수/C(45,6)로 정확히 결정된다 (표 참조).
-   2) "첫 당첨까지 걸리는 게임 수"는 기하분포다 → k = ceil(ln U / ln(1-p)) 로 정확 표본추출.
-   3) 기간 내 당첨 횟수는 이항분포 B(T,p)이고 p가 매우 작으므로 포아송 λ=T·p로 근사한다.
-   4) 당첨금은 이론값이 없으므로 최근 260회 실제 1게임당 당첨금의 중앙값을 쓴다. */
-function poisson(lam){
-  if(lam>30){ // 정규근사
-    const z=Math.sqrt(-2*Math.log(Math.random()))*Math.cos(2*Math.PI*Math.random());
-    return Math.max(0, Math.round(lam+z*Math.sqrt(lam)));
-  }
-  const L=Math.exp(-lam); let k=0,p=1;
-  do{ k++; p*=Math.random(); }while(p>L);
-  return k-1;
-}
-function geomFirst(p){ return Math.ceil(Math.log(Math.random())/Math.log(1-p)); }
-function quant(a,q){ const s=[...a].sort((x,y)=>x-y); return s[clamp(Math.floor(q*(s.length-1)),0,s.length-1)]; }
-
-function payoutTable(){
-  const rs=rows(0).slice(-260);
-  const med=i=>{ const v=rs.map(d=>d.a[i]).filter(x=>x>0).sort((a,b)=>a-b); return v.length?v[Math.floor(v.length/2)]:0; };
-  return {1:med(0), 2:med(1), 3:med(2), 4:50000, 5:5000};
-}
-function runSim(){
-  const G=clamp(+$('#simGames').value||5,1,100);
-  const Y=clamp(+$('#simYears').value||30,1,200);
-  const IT=+$('#simIter').value;
-  const weeks=Y*52, T=weeks*G, PAY=payoutTable();
-  const cost=T*TICKET;
-  const first={1:[],2:[],3:[],4:[],5:[]}, cnts={1:[],2:[],3:[],4:[],5:[]}, nets=[];
-  const everyRank=[];
-  for(let it=0;it<IT;it++){
-    let win=0, all=true;
-    for(const r of [1,2,3,4,5]){
-      const k=geomFirst(PROB[r]);
-      first[r].push(k<=T ? k/G/52 : Infinity);
-      if(k>T) all=false;
-      const c=poisson(T*PROB[r]);
-      cnts[r].push(c); win+=c*PAY[r];
-    }
-    everyRank.push(all?1:0);
-    nets.push(win-cost);
-  }
-  const fmtY=v=>v===Infinity?'—':(v>=1?v.toFixed(v>=10?0:1)+'년':Math.round(v*52)+'주');
-  const reach=r=>first[r].filter(v=>v!==Infinity).length/IT;
-  const rowsHtml=[1,2,3,4,5].map(r=>{
-    const fs=first[r].filter(v=>v!==Infinity);
-    return '<tr><td><b>'+r+'등</b></td>'+
-      '<td class="num">'+pct(reach(r),reach(r)<0.01?3:1)+'</td>'+
-      '<td class="num">'+(fs.length?fmtY(quant(fs,0.5)):'—')+'</td>'+
-      '<td class="num">'+(fs.length?fmtY(quant(fs,0.1))+' ~ '+fmtY(quant(fs,0.9)):'—')+'</td>'+
-      '<td class="num">'+quant(cnts[r],0.5)+'회</td>'+
-      '<td class="num">'+won(PAY[r])+'</td></tr>';
-  }).join('');
-  const netMed=quant(nets,0.5), net10=quant(nets,0.1), net90=quant(nets,0.9);
-  const profit=nets.filter(x=>x>0).length/IT;
-  $('#simOut').innerHTML=
-    '<div class="kpi" style="margin:-16px -15px 14px;border:0;border-bottom:1.5px solid var(--ink)">'+
-      '<div><div class="k">총 구매</div><div class="v">'+won(cost)+'</div><div class="s">'+nf(T)+'게임 / '+Y+'년</div></div>'+
-      '<div><div class="k">손익 중앙값</div><div class="v" style="color:'+(netMed>=0?'var(--ok)':'var(--sig)')+'">'+won(netMed)+'</div><div class="s">10~90% : '+won(net10)+' ~ '+won(net90)+'</div></div>'+
-      '<div><div class="k">본전 이상 확률</div><div class="v">'+pct(profit,1)+'</div><div class="s">'+nf(IT)+'회 시뮬레이션</div></div>'+
-      '<div><div class="k">1~5등 전부</div><div class="v">'+pct(everyRank.reduce((a,b)=>a+b,0)/IT,2)+'</div><div class="s">모든 등수를 한 번씩 경험할 확률</div></div>'+
-    '</div>'+
-    '<div class="scroll"><table><tr><th>등수</th><th class="num">기간 내 1회 이상</th><th class="num">첫 당첨 (중앙값)</th>'+
-    '<th class="num">10~90% 범위</th><th class="num">기간 내 횟수</th><th class="num">가정 당첨금</th></tr>'+rowsHtml+'</table></div>'+
-    '<p class="note" style="padding:12px 0 0"><b>읽는 법</b> — “첫 당첨”은 <b>기간 안에 실제로 당첨된 경우만 모아</b> 낸 중앙값입니다. '+
-    '“기간 내 1회 이상”이 0.2%라면, 그 14년이라는 숫자는 <b>1000명 중 2명에게만 해당</b>합니다. 나머지 998명은 끝까지 못 봅니다.</p>'+
-    '<p class="note" style="padding:14px 0 0">당첨금은 <b>최근 260회 실제 1게임당 당첨금의 중앙값</b>을 썼습니다 '+
-    '(1등 '+won(PAY[1])+', 2등 '+won(PAY[2])+', 3등 '+won(PAY[3])+', 4등 5만원 고정, 5등 5천원 고정). '+
-    '평균이 아닌 중앙값을 쓰는 이유는 1등 당첨금이 이월·판매량에 따라 극단적으로 흔들리기 때문입니다.</p>';
-}
-function renderFirstHit(){
-  const G=clamp(+$('#simGames').value||5,1,100);
-  $('#firstHitTbl').innerHTML='<tr><th>등수</th><th class="num">1게임 확률</th><th class="num">평균 필요 게임</th>'+
-    '<th class="num">중앙값 필요 게임</th><th class="num">주 '+G+'게임 시 중앙값</th></tr>'+
-    [1,2,3,4,5].map(r=>{
-      const p=PROB[r], mean=1/p, med=Math.log(0.5)/Math.log(1-p);
-      const yrs=med/G/52;
-      return '<tr><td><b>'+r+'등</b></td><td class="num">1 / '+nf(1/p)+'</td>'+
-        '<td class="num">'+nf(mean)+'</td><td class="num">'+nf(med)+'</td>'+
-        '<td class="num"><b>'+(yrs>=1?yrs.toFixed(yrs>=10?0:1)+'년':Math.round(yrs*52)+'주')+'</b></td></tr>';
-    }).join('');
-}
-
 function rankOf(combo, d){
   const m=combo.filter(n=>d.n.includes(n)).length;
   if(m===6) return 1;
@@ -2335,19 +2152,16 @@ function runBacktest(){
       '<div><div class="k">총 당첨</div><div class="v">'+won(gain)+'</div><div class="s">회수율 '+pct(gain/cost,1)+'</div></div>'+
       '<div><div class="k">손익</div><div class="v" style="color:'+(net>=0?'var(--ok)':'var(--sig)')+'">'+won(net)+'</div><div class="s">1게임당 '+won(net/(rs.length*combos.length))+'</div></div>'+
     '</div>'+
-    '<div class="scroll"><table><tr><th>등수</th><th class="num">당첨 횟수</th><th class="num">기대 횟수</th><th class="num">편차</th></tr>'+
+    '<div class="scroll"><table><tr><th>등수</th><th class="num">당첨 횟수</th></tr>'+
     [1,2,3,4,5].map(r=>{
-      const T=rs.length*combos.length, e=T*PROB[r], sd=Math.sqrt(T*PROB[r]*(1-PROB[r]));
-      const z=sd?(hits[r]-e)/sd:0;
-      return '<tr><td><b>'+r+'등</b></td><td class="num"><b>'+hits[r]+'회</b></td><td class="num">'+e.toFixed(2)+'</td>'+
-        '<td class="num">'+(z>=0?'+':'')+z.toFixed(2)+'σ</td></tr>';
+      return '<tr><td><b>'+r+'등</b></td><td class="num"><b>'+hits[r]+'회</b></td></tr>';
     }).join('')+'</table></div>'+
     (events.length?'<p class="note" style="padding:14px 0 6px"><b>3등 이상 기록</b></p><div class="scroll"><table>'+
       '<tr><th>회차</th><th>등수</th><th>조합</th><th class="num">당첨금</th></tr>'+
       events.slice(0,25).map(e=>'<tr><td class="mono">'+e.round+'회<br><span style="font-size:9px;color:var(--ink-40)">'+ymd2disp(e.ymd).slice(2)+'</span></td>'+
         '<td><b>'+e.r+'등</b></td><td>'+'ABCDEFGHIJKLMNOPQRST'[e.ci]+'</td><td class="num">'+won(e.amt)+'</td></tr>').join('')+'</table></div>':'')+
     '<p class="note" style="padding:14px 0 0">회수율 100%를 넘는 조합이 나왔다면 그것은 실력이 아니라 <b>사후선택 편향</b>입니다. '+
-    '과거 데이터에 맞춰 고른 조합은 항상 과거에 잘 맞습니다. 로또의 구조적 기대 회수율은 약 <b>50%</b>입니다.</p>';
+    '과거 데이터에 맞춰 고른 조합은 항상 과거에 잘 맞습니다.</p>';
 }
 
 /* ════════════════ 내 기록 ════════════════ */
@@ -2407,301 +2221,11 @@ function myDel(i){ const a=myLoad(); a.splice(i,1); mySave(a); renderMine(); }
 window.myDel=myDel;
 
 
-/* ══════════════════ 모의 매입 원장 ══════════════════════════════════
-   「매주 추천 상위 5게임을 산다」를 과거로 되돌려 그대로 굴려본 장부.
-
-   근거 — 숫자를 쓰기 전에 정한 것
-   ① 투입 : 매주 상위 5게임 = 5,000원. 실물 로또 용지 한 장이 A~E 5게임이라 단위가 맞다.
-   ② 회수 : «그 회차의 실제 당첨금»을 쓴다. 1·2·3등은 정액이 아니라 분배금이라 회차마다
-            다르고, 이 모델이 건드리려는 값이 바로 그 분배금이다. 4등 5만·5등 5천은 정액.
-   ③ 기준선: 같은 회차에 무작위 5게임을 샀을 때의 기대 회수금
-            = 5 × Σ_k (경우의수_k / C(45,6)) × 그 회차 k등 당첨금.
-            해석해로 계산하므로 시뮬레이션 오차가 없다.
-   ④ 판정 : 1,500게임(300주×5)에서 1등 기대 횟수는 0.00018회다. 즉 회수율은
-            «모델이 좋은지»를 재는 지표가 될 수 없다. 모델이 실제로 예측하는 양은
-            따로 잰다 — 실제 당첨번호의 분배지수 예측 vs 그 회차의 실제 4·5등 초과배수.
-
-   과거분은 walk-forward 다. R회차 추천은 R-1회차까지의 데이터로만 만든다.
-   추천이 회차번호 시드로 결정되므로, DB 를 R-1 까지 잘라 다시 돌리면
-   그때 화면에 떴을 조합이 그대로 재현된다. */
-const LSLED = 'lottolab.ledger.v1';
-const LED_WINDOW = 300, LED_GAMES = 5, LED_FROM_MIN = 300;
-let LEDGER = null, LED_BUSY = false;
-
-/* 숨은 탭에서도 도는 양보 (setTimeout 은 억제된다) */
-const ledTick = () => new Promise(r=>{ const c=new MessageChannel(); c.port1.onmessage=()=>r(); c.port2.postMessage(0); });
-
-function ledLoad(){
-  try{ const o=JSON.parse(localStorage.getItem(LSLED)||'null');
-       return (o && o.v===1 && Array.isArray(o.recs)) ? o : null; }catch(e){ return null; }
-}
-function ledSave(o){
-  try{ localStorage.setItem(LSLED, JSON.stringify(o)); }
-  catch(e){ log('원장 저장 실패 · '+e.message+' (계산은 정상, 다음에 다시 계산합니다)'); }
-}
+/* chanceEV 는 CI(validate.mjs)가 페이지 안에서 부르므로 남긴다. 원장 탭은 삭제했다(trade-1). */
 /* 무작위 1게임의 그 회차 기대 회수금 (원) */
 function chanceEV(d){
   let ev=0; for(const k of [1,2,3,4,5]){ const a=d.a[k-1]; if(a) ev += PROB[k]*a; }
   return ev;
-}
-
-/* 원장 계산. 이미 있는 회차는 건너뛰고 새 회차만 덧붙인다(적재). */
-async function ledBuild(onProg){
-  if(LED_BUSY) throw new Error('이미 계산 중입니다');
-  const latest = DB.latest;
-  if(!latest) throw new Error('데이터가 없습니다');
-
-  const cache = ledLoad();
-  const have = new Map();
-  if(cache) cache.recs.forEach(r=>have.set(r.R, r));
-
-  const from = Math.max(LED_FROM_MIN, latest - LED_WINDOW + 1);
-  const need = [];
-  for(let R=from; R<=latest; R++) if(!have.has(R) && DB.draws[R]) need.push(R);
-
-  /* 원본 DB 를 건드리지 않는다. 작업용 사본을 끼워 넣고 finally 에서 반드시 되돌린다.
-     (중간에 예외가 나도 도구가 잘린 데이터로 남으면 안 된다) */
-  const origDraws = DB.draws, origLatest = DB.latest;
-  LED_BUSY = true;
-  try{
-    if(need.length){
-      const work = DB.draws.slice();
-      DB.draws = work;
-      for(let i=0;i<need.length;i++){
-        const R = need[i];
-        /* need 가 연속이라는 보장이 없다(이미 캐시된 회차는 건너뛴다).
-           매 스텝 전체를 복원한 뒤 R 이후만 잘라야 «R-1 까지 꽉 찬» 상태가 보장된다.
-           복원을 생략하면 이전 스텝에서 지운 구간이 그대로 비어 남는다. */
-        for(let j=1;j<origDraws.length;j++) work[j] = origDraws[j];
-        for(let j=R;j<work.length;j++)      work[j] = undefined;
-        DB.latest = R-1; bumpDB();
-        const W = weeklyPicks();
-        if(W.round !== R) throw new Error('시드 회차 불일치 '+W.round+' != '+R);
-        const actual = origDraws[R];
-        const picks = W.combos.slice(0, LED_GAMES);
-        const ranks = picks.map(c=>rankOf(c, actual));
-        let ret=0; ranks.forEach(k=>{ if(k) ret += actual.a[k-1]||0; });
-
-        /* 모델의 out-of-sample 예측 — 실제 당첨번호를 대상으로 */
-        const F = fitPop();
-        let zA=null, zB=null, rA=null;
-        if(F.A && actual.s && actual.w[3] && actual.w[4]){
-          const g=actual.s/TICKET, e4=g*WAYS[4]/C456, e5=g*WAYS[5]/C456;
-          if(e4>=200){
-            zA = (popScoreA(actual.n)-F.A.predMean)/F.A.predSD;
-            if(F.B) zB = (popScoreB(actual.n)-F.B.predMean)/F.B.predSD;
-            rA = 0.5*(actual.w[3]/e4) + 0.5*(actual.w[4]/e5);
-          }
-        }
-        have.set(R, { R, y:actual.ymd, p:picks, k:ranks, g:ret,
-                      e:Math.round(LED_GAMES*chanceEV(actual)),
-                      zA:zA==null?null:+zA.toFixed(4), zB:zB==null?null:+zB.toFixed(4),
-                      rA:rA==null?null:+rA.toFixed(5) });
-        if(onProg) onProg(i+1, need.length, R);
-        await ledTick();
-      }
-    }
-  } finally {
-    DB.draws = origDraws; DB.latest = origLatest; bumpDB();
-    LED_BUSY = false;
-  }
-
-  const recs = [...have.values()].filter(r=>r.R>=from).sort((a,b)=>a.R-b.R);
-  const out = { v:1, at:Date.now(), latest, games:LED_GAMES, recs };
-  ledSave(out);
-  return (LEDGER = out);
-}
-
-/* ── 재보정 : 누적된 (z, 실제초과배수) 쌍으로 확장창 회귀를 돌린다 ──
-   원본 예측은 «순위»는 맞지만 «폭»이 과하다. 선형 재보정은 순서를 바꾸지 않으므로
-   추천 조합은 그대로 두고 표시되는 숫자만 정직해진다. */
-function ledCalib(recs){
-  const ok = recs.filter(r=>r.zA!=null && r.zB!=null && r.rA!=null);
-  if(ok.length < 60) return { n:ok.length, ready:false };
-  const z = r => (r.zA + r.zB)/2;
-  const fit = arr => {                                   // y = a + b·z (최소제곱)
-    const n=arr.length;
-    const mz=arr.reduce((a,r)=>a+z(r),0)/n, my=arr.reduce((a,r)=>a+r.rA,0)/n;
-    let sxy=0, sxx=0;
-    arr.forEach(r=>{ const dz=z(r)-mz; sxy+=dz*(r.rA-my); sxx+=dz*dz; });
-    if(!sxx) return null;
-    const b=sxy/sxx; return { a:my-b*mz, b };
-  };
-  /* 정직한 성능 측정: i번째는 0..i-1 로만 적합한 계수로 예측한다 (미래 안 씀) */
-  const preds=[], ys=[];
-  for(let i=60;i<ok.length;i++){
-    const f=fit(ok.slice(0,i)); if(!f) continue;
-    preds.push(f.a + f.b*z(ok[i])); ys.push(ok[i].rA);
-  }
-  const full = fit(ok);
-  let r2=null, mae=null, maeNaive=null, corr=null;
-  if(ys.length>20){
-    const my=ys.reduce((a,b)=>a+b,0)/ys.length;
-    const sst=ys.reduce((a,v)=>a+(v-my)**2,0);
-    r2 = 1 - preds.reduce((a,v,i)=>a+(v-ys[i])**2,0)/sst;
-    mae = preds.reduce((a,v,i)=>a+Math.abs(v-ys[i]),0)/ys.length;
-    maeNaive = ys.reduce((a,v)=>a+Math.abs(v-my),0)/ys.length;
-  }
-  { const n=ok.length, mz=ok.reduce((a,r)=>a+z(r),0)/n, my=ok.reduce((a,r)=>a+r.rA,0)/n;
-    let nu=0,dz=0,dy=0;
-    ok.forEach(r=>{ const u=z(r)-mz, v=r.rA-my; nu+=u*v; dz+=u*u; dy+=v*v; });
-    corr = dz&&dy ? nu/Math.sqrt(dz*dy) : null; }
-  return { n:ok.length, ready:true, a:full.a, b:full.b, r2, mae, maeNaive, corr, nOOS:ys.length };
-}
-
-/* 무작위 5게임 × N주 총 회수금 분포 (몬테카를로).
-   1·2·3등은 회차마다 분배금이 달라 «당첨이 나면 회차를 균등추출»해 그 회차 상금을 준다.
-   4·5등은 정액이라 건수만 있으면 된다. 등수별 건수는 Poisson(λ) — p가 매우 작아 근사가 정확하다. */
-function ledChanceDist(recs, trials){
-  trials = trials || 20000;
-  const G = recs.length*LED_GAMES;
-  const amt = k => recs.map(r=>{ const d=DB.draws[r.R]; return d ? (d.a[k-1]||0) : 0; });
-  const A3=amt(3), A2=amt(2), A1=amt(1);
-  const pois = l => { const L=Math.exp(-l); let k=0,p=1; do{ k++; p*=Math.random(); }while(p>L); return k-1; };
-  const out = new Float64Array(trials);
-  for(let t=0;t<trials;t++){
-    let v = 5000*pois(G*PROB[5]) + 50000*pois(G*PROB[4]);
-    let n = pois(G*PROB[3]); for(let i=0;i<n;i++) v += A3[(Math.random()*A3.length)|0];
-    n = pois(G*PROB[2]);     for(let i=0;i<n;i++) v += A2[(Math.random()*A2.length)|0];
-    n = pois(G*PROB[1]);     for(let i=0;i<n;i++) v += A1[(Math.random()*A1.length)|0];
-    out[t]=v;
-  }
-  out.sort();
-  const q = f => out[Math.min(trials-1, Math.floor(trials*f))];
-  /* 평균과 1등 확률은 몬테카를로로 재지 않는다. 둘 다 1등 꼬리가 지배하는 값이라
-     2만 회로는 눈에 띄게 흔들린다. 해석해가 있으므로 그걸 쓴다.
-       평균     = Σ_회차 Σ_등수 (게임수 × P_등수 × 그 회차 당첨금)  ← recs[].e 의 합
-       1등 확률 = 1 − (1 − P₁)^게임수 */
-  const meanExact = recs.reduce((a,r)=>a+r.e,0);
-  return { mean:meanExact, p10:q(.10), p25:q(.25), med:q(.50), p75:q(.75), p90:q(.90),
-           pctOf: v => { let c=0; for(let i=0;i<trials;i++) if(out[i]<v) c++; return c/trials; },
-           pFirst: 1-Math.pow(1-PROB[1], G) };
-}
-
-
-/* ── 원장 렌더 ─────────────────────────────────────────────────── */
-function renderLedger(){
-  const box=$('#ledMeta');
-  if(!LEDGER) LEDGER=ledLoad();
-  if(!LEDGER || !LEDGER.recs.length){
-    box.textContent='아직 계산하지 않았습니다 — [원장 계산] 을 누르세요';
-    ['#kpiLed','#ledChance','#ledModel'].forEach(x=>$(x).innerHTML='');
-    $('#ledRankTbl').innerHTML=''; $('#ledTbl').innerHTML='';
-    return;
-  }
-  const recs=LEDGER.recs, n=recs.length, G=LEDGER.games||LED_GAMES;
-  const stale = DB.latest > LEDGER.latest;
-  box.textContent = recs[0].R+'~'+recs[n-1].R+'회 · '+n+'주 · '+nf(n*G)+'게임'
-    + (stale ? ' · 새 회차 '+(DB.latest-LEDGER.latest)+'개 미반영' : '');
-
-  const cost=n*G*TICKET;
-  const ret =recs.reduce((a,r)=>a+r.g,0);
-  const ev  =recs.reduce((a,r)=>a+r.e,0);
-  const cnt={1:0,2:0,3:0,4:0,5:0};
-  recs.forEach(r=>r.k.forEach(k=>{ if(k) cnt[k]++; }));
-  const best=[1,2,3,4,5].find(k=>cnt[k]>0);
-  const matched=recs.reduce((a,r)=>a+r.p.reduce((x,c,i)=>{
-    const d=DB.draws[r.R]; return x + (d ? c.filter(v=>d.n.includes(v)).length : 0); },0),0);
-
-  renderKPI('#kpiLed',[
-    ['누적 주차', nf(n)+'주', recs[0].R+'~'+recs[n-1].R+'회'],
-    ['투입', won(cost), G+'게임 × '+nf(n)+'주'],
-    ['회수', won(ret), '회수율 '+pct(ret/cost,1)],
-    ['손익', won(ret-cost), (ret>=cost?'수익':'손실')],
-    ['최고 등수', best?best+'등':'—', '5등 '+cnt[5]+' · 4등 '+cnt[4]+' · 3등 '+cnt[3]]
-  ]);
-
-  /* ── 우연과의 비교 — 여기서 정직해야 한다 ── */
-  const D=ledChanceDist(recs, 20000);
-  const pctile=D.pctOf(ret);
-  $('#ledChance').innerHTML=
-    '<p style="font-size:13.5px;margin-bottom:10px">같은 300주에 <b>아무 번호나</b> 5게임씩 샀다면 총 회수금이 어디쯤 떨어지는지를 '
-    +'2만 번 시뮬레이션했습니다. 이 원장의 '+won(ret)+' 은 그 분포의 <b>'+(pctile*100).toFixed(0)+' 백분위</b>입니다.</p>'
-    +'<div class="scroll"><table>'
-    +'<tr><th>무작위 5게임 × '+n+'주</th><th class="num">총 회수금</th><th class="num">회수율</th></tr>'
-    +[['하위 10%',D.p10],['하위 25%',D.p25],['<b>중앙값 — 실제로 겪는 값</b>',D.med],
-      ['상위 25%',D.p75],['상위 10%',D.p90],['<b>평균 — 1등 꼬리가 끌어올린 값</b>',D.mean]]
-      .map(([k,v])=>'<tr><td>'+k+'</td><td class="num">'+won(v)+'</td><td class="num">'+pct(v/cost,1)+'</td></tr>').join('')
-    +'<tr style="border-top:2px solid var(--ink)"><td><b>이 원장</b></td><td class="num"><b>'+won(ret)+'</b></td><td class="num"><b>'+pct(ret/cost,1)+'</b></td></tr>'
-    +'</table></div>'
-    +'<div class="verdict" style="margin-bottom:0"><b>평균과 중앙값이 세 배 넘게 벌어지는 이유</b><br>'
-    +'· 로또의 구조적 환급률 약 50%는 <b>1등 당첨금이 만드는 값</b>입니다. 그런데 '+nf(n*G)+'게임에서 1등이 한 번이라도 나올 확률은 '
-    +(D.pFirst*100).toFixed(2)+'% 입니다<br>'
-    +'· 그래서 «평균 회수율 '+pct(D.mean/cost,1)+'» 은 거의 아무도 겪지 않는 값이고, 실제로 겪는 값은 중앙값 '+pct(D.med/cost,1)+' 쪽입니다<br>'
-    +'· <b>이 원장의 회수율은 모델 성능 지표가 아닙니다.</b> 표본이 이만큼이면 어떤 번호를 골라도 결과는 우연 분포 안에서 흔들립니다<br>'
-    +'<span style="color:var(--ink-40)">모델이 실제로 예측하는 양은 아래 「모델은 실제로 무엇을 맞히나」에서 따로 잽니다.</span></div>';
-
-  /* ── 등수별 관측 vs 기대 ── */
-  const games=n*G;
-  const label={1:'1등 · 6개',2:'2등 · 5개+보너스',3:'3등 · 5개',4:'4등 · 4개',5:'5등 · 3개'};
-  $('#ledRankTbl').innerHTML='<tr><th>등수</th><th class="num">관측</th><th class="num">기대</th><th class="num">차이</th><th>판정</th></tr>'
-    +[1,2,3,4,5].map(k=>{
-      const e=games*PROB[k], o=cnt[k], sd=Math.sqrt(e);
-      const z=sd>0.5 ? (o-e)/sd : null;
-      const verdict = z==null ? '<span class="tag noi">표본 부족</span>'
-        : Math.abs(z)<2 ? '<span class="tag noi">우연 범위</span>'
-        : '<span class="tag sig">'+(z>0?'+':'')+z.toFixed(1)+'σ</span>';
-      return '<tr><td>'+label[k]+'</td><td class="num"><b>'+o+'</b></td><td class="num">'+e.toFixed(e<1?4:1)
-        +'</td><td class="num">'+(o-e>=0?'+':'')+(o-e).toFixed(e<1?4:1)+'</td><td>'+verdict+'</td></tr>';
-    }).join('')
-    +'<tr style="border-top:2px solid var(--ink)"><td><b>번호 일치 총합</b></td><td class="num"><b>'+nf(matched)+'</b></td>'
-    +'<td class="num">'+nf(games*6*6/45)+'</td><td class="num">'+(matched-games*36/45>=0?'+':'')+nf(matched-games*36/45)+'</td>'
-    +'<td><span class="mono" style="font-size:10.5px">게임당 '+(matched/games).toFixed(3)+' / 우연 0.800</span></td></tr>';
-
-  /* ── 모델 검증 + 재보정 ── */
-  if(!VAL_CALIB_ST) loadValCalib(()=>{ const lb=$('#tabs button[data-t="ledger"]'); if($('#ledModel') && lb && lb.classList.contains('on')) renderLedger(); });
-  const C=ledCalib(recs);
-  if(!C.ready){
-    $('#ledModel').innerHTML='<p style="font-size:13px;color:var(--ink-60)">검증 표본이 '+C.n+'회차입니다. 60회차 이상 쌓이면 표시합니다.</p>';
-  } else {
-    const gain = C.maeNaive ? (1-C.mae/C.maeNaive) : null;
-    const zAdv = 2.06;   // 추천 상위 5게임의 평균 z 이득 (아래 표에서 실측치로 덮어씀)
-    const zs = recs.map(r=>(r.zA+r.zB)/2).filter(v=>v!=null);
-    const zMean = zs.reduce((a,b)=>a+b,0)/zs.length;
-    const pickZ = (()=>{ try{ const F=fitPop(), W=weeklyPicks();
-      const zz=W.combos.slice(0,5).map(c=>((popScoreA(c)-F.A.predMean)/F.A.predSD+(popScoreB(c)-F.B.predMean)/F.B.predSD)/2);
-      return zz.reduce((a,b)=>a+b,0)/zz.length; }catch(e){ return null; } })();
-    const edge = (pickZ!=null && C.b) ? (zMean-pickZ)*C.b : null;
-    const VG = valPayoutGain();
-    $('#ledModel').innerHTML=
-      '<div class="scroll"><table>'
-      +'<tr><th>지표</th><th class="num">값</th><th>뜻</th></tr>'
-      +'<tr><td>검증 표본</td><td class="num">'+C.n+'회차</td><td>실제 당첨번호 대상. 매주 1개씩 늘어난다</td></tr>'
-      +'<tr><td>상관 (예측 vs 실제)</td><td class="num"><b>'+C.corr.toFixed(3)+'</b></td><td>순위 정보는 실재한다</td></tr>'
-      +'<tr><td>재보정 후 R²</td><td class="num"><b>'+C.r2.toFixed(3)+'</b></td><td>확장창 walk-forward. 미래를 쓰지 않은 값</td></tr>'
-      +'<tr><td>평균오차 (재보정)</td><td class="num">'+C.mae.toFixed(4)+'</td><td rowspan="2">순진 예측(항상 평균) 대비 <b>'
-        +(gain!=null?pct(gain,1):'—')+' 개선</b></td></tr>'
-      +'<tr><td>평균오차 (순진 예측)</td><td class="num">'+C.maeNaive.toFixed(4)+'</td></tr>'
-      +'<tr><td>재보정 기울기</td><td class="num">'+C.b.toFixed(4)+'</td><td>분배지수 1σ당 당첨자수 배수 변화</td></tr>'
-      +'<tr style="border-top:2px solid var(--ink)"><td><b>검증 보드 실측</b></td>'
-        +'<td class="num"><b>'+(VG?((VG.v>=0?'+':'')+pct(VG.v,1)):'—')+'</b></td>'
-        +'<td>validation.json · 300주 walk-forward'+(VG?'(전략 «'+VG.key+'»)':'')+' · <b>모든 방문자가 같은 값</b>을 본다 → <a href="./validate.html" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ink-30)">검증</a></td></tr>'
-      +(edge!=null?'<tr><td><b>이 기기 원장 실측 · 이번 주 A~E</b></td>'
-        +'<td class="num"><b>'+(edge>=0?'+':'')+pct(edge,1)+'</b></td><td>이 브라우저에 쌓인 원장('+C.n+'주)의 재보정 기울기로 <b>이번 주 추천 5게임만</b> 따로 잰 값 — 위 검증 보드 값과는 다른 수치다</td></tr>':'')
-      +'</table></div>'
-      +'<div class="verdict" style="margin-bottom:0"><b>솔직하게 — 원래 숫자는 틀렸습니다</b><br>'
-      +'· 재보정 <b>전</b> 예측은 out-of-sample R² 가 <b>음수</b>였습니다. 방향은 맞는데 폭이 과했다는 뜻입니다<br>'
-      +'· 그래서 쌓인 기록으로 기울기를 다시 재 «분배지수»를 재보정했습니다. 선형 변환이라 <b>순서는 바뀌지 않습니다</b> — 추천 조합은 그대로고, 표시되는 숫자만 정직해집니다<br>'
-      +'· 두 모델(판매 기준 · 구매방식 기준)에 서로 다른 가중을 줘 봤지만 지금의 «평균 결합»보다 나아지지 않았습니다. 그래서 <b>건드리지 않았습니다</b><br>'
-      +'<span style="color:var(--ink-40)">1등 확률은 여전히 1/8,145,060 입니다. 바뀌는 건 당첨됐을 때 나눠 갖는 인원뿐이고, 그 크기가 위의 두 실측치입니다(정의가 다르니 섞어 읽지 마세요).</span></div>';
-  }
-
-  /* ── 회차별 ── */
-  const rankTag=k=>k?'<span class="tag sig"><b>'+k+'등</b></span>':'';
-  $('#ledTbl').innerHTML='<tr><th>회차</th><th>당첨번호</th><th>A~E 결과</th><th class="num">회수</th><th class="num">누적손익</th></tr>'
-    +(()=>{ let acc=0; const rowsHtml=recs.map(r=>{ acc += r.g - LED_GAMES*TICKET; return {r, acc}; });
-      return rowsHtml.slice(-24).reverse().map(({r,acc})=>{
-        const d=DB.draws[r.R];
-        return '<tr><td class="mono"><b>'+r.R+'</b><div style="font-size:9.5px;color:var(--ink-40)">'+ymd2disp(r.y)+'</div></td>'
-        +'<td><span class="balls">'+(d?d.n.map(x=>ballHTML(x,'xs')).join('')+'<span class="mono" style="color:var(--ink-30)">+</span>'+ballHTML(d.b,'xs bonus'):'—')+'</span></td>'
-        +'<td><div style="display:flex;flex-direction:column;gap:3px">'
-          +r.p.map((c,i)=>'<div style="display:flex;align-items:center;gap:6px">'
-            +tkHTML(GLET[i], c, {sz:'xs', dim:true, hi:d?c.filter(v=>d.n.includes(v)||d.b===v):[], bonus:d&&c.includes(d.b)?d.b:undefined})
-            +rankTag(r.k[i])+'</div>').join('')+'</div></td>'
-        +'<td class="num">'+(r.g?won(r.g):'—')+'</td>'
-        +'<td class="num" style="color:'+(acc>=0?'var(--ok)':'var(--sig)')+'">'+won(acc)+'</td></tr>';
-      }).join(''); })()
-    +'<tr><td colspan="5" style="font-size:11px;color:var(--ink-40)">최근 24주만 표시합니다. 전체는 '+recs.length+'주입니다.</td></tr>';
 }
 
 /* ════════════════ 데이터 탭 ════════════════ */
@@ -2796,7 +2320,7 @@ function openSheet(){
   '<h1>'+R+'<span class="sub">추천 조합 마크시트</span></h1>'+
   '<h2>통합 번호판</h2><div class="board"><div class="grid">'+board+'</div></div>'+
   '<h2>조합 '+GEN_RESULT.length+'</h2><div class="rows">'+rows_+'</div>'+
-  '<div class="foot"><span>Prepared by 이재오</span><span>N='+rows(0).length+' rounds</span></div>'+
+  '<div class="foot"><span>Prepared by 잼족</span><span>N='+rows(0).length+' rounds</span></div>'+
   '<p class="dis">각 회차는 독립 시행입니다. 이 조합의 1등 확률은 자동 선택과 같은 1/8,145,060이며, 통계는 번호를 고르는 기준일 뿐 예측이 아닙니다.</p>'+
   '</main></body></html>';
   const w=window.open('','_blank');
@@ -2816,9 +2340,7 @@ function switchTab(t){
     if(t==='stat') renderStat();
     if(t==='order') renderOrder();
     if(t==='gen')  renderPopModel();
-    if(t==='sim')  renderFirstHit();
     if(t==='mine') renderMine();
-    if(t==='ledger') renderLedger();
     if(t==='data') renderData();
   }catch(e){ console.error(e); log('렌더 오류('+t+'): '+e.message); }
 }
@@ -2826,32 +2348,6 @@ function wire(){
   $$('#tabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.t));
   try{ if(window.SITE && SITE.theme && SITE.theme.mount) SITE.theme.mount('#themeBtn'); }catch(e){}
 
-  /* ── 원장 ── */
-  $('#ledRun').onclick = async ()=>{
-    if(LED_BUSY) return;
-    const btn=$('#ledRun'), wrap=$('#ledProgWrap');
-    btn.disabled=true; wrap.style.display='block';
-    $('#ledProgTxt').textContent='준비 중…';
-    try{
-      await ledBuild((i,tot,R)=>{
-        $('#ledProg').style.width=(i/tot*100).toFixed(1)+'%';
-        $('#ledProgTxt').textContent=R+'회 채점 · '+i+'/'+tot+' (남은 시간 약 '
-          +Math.ceil((tot-i)*0.15)+'초)';
-      });
-      renderLedger();
-      log('원장 갱신 · '+LEDGER.recs.length+'주');
-    }catch(e){
-      $('#ledProgTxt').textContent='실패: '+e.message;
-      log('원장 계산 실패 · '+e.message);
-    }finally{
-      btn.disabled=false;
-      setTimeout(()=>{ wrap.style.display='none'; $('#ledProg').style.width='0%'; }, 900);
-    }
-  };
-  $('#ledReset').onclick = ()=>{
-    if(!confirm('원장을 지우고 처음부터 다시 계산합니다. 계속할까요?')) return;
-    localStorage.removeItem(LSLED); LEDGER=null; renderLedger();
-  };
   $('#statWin').onchange=renderStat; $('#statBonus').onchange=renderStat;
 
   const sc=$('#stratChips');
@@ -2888,9 +2384,7 @@ function wire(){
                              : added+'게임('+nf(added*TICKET)+'원)을 '+W.round+'회에 담았습니다. 이미 담긴 '+(buy.length-added)+'게임은 건너뛰었습니다.');
   };
 
-  $('#simBtn').onclick=()=>{ $('#simOut').innerHTML='<span class="spin"></span>'; setTimeout(()=>{ try{runSim();}catch(e){$('#simOut').innerHTML='오류: '+e.message;} renderFirstHit(); },30); };
   $('#btBtn').onclick=runBacktest;
-  $('#simGames').onchange=renderFirstHit;
 
   $('#orderSearchBtn').onclick=()=>{
     const r=+$('#orderSearch').value;
@@ -2961,6 +2455,8 @@ function applyHash(){
   }catch(e){}
 }
 (async function init(){
+  try{ localStorage.removeItem('lottolab.ledger.v1'); }catch(e){}   /* 원장 탭 삭제(trade-1): 이 기기에 남은 옛 원장 저장값 정리 */
+  if(INITIAL_HASH==='#ledger'){ location.replace('./record.html#trade'); return; }   /* 옛 #ledger 링크 -> 기록 › 매매 일지 */
   wire(); renderPickBoard();
   /* lotto-order.json — 로또 DB 와 독립이라 병렬로 시작하고, 끝나면 지금 보이는 탭만 다시 그린다.
      loadOrderExtra() 는 항상 true/false 만 돌려준다(예외를 던지지 않음) — 실패해도 여기서 안 막힌다. */

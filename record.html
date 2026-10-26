@@ -85,10 +85,9 @@ h3 .sub{display:block;font-size:11px;font-weight:400;color:var(--ink-40);letter-
 .crossgrid{display:flex;flex-direction:column;font-size:12.5px}
 .crosshead{font-size:11px;color:var(--ink-40);font-weight:700;padding:10px 0 4px}
 .crosshead:first-child{padding-top:0}
-/* [rev2] crossval 에 sd·pMC 가 붙으면서(예: "관측 3,355 · 기대 3299.1 ± 179.5 · p=0.749") 한 줄에 다
-   안 들어간다 — justify-content:space-between 로 나란히 두면 라벨(.crosslabel)이 0폭까지 눌려 한글이
-   한 글자씩 세로로 쪼개졌다(375px 실측 확인). 좁은 화면은 세로로 쌓고, 한 줄이 들어갈 만큼 넓을 때만
-   (약 560px~) 다시 나란히 놓는다. */
+/* [rev2] 값이 길면(교차 적중 한 줄·매매 일지 한 줄) 한 줄에 다 안 들어간다 — justify-content:space-between 로 나란히 두면
+   라벨(.crosslabel)이 0폭까지 눌려 한글이 한 글자씩 세로로 쪼개졌다(375px 실측 확인). 좁은 화면은 세로로 쌓고,
+   한 줄이 들어갈 만큼 넓을 때만(약 560px~) 다시 나란히 놓는다. */
 .crossrow{display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px solid var(--ink-12)}
 .crossrow:last-child{border-bottom:0}
 .crosslabel{color:var(--ink-60)}
@@ -119,6 +118,11 @@ details.more summary{font-size:12px;color:var(--ink-60);font-weight:700;cursor:p
 /* .btn{display:inline-flex} 는 작성자 스타일이라 동일 특정성의 UA [hidden]{display:none} 보다 우선한다 —
    버튼에 hidden 을 쓰는 곳(취소 버튼)이 이 페이지에 처음이라 지금까지 드러나지 않았던 버그. 명시로 고정. */
 .btn[hidden]{display:none}
+/* 매매 일지(#trade) — 장수 칩 */
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+/* 칩 5개를 한 줄에 · 긴 값은 줄바꿈(360px 가로 스크롤 방지) */
+#tradeK{gap:6px}#tradeK .btn{flex:1 1 0;min-width:0;justify-content:center;padding:9px 4px}
+#tradeWrap .crossval{white-space:normal;overflow-wrap:anywhere}#tradeWrap .kpi .v{overflow-wrap:anywhere}
 </style>
 </head><body>
 <nav class="gnav" aria-label="사이트">
@@ -163,6 +167,41 @@ details.more summary{font-size:12px;color:var(--ink-60);font-weight:700;cursor:p
   <div class="kpi" id="kpiLedger"></div>
   <p class="note" id="pendingLedgerNote" hidden></p>
 </div>
+
+<a id="trade"></a>
+<div id="tradeWrap" hidden>
+<h2>매매 일지 <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-40)">(최근 50회 · 가정 · 재미용)</span></h2>
+<div class="card flat">
+  <p class="note">종목 4개가 매 회차 <b>그 직전 회차까지의 당첨번호만</b> 보고 줄을 내고, 펀드는 비중대로 고른 장수만큼 삽니다. ‘무작위’는 아무 규칙 없는 대조 종목입니다 — 다른 종목이 무작위와 비슷하면 규칙이 한 일은 없는 것입니다.</p>
+  <p class="note">아래 ‘최근 50회’는 지금의 규칙을 과거 회차에 적용해 다시 만든 <b>재현(가정)</b>이고, 추첨 전에 실제로 낸 줄은 맨 아래 ‘실제 제시 일지’에 쌓입니다. 위 「내 기록」·「추천 원장」과는 합산하지 않습니다.</p>
+  <p class="note" style="padding-bottom:0">위 ‘추천 원장’과 이번 주 페이지의 A~E 는 당첨 때 나눠 갖는 인원을 줄이려는 기존 추천이고, 이 일지는 별도의 모의 매매입니다. <b>어느 줄이든 당첨 확률은 같습니다.</b></p>
+</div>
+<p class="note" id="tradeNotice" role="status" hidden></p>
+<div id="tradeBody" hidden>
+  <div id="tradeKBox">
+    <div class="btnrow" id="tradeK" role="group" aria-label="회차당 구매 장수"></div>
+    <p class="note" style="padding-top:6px">1장 1,000원. 장수를 늘린 결과는 쓴 돈과 함께 보세요.</p>
+  </div>
+  <div class="kpi" id="kpiTrade"></div>
+  <div class="card" id="tradeStory"></div>
+  <h3>누적 손익<span class="sub">— 펀드(비중대로 고른 장수) 대 무작위 종목만 같은 장수, 최근 50회 재현</span></h3>
+  <div class="card flat" id="tradeChart"></div>
+  <h3>도전 사다리<span class="sub">— 등수별로 처음 나온 회차와 가장 가까웠던 기록</span></h3>
+  <div class="card flat" id="tradeLadder"></div>
+  <h3>종목 비중<span class="sub">— 직전 10회 성적대로 장수를 나눕니다(성적일 뿐 앞날과 무관)</span></h3>
+  <div class="card flat"><div id="tradeBoard" class="crossgrid"></div><div id="tradeSteps"></div></div>
+  <h3>이번엔 이거?<span class="sub">— 재미용 제시 · 과거 모양이 다음 추첨을 바꾸지는 않습니다</span></h3>
+  <div id="tradeNext"></div>
+  <h3>회차별 재현<span class="sub">— 같은 규칙을 지난 회차에 적용했다면</span></h3>
+  <div id="tradeRounds" class="weeklist"></div>
+  <div id="tradeJournalBox">
+    <h3>실제 제시 일지<span class="sub">— CI 가 추첨 전에 기록 · 기록 뒤 수정 없음</span></h3>
+    <div class="card flat" id="tradeJournal"></div>
+  </div>
+</div>
+<p class="note mono" id="tradeMeta" style="padding-top:6px"></p>
+</div>
+
 
 <div id="simWrap" hidden>
 <h2>모의 원장 <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-40)">— 로또 1000회·연금 100회부터 매주 추천대로 샀다면(가정)</span></h2>
@@ -237,6 +276,7 @@ details.more summary{font-size:12px;color:var(--ink-60);font-weight:700;cursor:p
 <p class="foot">회수율은 1등 꼬리가 지배 — 실력 지표가 아닙니다 → <a href="./validate.html">검증</a><br>
 복권 구매는 감당할 수 있는 범위 안에서. 만 19세 미만은 구매할 수 없습니다.</p>
 </div>
+<script src="./rank-core.js" defer></script><script src="./lotto-trade.js" defer></script>
 <script src="./site.js" defer></script>
 <script>
 "use strict";
@@ -335,7 +375,7 @@ function loadLottoMap(){
     if(!o || !Array.isArray(o.draws)) return null;
     var map={};
     o.draws.forEach(function(d){
-      map[d.round] = { n:d.numbers, b:d.bonus,
+      map[d.round] = { n:d.numbers, b:d.bonus, date:d.date,
         a:[d.prize.first,d.prize.second,d.prize.third,d.prize.fourth,d.prize.fifth] };
     });
     return map;
@@ -382,7 +422,9 @@ function renderKPI(sel, items){
     return '<div><div class="k">'+it[0]+'</div><div class="v">'+it[1]+'</div><div class="s">'+it[2]+'</div></div>';
   }).join('');
 }
-function buildChart(list){
+function buildChart(list, labels){
+  labels = labels || {};            // {aria,mine,ledger,fmt} — 매매 일지가 같은 그래프를 다른 문구로 쓴다. 없으면 지금 문구 그대로
+  var fmt = labels.fmt || won;
   if(!list.length) return '<p class="note">기록이 쌓이면 여기 누적 그래프가 나타납니다.</p>';
   var n=list.length, W=680, H=190, padL=48, padR=10, padT=12, padB=10;
   var xs = function(i){ return n<=1 ? (padL+(W-padL-padR)/2) : padL+(W-padL-padR)*i/(n-1); };
@@ -397,14 +439,14 @@ function buildChart(list){
   };
   var zeroY = ys(0).toFixed(1);
   var last = list[list.length-1];
-  return '<svg viewBox="0 0 '+W+' '+H+'" class="chart" role="img" aria-label="누적 손익: 내 기록 대 추천 원장">'+
+  return '<svg viewBox="0 0 '+W+' '+H+'" class="chart" role="img" aria-label="'+(labels.aria || '누적 손익: 내 기록 대 추천 원장')+'">'+
     '<line x1="'+padL+'" y1="'+zeroY+'" x2="'+(W-padR)+'" y2="'+zeroY+'" class="axis0"/>'+
     '<path d="'+path('cumLedger')+'" class="ln ledger"/>'+
     '<path d="'+path('cumMine')+'" class="ln mine"/>'+
   '</svg>'+
   '<div class="legend">'+
-    '<span class="lg"><span class="sw"></span>내 기록 누적 손익 '+won(last.cumMine)+'</span>'+
-    '<span class="lg"><span class="sw ledger"></span>추천 원장 누적 손익 '+won(last.cumLedger)+'</span>'+
+    '<span class="lg"><span class="sw"></span>'+(labels.mine || '내 기록 누적 손익 ')+fmt(last.cumMine)+'</span>'+
+    '<span class="lg"><span class="sw ledger"></span>'+(labels.ledger || '추천 원장 누적 손익 ')+fmt(last.cumLedger)+'</span>'+
   '</div>';
 }
 function ticketRowLotto(t){
@@ -466,8 +508,8 @@ function buildSimList(rowsDesc, kind, lottoMap){
       return isL ? simTicketRowLotto(p,res,lottoMap,row.round) : simTicketRowPension(p,res);
     }).join('');
     var net = row.status==='done' ? (row.ret||0) - (row.picks?row.picks.length:5)*1000 : null;
-    var crossLine = (row.cross && row.cross.exp!=null)
-      ? '<div class="wksub" style="padding-top:4px">이 회차 교차 적중(우연) '+nf(row.cross.any)+'건 · 기대 '+row.cross.exp.toFixed(1)+'건</div>' : '';
+    var crossLine = (row.cross && row.cross.any!=null)
+      ? '<div class="wksub" style="padding-top:4px">이 회차 교차 적중(우연) '+nf(row.cross.any)+'건</div>' : '';
     return '<div class="weekcard"><div class="whead"><div><div class="wk">'+row.round+'회</div>'+
       '<div class="wksub">'+(row.status==='done' ? '추첨 완료 · '+mmddSim(row.date) : '추첨 대기 · 예측')+'</div></div>'+
       (net!=null ? '<div class="net mono">'+won(net)+'</div>' : '')+'</div>'+
@@ -514,21 +556,16 @@ function simKPI(sum, NAME, order){
 function simFootnote(sum){
   if(!sum) return '';
   var bits=[];
-  if(sum.exp && sum.exp.ret!=null) bits.push('무작위(우연) 기준 누적 수령 약 '+won(sum.exp.ret)+' — 실제 누적 수령과 견줘 보는 기준선');
   if(sum.dry) bits.push('연속 무당첨 최장 '+sum.dry.max+'주(현재 '+sum.dry.current+'주)');
   if(sum.pending) bits.push('다음 예측 '+sum.pending.round+'회'+(sum.pending.date?' ('+mmddSim(sum.pending.date)+')':'')+' — 아직 추첨 전');
   return bits.length ? '<p class="note">'+bits.join('<br>')+'</p>' : '';
 }
 // 교차 적중 — classes.after 만 보여준다: before 는 그 회차 선택이 이미 그 이전 추첨을 알고 골랐으므로
-// 증거가 아니고(SIM-SCHEMA §3.1), same 은 위에서 이미 보여준 실제 원장과 같다. 관측을 기대와 항상 나란히.
-// [rev2] sd(몬테카를로 표준편차)·pMC(상관관계를 반영한 몬테카를로 p값)가 추가됐다 — 둘 다 있으면 같이 보여준다.
-// p 는 명시하지 않으면 참고용 푸아송 근사(과소평가)라 UI 는 pMC 를 "p="로 쓴다(SIM-SCHEMA §3.1 UI 지시 그대로).
+// 증거가 아니고(SIM-SCHEMA §3.1), same 은 위에서 이미 보여준 실제 원장과 같다.
+// 화면에는 관측 개수만 둔다(10-26 결정: 이론값 — 기대·표준편차·p — 은 화면에서 뺐다. JSON 의 exp·sd·pMC 는 검증기용으로 남아 있다).
+// 서명·호출은 그대로다 — exp·sd·pMC 인자는 받아도 쓰지 않는다.
 function crossRowHTML(label,obs,exp,sd,pMC){
-  var expTxt = exp==null ? '—' : exp.toFixed(1);
-  var sdTxt = (sd==null||isNaN(sd)) ? null : sd.toFixed(1);
-  var pTxt = (pMC==null||isNaN(pMC)) ? null : (pMC<0.001 ? '<0.001' : pMC.toFixed(3));
-  return '<div class="crossrow"><span class="crosslabel">'+label+'</span><span class="crossval">관측 <b>'+nf(obs)+'</b> · 기대 <b>'+expTxt+'</b>'+
-    (sdTxt?' ± '+sdTxt:'')+(pTxt?' · p='+pTxt:'')+'</span></div>';
+  return '<div class="crossrow"><span class="crosslabel">'+label+'</span><span class="crossval">관측 <b>'+nf(obs)+'</b></span></div>';
 }
 function buildCrossLotto(cross){
   if(!cross || !cross.classes || !cross.classes.after) return '';
@@ -548,8 +585,8 @@ function buildCrossPension(cross){
     crossRowHTML('등위 합계', af.obs.any, af.exp.any, af.sd&&af.sd.any, af.pMC&&af.pMC.any)+
     buildBestHist(cross.best&&cross.best.after, 'pension', '연금');
 }
-// (선택) 줄별 최고 성적 분포 — SIM-SCHEMA §3.1 summary.cross.best.after. sd/pMC 는 이 필드엔 없으므로
-// crossRowHTML 에 관측·기대만 넘긴다(자동으로 생략됨). after 만 쓴다 — best.all/before 는 표본 밖이 아니다.
+// (선택) 줄별 최고 성적 분포 — SIM-SCHEMA §3.1 summary.cross.best.after.
+// crossRowHTML 에 관측만 넘긴다. after 만 쓴다 — best.all/before 는 표본 밖이 아니다.
 function buildBestHist(best, kind, kindLabel){
   if(!best || !best.hist) return '';
   var isL = kind==='lotto';
@@ -558,7 +595,7 @@ function buildBestHist(best, kind, kindLabel){
     var label = isL ? (k+'개 일치(줄당 최고)') : (k+'자리 일치(줄당 최고)');
     return crossRowHTML(label, best.hist[k], best.exp&&best.exp[k]);
   }).join('');
-  return '<div class="crosshead" style="padding-top:14px">'+kindLabel+' — 줄별 최고 성적 분포(대조한 '+nf(best.lines||0)+'줄 기준, 관측 줄 수 vs 기대)</div>'+rows;
+  return '<div class="crosshead" style="padding-top:14px">'+kindLabel+' — 줄별 최고 성적 분포(대조한 '+nf(best.lines||0)+'줄 기준, 관측 줄 수)</div>'+rows;
 }
 function buildNotable(lottoCross, pensionCross, lottoDateMap, pensionDateMap){
   var items=[];
@@ -582,7 +619,7 @@ function buildNotable(lottoCross, pensionCross, lottoDateMap, pensionDateMap){
   var head=items.slice(0,10), rest=items.slice(10);
   var restHTML = rest.length ? '<details class="more"><summary>더 보기 ('+rest.length+'건)</summary><div class="notelist">'+
     rest.map(function(x){ return '<div class="noteitem">'+x.html+'</div>'; }).join('')+'</div></details>' : '';
-  return '<p class="note" style="padding-top:8px"><b>실제 당첨이 아니라 우연의 일치입니다.</b> 산 줄이 그 줄을 산 <b>이후에 나온</b> 다른 회차 당첨번호와 우연히 많이 겹친 사례만 모았습니다(날짜순) — 위 표의 관측/기대 개수가 그 전체 규모입니다.</p>'+
+  return '<p class="note" style="padding-top:8px"><b>실제 당첨이 아니라 우연의 일치입니다.</b> 산 줄이 그 줄을 산 <b>이후에 나온</b> 다른 회차 당첨번호와 우연히 많이 겹친 사례만 모았습니다(날짜순) — 위 표의 관측 개수가 그 전체 규모입니다.</p>'+
     '<div class="notelist">'+head.map(function(x){ return '<div class="noteitem">'+x.html+'</div>'; }).join('')+'</div>'+restHTML;
 }
 
@@ -622,10 +659,7 @@ function renderSimLedger(lottoMap){
 
     var crossNoteEl=document.getElementById('crossNote');
     if(crossNoteEl){
-      var jsonNote=(okL&&simL.summary&&simL.summary.cross&&simL.summary.cross.note) || (okP&&simP.summary&&simP.summary.cross&&simP.summary.cross.note) || '';
-      crossNoteEl.innerHTML = '이 회차 자체(같은 회차에 산 줄)가 아니라, <b>산 줄이 나중에 나온 다른 회차</b>와 우연히 겹친 정도만 모았습니다 — 관측 개수를 무작위 기대 개수(±표준편차)와 나란히 둡니다.<br>'+
-        '<b>p</b>는 줄끼리 번호(연금은 끝자리)를 공유하는 상관관계까지 반영한 몬테카를로 값입니다(단순 푸아송 근사보다 큼) — 칸을 여러 개 한꺼번에 보면 그중 몇 칸은 우연히 작게 나옵니다.'+
-        (jsonNote?'<br>'+jsonNote:'');
+      crossNoteEl.innerHTML = '이 회차 자체(같은 회차에 산 줄)가 아니라, <b>산 줄이 나중에 나온 다른 회차</b>와 우연히 겹친 정도만 모았습니다. 칸을 여러 개 한꺼번에 보면 그중 몇 칸은 우연히 크게 나옵니다.';
     }
     var clEl=document.getElementById('crossLotto'); if(clEl) clEl.innerHTML = okL ? buildCrossLotto(simL.summary&&simL.summary.cross) : '';
     var cpEl=document.getElementById('crossPension'); if(cpEl) cpEl.innerHTML = okP ? buildCrossPension(simP.summary&&simP.summary.cross) : '';
@@ -968,6 +1002,659 @@ function wireExportImport(){
   };
 }
 
+/* ══════════════════ 매매 일지 (lotto-trade.js 엔진 + brief/trade-lotto.json) ══════════════════
+   설계 .lab/revamp/design-final.md §5.2·§6·§13. 종목 4개(패턴·자주 나온 번호·오래 쉰 번호·무작위)가 매 회차 «직전 회차까지의 당첨번호만» 보고 낸 줄로
+   최근 50회를 다시 사 본 재현(가정)과, CI 가 추첨 전에 기록한 «실제 제시 일지»(append-only)를 보여준다.
+   기준선은 이론값(기대·p)이 아니라 무작위 대조군(무작위 종목·CI 의 무작위 20벌 띠)의 실제 결과다.
+   - 빠른 길: brief/trade-lotto.json 이 이 기기의 이력과 같은 회차·같은 입력 지문이면 즉시 그리고, 유휴 시간에 tradeVerify() 가
+     이 기기에서 다시 계산해 지문(window.digest)을 대조한다. 다르면 표는 그대로 CI 값이고 꼬리 문구만 바뀐다.
+   - 느린 길: JSON 이 없거나 낡았거나 깨졌으면 이 기기에서 계산한다(runAsync, 회차마다 양보 — 진행 n/61). 낡은 JSON 은 «CI 기록 r회 기준»으로 먼저 보인다.
+   - 무작위 20벌 띠(band)는 CI 전용이다. 느린 길에는 없다 → 사후 줄을 숨기고 «CI 기록 뒤 표시»(§13-4).
+   - 일지(journal)는 CI 만 쓴다. 이 기기 계산은 일지가 아니다. */
+var TRADE_K_KEY = 'lottolab.trade.k';
+var TRADE_STRATS = ['pat','hot','cold','rand'];
+var TRADE_NAME = {pat:'패턴', hot:'자주 나온 번호', cold:'오래 쉰 번호', rand:'무작위'};
+var TRADE_HKEYS = ['carry','rep','gap','heat','sum','cons','odd'];
+var tradeS = null;          // 지금 그리는 상태 {src:'ci'|'local', rows, next, summary, band, journal, digest, …}
+var tradeK = 5;             // 고른 회차당 장수
+var tradeShown = false;     // #trade 해시 스크롤은 첫 그림에서 한 번만
+var tradeLotto = null;      // lottoMap({회차:{n,b,a,date}}) — 일지 행의 당첨번호 강조에 쓴다
+
+function tradeEl(id){ return document.getElementById(id); }
+function tradeFull(n){ return nf(n)+'원'; }
+// KPI 칸은 좁다(360px 에서 칸 폭 약 140px) — 100만원 이상은 이 페이지의 won() 표기(만 단위)로 줄인다. 정확한 값은 보조 줄이나 본문에 있다.
+function tradeKrw(n){ n=Number(n)||0; return Math.abs(n)>=1000000 ? won(n)+'원' : nf(n)+'원'; }
+function tradePad(n){ return n<10 ? '0'+n : ''+n; }
+// 상금 표기: 5만원·163만원·36.4억원
+function tradePrize(p){ return (p>=10000 ? won(p) : nf(p))+'원'; }
+// 순위 «43.2만 위»·«798만 위»
+function tradeMan(n){
+  if(n>=10000){ var m=n/10000; return (m>=100 ? String(Math.round(m)) : m.toFixed(1))+'만'; }
+  return nf(n);
+}
+function tradeRank(r){ return r[0]===r[1] ? nf(r[0]) : nf(r[0])+'~'+nf(r[1]); }   // 순위·장수는 정확한 값 그대로
+// 값 20개(null=+∞)의 가운데 두 값 [lo,hi] — 오름차순 0-기반 9·10번째, 같으면 한 값(§13-3)
+function tradeMed(arr){
+  var a=arr.map(function(x){ return x==null ? Infinity : x; }).sort(function(p,q){ return p-q; });
+  if(!a.length) return null;
+  return [a[Math.floor((a.length-1)/2)], a[Math.floor(a.length/2)]];
+}
+function tradeRange(m, plain){   // plain: 회차·장수처럼 천 단위 쉼표를 쓰지 않는 값
+  if(!m || m[0]===Infinity || m[1]===Infinity) return null;
+  var f=plain ? String : nf;
+  return m[0]===m[1] ? f(m[0]) : f(m[0])+'~'+f(m[1]);
+}
+function tradeKst(iso){
+  var t=Date.parse(iso); if(isNaN(t)) return '—';
+  var d=new Date(t+9*3600*1000);
+  return tradePad(d.getUTCMonth()+1)+'.'+tradePad(d.getUTCDate())+' '+tradePad(d.getUTCHours())+':'+tradePad(d.getUTCMinutes());
+}
+function tradeNote(txt){ var el=tradeEl('tradeNotice'); if(!el) return; el.hidden=!txt; el.textContent=txt||''; }
+function tradeMeta(txt){ var el=tradeEl('tradeMeta'); if(el) el.textContent=txt||''; }
+function tradeNow(){ return (window.performance && performance.now) ? performance.now() : Date.now(); }
+
+/* ── 상태 만들기 ── */
+// CI 산출(JSON)이 화면을 망가뜨리지 않게 모양을 먼저 점검한다. 하나라도 어긋나면 «없는 것»으로 보고 이 기기에서 계산한다.
+function tradeJSONUsable(j, T){
+  try{
+    if(!j || j.v!==1 || j.kind!=='trade-lotto' || !j.source || !(j.source.latest>0) || !j.window) return false;
+    var w=j.window, s=j.summary;
+    if(!Array.isArray(w.rows) || w.rows.length!==T.CONF.WINDOW || !w.next || !w.next.s || !w.next.hint || !w.next.sc) return false;
+    if(!s || !s.K || !s.ladder || !s.kstar || !s.tiers) return false;
+    if(w.rows[0].t!==w.from || w.rows[w.rows.length-1].t!==w.to) return false;
+    for(var i=0;i<w.rows.length;i++){
+      var r=w.rows[i];
+      if(!r || !r.sc || !r.hint || !r.hint.hit || !Array.isArray(r.n) || !r.s) return false;
+      for(var k=0;k<TRADE_STRATS.length;k++){
+        var x=r.s[TRADE_STRATS[k]];
+        if(!x || !Array.isArray(x.h) || !Array.isArray(x.p)) return false;
+      }
+    }
+    for(var q=0;q<TRADE_STRATS.length;q++){ var nx=w.next.s[TRADE_STRATS[q]]; if(!nx || !Array.isArray(nx.h)) return false; }
+    return true;
+  }catch(e){ return false; }
+}
+function tradeJournalOf(j){ return (j && j.journal && Array.isArray(j.journal.rows)) ? j.journal : null; }
+function tradeFromCI(j){
+  return { src:'ci', from:j.window.from, to:j.window.to, latest:j.source.latest, rows:j.window.rows, next:j.window.next,
+    summary:j.summary, band:(j.band && j.band.K) ? j.band : null, journal:tradeJournalOf(j), digest:j.window.digest, jLatest:j.source.latest };
+}
+function tradeFromRun(run, jr, latest){
+  var T=window.LOTTOTRADE, w=run.window, band=null;
+  // §13-4: 띠는 «JSON 창 = 표시 창»일 때만 쓴다. 이 기기에서 다시 계산한 창이 JSON 과 다르면 없다.
+  if(jr && jr.ver===T.VER && jr.window && jr.window.from===w.from && jr.window.to===w.to && jr.band && jr.band.K) band=jr.band;
+  return { src:'local', from:w.from, to:w.to, latest:latest, rows:w.rows, next:w.next, summary:T.summarize(w.rows,{band:band}), band:band,
+    journal:tradeJournalOf(jr), digest:w.digest, jLatest:jr ? jr.source.latest : null };
+}
+
+/* ── K 별 계산(캐시) ── */
+function tradeFund1(st, L){
+  st.f1 = st.f1 || {};
+  if(!st.f1[L]) st.f1[L] = window.LOTTOTRADE.fund(st.rows, L);
+  return st.f1[L];
+}
+function tradeFunds(st, K){
+  st.fc = st.fc || {};
+  if(!st.fc[K]){
+    var T=window.LOTTOTRADE, o={fund:tradeFund1(st,K), rand:T.fund(st.rows,K,'rand'), strat:{}};
+    TRADE_STRATS.forEach(function(s){ o.strat[s]=T.fund(st.rows,K,s); });
+    st.fc[K]=o;
+  }
+  return st.fc[K];
+}
+function tradeSum(st, K){
+  var s=st.summary && st.summary.K && st.summary.K[K];
+  if(s) return s;
+  st.sc = st.sc || {};
+  if(!st.sc[K]) st.sc[K] = window.LOTTOTRADE.aggregate(st.rows, K, {band:st.band});
+  return st.sc[K];
+}
+function tradeBandK(st, K){ return (st.band && st.band.K && st.band.K[K] && Array.isArray(st.band.K[K].n4)) ? st.band.K[K] : null; }
+function tradeBandHit(bk){ return bk.n4.filter(function(x){ return x>0; }).length; }
+function tradeBandFirst(bk){
+  var fin=bk.first4.filter(function(x){ return x!=null; });
+  return {min: fin.length ? Math.min.apply(null, fin) : null, med: tradeMed(bk.first4)};
+}
+function tradeLines(row, a){   // 산 줄 [{s,i,c}] — head 20줄 안만(K>20 의 나머지는 합계로만 센다)
+  var out=[];
+  TRADE_STRATS.forEach(function(s,k){
+    var h=row.s[s].h, n=Math.min(a[k], h.length);
+    for(var i=0;i<n;i++) out.push({s:s, i:i+1, c:RANKCORE.lotto.combo(h[i])});
+  });
+  return out;
+}
+function tradeFirst4(row, s){   // 2,000줄 안에서 4개 이상이 처음 나온 줄 번호
+  var p=row.s[s].p;
+  for(var q=0;q<p.length;q++) if((p[q]&7)>=4) return p[q]>>3;
+  return null;
+}
+
+/* ── ③ KPI ── */
+function tradeKPI(st, K){
+  var s=tradeSum(st,K), bk=tradeBandK(st,K), cnt=s.cnt, n=st.rows.length;
+  var bits=[LOTTO_NAME[5]+' '+cnt[5]+'번', LOTTO_NAME[4]+' '+cnt[4]+'번'];
+  [3,2,1].forEach(function(r){ if(cnt[r]) bits.push(LOTTO_NAME[r]+' '+cnt[r]+'번'); });
+  var sub;
+  if(bk && bk.net && bk.net.length && s.bandRank!=null){
+    var m=tradeMed(bk.net);
+    sub='무작위 '+bk.net.length+'벌 가운데 '+tradeRange(m)+'원 · '+(bk.net.length+1)+'개 중 손익 높은 순 '+s.bandRank+'위';   // 1위 = 손익이 가장 높은 쪽(aggregate bandRank)
+  } else {
+    sub='무작위 종목만 '+K+'장 '+nf(s.randSolo.net)+'원';
+  }
+  var bestV, bestS;
+  if(K>20 && s.best.m<=2){ bestV='2개 이하'; bestS='3개 이상 없음'; }
+  else { bestV=s.best.m+'개'; bestS=s.best.n+'회'; }
+  renderKPI('#kpiTrade',[
+    ['투입', tradeKrw(s.spend), n+'회 × '+K+'장'],
+    ['회수', tradeKrw(s.ret), bits.join(' · ')],
+    ['손익', tradeKrw(s.net), sub],
+    ['최고 일치', bestV, bestS],
+    ['최대 낙폭', tradeKrw(s.mdd), '최장 '+s.dryMax+'회 무당첨'],
+    ['비중 효과', s.effect.rounds+'회', '고르게 샀을 때와 결과가 달랐던 회차 · 차액 합 '+tradeFull(s.effect.sum)]
+  ]);
+}
+
+/* ── ④ 5만원 이야기 ── */
+function tradeStoryWin(st, y){   // 이야기에 나온 그 줄의 맞힌 개수·등수·상금
+  var T=window.LOTTOTRADE, F=tradeFund1(st, y.k), it=null, i;
+  for(i=0;i<F.length;i++) if(F[i].t===y.t){ it=F[i]; break; }
+  if(!it) return null;
+  for(i=0;i<it.wins.length;i++) if(it.wins[i].s===y.s && it.wins[i].i===y.j) return it.wins[i];
+  return null;
+}
+// 이야기에 나온 그 줄의 공 — 번호는 그 회차 스트림의 앞 HEAD(20)줄까지만 기록돼 있다. 밖이면 번호 없이 문구만 둔다.
+function tradeStoryTicketHTML(st, y){
+  if(!y || y.t==null || !y.s || !(y.j>=1)) return '';
+  // 사후(hindsight) 단의 줄은 결과를 본 뒤 고른 최솟값 — 무작위 20벌 범위(띠)와 함께일 때만 그린다(§13-4, 규칙 15). 띠가 없으면 줄도 숨긴다.
+  var hind=(y.tier==='hindsight');
+  if(hind && !(st.band && Array.isArray(st.band.kstar4) && st.band.kstar4.length)) return '';
+  var T=window.LOTTOTRADE, row=null, i;
+  for(i=0;i<st.rows.length;i++) if(st.rows[i].t===y.t){ row=st.rows[i]; break; }
+  if(!row || !row.s || !row.s[y.s] || !Array.isArray(row.s[y.s].h) || !Array.isArray(row.n)) return '';
+  var nm=TRADE_NAME[y.s] || y.s, h=row.s[y.s].h, ix=h[y.j-1];
+  var cap=(hind ? '돌아보면(사후) ' : '')+y.t+'회 당첨 '+row.n.map(tradePad).join(' ')+' +'+tradePad(row.b)+' · '+(y.tier==='ladder' || hind ? '회차당 '+y.k+'장 중 ' : '')+nm+' '+y.j+'번째 줄';
+  if(ix==null) return '<p class="wksub" style="padding-top:6px">'+cap+' — 번호는 앞 '+h.length+'줄까지만 기록해서 이 줄의 번호는 보이지 않습니다.</p>';
+  var c=RANKCORE.lotto.combo(ix), g=T.grade(c,{n:row.n,b:row.b});
+  return '<div class="tkrow" style="padding-top:6px"><span class="tag">'+nm+'</span>'+lottoTicketHTML(c, tradeHitNums(c,row))+
+    (g.rank ? '<span class="tag sig">'+LOTTO_NAME[g.rank]+'</span>' : '<span class="tag noi">미당첨</span>')+'</div><p class="wksub">'+cap+'</p>';
+}
+function tradeHindsightHTML(st){
+  var ks=st.summary.kstar || {}, band=st.band, best=null, list=[];
+  TRADE_STRATS.forEach(function(s){
+    var x=ks[s];
+    if(x){ list.push(TRADE_NAME[s]+' '+x.k+'장('+x.t+'회)'); if(!best || x.k<best.k) best={s:s, k:x.k, t:x.t}; }
+    else list.push(TRADE_NAME[s]+' 2,000줄 안 없음');
+  });
+  if(!best) return '';
+  if(!band || !Array.isArray(band.kstar4) || !band.kstar4.length){
+    return '<p class="note" style="padding-top:8px">돌아보면(사후) 값은 무작위 20벌 범위와 함께 CI 기록 뒤에 표시합니다.</p>';
+  }
+  var k4=band.kstar4.map(function(x){ return x ? x.k : null; });
+  var fin=k4.filter(function(x){ return x!=null; });
+  var h='<p class="note" style="padding-top:8px"><b>돌아보면(사후)</b> — '+TRADE_NAME[best.s]+' 종목만 회차당 <b>'+best.k+'장</b>이었다면 '+best.t+'회에 4개 일치가 처음 나왔습니다. ';
+  if(fin.length){
+    var lo=Math.min.apply(null, fin), hi=Math.max.apply(null, fin), rg=tradeRange(tradeMed(k4), true);
+    h+='무작위 '+k4.length+'벌도 같은 방법으로 찾으면 '+lo+'~'+hi+'장'+(rg ? '(가운데 '+rg+'장)' : '')+(fin.length<k4.length ? ', '+(k4.length-fin.length)+'벌은 2,000줄 안에 없음' : '');
+    if(best.k>=lo && best.k<=hi) h+='이라, 이 숫자는 운의 범위 안입니다.';
+    else if(best.k<lo) h+='입니다. 이보다 작지만 종목 4개와 장수 여러 칸을 본 뒤 골라낸 값이라 우연히 작게 나왔을 수 있습니다.';
+    else h+='입니다.';
+  } else {
+    h+='무작위 '+k4.length+'벌은 2,000줄 안에서 4개 일치가 한 번도 없었습니다.';
+  }
+  h+='</p><p class="wksub">종목별 돌아보면(사후) 최소 장수 — '+list.join(' · ')+'</p>';
+  return h;
+}
+function tradeStoryHTML(st, K){
+  var s=tradeSum(st,K), y=s.story, bk=tradeBandK(st,K), n=st.rows.length, h='';
+  if(!y){
+    h='<p class="note" style="padding-bottom:0">이 '+n+'회 동안 3개 이상 맞은 줄이 없었습니다.</p>';
+    return h;
+  }
+  var nm=TRADE_NAME[y.s] || y.s;
+  if(y.tier==='K'){
+    var w=tradeStoryWin(st,y);
+    var hitTxt=w ? (window.LOTTOTRADE.hitOfCode(w.code)+'개를 맞혀 <b>첫 '+tradePrize(w.prize)+'</b>('+LOTTO_NAME[w.rank]+')') : '4개 이상을 맞혀 <b>첫 당첨</b>';
+    h='<p>'+st.from+'회부터 매 회차 <b>'+K+'장</b>씩 샀다면 — <b>'+y.week+'주째 '+y.t+'회</b>, '+nm+' '+y.j+'번째 줄이 '+hitTxt+
+      '. 그때까지 쓴 돈 '+tradeFull(y.spent)+' · 받은 돈 '+tradeFull(y.got)+'.</p>';
+  } else if(y.tier==='ladder'){
+    var w2=tradeStoryWin(st,y);
+    var lead=K+'장씩이면 이 '+n+'회 동안 5만원(4등) 이상은 <b>0번</b>이었습니다';
+    if(bk){
+      var bh=tradeBandHit(bk), bf=tradeBandFirst(bk);
+      lead+=' — 같은 '+K+'장씩 무작위로 산 '+bk.n4.length+'벌 중 '+bh+'벌은 1번 이상'+(bf.min!=null ? '(가장 이른 '+bf.min+'회)' : '');
+    }
+    var bL=tradeBandK(st,y.k), tail='';
+    if(bL){
+      var lf=tradeBandFirst(bL), lr=tradeRange(lf.med, true);
+      tail=' (무작위 '+y.k+'장씩 '+bL.n4.length+'벌: '+tradeBandHit(bL)+'벌이 '+n+'회 안에 첫 4등 이상'+(lr ? ', 가운데 '+lr+'회' : ', 가운데 없음')+')';
+    }
+    var lineTxt=nm+' '+y.j+'번째 줄이 '+(w2 ? window.LOTTOTRADE.hitOfCode(w2.code)+'개를 맞힘' : '4개 이상을 맞힘');
+    h='<p>'+lead+'. 미리 정한 장수로 늘리면 <b>회차당 '+y.k+'장 → '+y.t+'회('+y.week+'주째) 첫 '+tradePrize(w2 ? w2.prize : 50000)+'</b>('+lineTxt+'), 그때까지 쓴 돈 '+tradeFull(y.spent)+tail+'.</p>';
+  } else if(y.tier==='hindsight'){
+    h='<p>'+K+'장씩으로는, 미리 정한 어느 장수로도 4개 이상이 없었습니다.</p>';   // 사후 최소 장수는 아래 tradeHindsightHTML 이 무작위 20벌 범위와 함께(띠가 없으면 숨김, §13-4)
+  } else {
+    h='<p>5만원(4등)은 이 '+n+'회 동안 없었습니다. 가장 가까웠던 것: '+(y.m!=null ? y.m+'개 일치' : '')+(y.rank ? '('+LOTTO_NAME[y.rank]+')' : '')+' — '+y.t+'회 '+nm+' '+y.j+'번째 줄.</p>';
+  }
+  h+=tradeStoryTicketHTML(st,y);   // 이야기에 나온 그 줄(종목·줄 번호·공·등수) — 화면에서 직접 확인
+  h+=tradeHindsightHTML(st);
+  h+='<p class="wksub" style="padding-top:6px">창은 매주 한 칸씩 밀립니다. 이 이야기의 회차가 창 밖으로 나가면 이야기도 바뀝니다 — 바뀌지 않는 기록은 아래 ‘실제 제시 일지’입니다.</p>';
+  return h;
+}
+
+/* ── ⑤ 누적 손익 ── */
+function tradeChartHTML(st, K){
+  var F=tradeFunds(st,K), unk=0, list=st.rows.map(function(r,i){ unk+=F.fund[i].unk||0; return {round:r.t, cumMine:F.fund[i].cum, cumLedger:F.rand[i].cum}; });
+  return buildChart(list,{
+    aria:'누적 손익: 펀드 대 무작위만 '+K+'장(가정)',
+    mine:'펀드(회차당 '+K+'장) 누적 손익(가정) ',
+    ledger:'무작위만 '+K+'장 누적 손익(가정) ',
+    fmt:tradeFull
+  })+'<p class="wksub" style="padding-top:6px">세전·명목. 1~3등은 그 회차 실제 1인 수령액'+(unk ? ' — 당첨자 없던 회차의 금액은 미상(?)이라 0원으로 셉니다('+unk+'건)' : ', 당첨자 없던 회차는 금액 미상(?)')+'.</p>';
+}
+
+/* ── ⑥ 도전 사다리 ── */
+function tradeLadderHTML(st, K){
+  var s=tradeSum(st,K), ti=st.summary.tiers || {}, lad=st.summary.ladder && st.summary.ladder.fund, n=st.rows.length;
+  var ci=!!(st.rows[0] && st.rows[0].win), near=false;
+  var defs=[[5,'3개 일치(5등)'],[4,'4개 일치(5만원)'],[3,'5개 일치(3등)'],[2,'5개+보너스(2등)'],[1,'6개 일치(1등)']];
+  var items=defs.map(function(d){
+    var r=d[0], first=s.first[r], c=s.cnt[r], x=ti[r], line;
+    if(first!=null){
+      line='<b>'+d[1]+'</b> ✓ 첫 '+first+'회 · '+n+'회 중 '+c+'번';
+    } else {
+      line='<b>'+d[1]+'</b> 아직('+K+'장)';
+      if(r===4 && lad){
+        var Ls=window.LOTTOTRADE.CONF.LADDER;
+        for(var q=0;q<Ls.length;q++) if(Ls[q]>K && lad[Ls[q]] && lad[Ls[q]].first4!=null){ line+=' → '+Ls[q]+'장이면 '+lad[Ls[q]].first4+'회'; break; }
+      } else if(r<=3){
+        // 최근접은 창 50회 × 종목 4개 중 결과를 본 뒤 고른 최솟값 — «돌아보면(사후)» 를 붙인다(P6)
+        if(x && x.rank){
+          var nm=TRADE_NAME[x.s] || x.s; near=true;
+          line+= r===1 ? ' · 돌아보면(사후) 최근접: '+x.t+'회 당첨 조합이 '+nm+' 순위 '+tradeRank(x.rank)+'위 = 회차당 '+tradeRank(x.rank)+'장 필요했음'
+                       : ' · 돌아보면(사후) 최근접: '+x.t+'회 5개 일치 조합이 '+nm+' 순위 '+tradeRank(x.rank)+'위';
+        } else if(x){
+          near=true;
+          line+=' · 돌아보면(사후) 최근접: '+(TRADE_NAME[x.s] || x.s)+' '+x.i+'번째 줄('+x.t+'회)';
+        } else if(!ci && (r===1 || r===3)){
+          line+=' · 최근접 순위는 CI 기록 뒤에 표시합니다';
+        }
+      }
+    }
+    return '<div class="noteitem">'+line+'</div>';
+  });
+  return '<div class="notelist" style="padding-top:0">'+items.join('')+'</div>'+
+    (near ? '<p class="wksub" style="padding-top:8px">‘돌아보면(사후)’ 최근접은 이 '+n+'회 × 종목 4개 가운데 결과를 본 뒤 고른 가장 가까운 값입니다. 무작위 20벌의 같은 값은 계산하지 않았으니, 무작위보다 가까웠다는 뜻으로 읽지 마세요.</p>' : '')+
+    '<p class="wksub" style="padding-top:8px">앞으로 몇 회 뒤에 몇 등이 나온다는 예측은 하지 않습니다. 매 추첨은 지난 회와 무관해서 그런 숫자는 평균 대기 같은 이론값이 될 수밖에 없습니다. 대신 지금까지의 첫 회차와 최근접 기록을 매주 다시 셉니다.</p>';
+}
+
+/* ── ⑦ 종목 비중 · ⑧ 장수 사다리 ── */
+function tradeBoardHTML(st, K){
+  var T=window.LOTTOTRADE, F=tradeFunds(st,K), next=st.next, sc=next.sc || [0,0,0,0], a=T.alloc(sc,K), w=T.weights(sc);
+  // P6·§13-4: 결과를 본 뒤 고른 «사후 최소 장수»는 이 블록에 두지 않는다(무작위 20벌 범위와 함께 위 ‘5만원 이야기’에만).
+  // 대신 미리 정한 장수(K)로 그 종목만 샀을 때의 4개 이상 횟수 — 장수를 고르는 데 결과를 쓰지 않는 값이다.
+  var rows=TRADE_STRATS.map(function(s,k){
+    var it=F.strat[s], net=it.length ? it[it.length-1].cum : 0, n4=0, f4=null;
+    it.forEach(function(x){ var c=x.cnt[1]+x.cnt[2]+x.cnt[3]+x.cnt[4]; if(c){ n4+=c; if(f4==null) f4=x.t; } });
+    return '<div class="crossrow"><span class="crosslabel"><b>'+TRADE_NAME[s]+'</b> · 이번 회 비중 '+w[k].toFixed(1)+'% ('+K+'장 중 '+a[k]+'장)</span>'+
+      '<span class="crossval">최근 10회 점수 '+nf(sc[k])+' · 창 단독 '+tradeFull(net)+' · '+K+'장씩이면 4개 이상 '+n4+'번'+(f4!=null ? '(첫 '+f4+'회)' : '')+'</span></div>';
+  }).join('');
+  return rows+'<p class="wksub" style="padding-top:8px">비중은 지난 10회 성적일 뿐입니다 — 무작위가 점수 1위였던 회차 '+(st.summary.randTop || 0)+'번. ‘창 단독’·‘4개 이상’은 그 종목만 매 회차 '+K+'장씩 샀을 때의 결과이고, 무작위 줄과 나란히 보세요. 결과를 본 뒤 찾은 최소 장수는 위 ‘5만원 이야기’에 무작위 20벌 범위와 함께 있습니다.</p>';
+}
+function tradeStepsHTML(st, K){
+  var T=window.LOTTOTRADE, lad=st.summary.ladder, n=st.rows.length;
+  if(!lad || !lad.fund || !lad.rand) return '';
+  var rows=T.CONF.LADDER.map(function(Lv){
+    var f=lad.fund[Lv], r=lad.rand[Lv]; if(!f || !r) return '';
+    var spend=n*Lv*1000, bk=tradeBandK(st,Lv), b='';
+    if(bk){
+      var bf=tradeBandFirst(bk), rg=tradeRange(bf.med, true);
+      b=' · 무작위 '+bk.n4.length+'벌 중 '+tradeBandHit(bk)+'벌 4등'+(rg ? '(첫 4등 가운데 '+rg+'회)' : '(첫 4등 가운데 없음)');
+    }
+    return '<div class="crossrow"><span class="crosslabel">회차당 <b>'+Lv+'장</b>'+(Lv===K ? ' (고른 장수)' : '')+'</span>'+
+      '<span class="crossval">펀드 '+(f.first4!=null ? f.first4+'회('+f.n4+'번)' : '4등 없음')+' · 무작위만 '+(r.first4!=null ? r.first4+'회('+r.n4+'번)' : '4등 없음')+
+      ' · '+n+'회 투입 '+tradeFull(spend)+' · 회수 '+tradeFull(spend+f.net)+b+'</span></div>';
+  }).join('');
+  return '<details class="more"><summary>미리 정한 장수로 샀다면(펀드 / 무작위만)</summary><div class="crossgrid" style="padding-top:6px">'+rows+'</div></details>';
+}
+
+/* ── ⑨ 이번엔 이거? ── */
+// 일지의 pending 행 — 추첨 전에 CI 가 얼린 제시(회차 t)
+function tradePendingRow(st, t){
+  if(!st || !st.journal || !Array.isArray(st.journal.rows)) return null;
+  for(var i=0;i<st.journal.rows.length;i++){ var r=st.journal.rows[i]; if(r && r.r===t && r.status==='pending') return r; }
+  return null;
+}
+function tradeNextHTML(st){
+  var T=window.LOTTOTRADE, next=st.next, sc=next.sc || [0,0,0,0], w=T.weights(sc), v=next.hint.v, stt=next.hint.stat || {}, bt=stt.bt || {}, base=stt.base || {};
+  var picks=next.picks5;
+  if(!Array.isArray(picks)) picks=T.picks(next, T.CONF.K0);
+  // CI 가 추첨 전에 얼린 pending 행이 있으면 그 줄·비중이 «제시»다. 이번 계산이 다르면(J4) 화면 제시가 기록과 갈리지 않게 기록을 쓴다.
+  var jr=tradePendingRow(st, next.t), frozen=false, differs=false;
+  if(jr && Array.isArray(jr.picks) && jr.picks.length){
+    differs=JSON.stringify(jr.picks)!==JSON.stringify(picks);
+    picks=jr.picks; frozen=true;
+    if(Array.isArray(jr.w) && jr.w.length===TRADE_STRATS.length) w=jr.w;
+  }
+  var W=T.CONF.WINDOW, B=function(k){ return bt[k]!=null ? bt[k] : '—'; };
+  var perS={}, seen={};
+  picks.forEach(function(p){ perS[p.s]=(perS[p.s] || 0)+1; });
+  var order=picks.map(function(p){
+    var k=TRADE_STRATS.indexOf(p.s), many=perS[p.s]>1;
+    seen[p.s]=(seen[p.s] || 0)+1;
+    // 같은 종목이 2장 이상이면 비중은 종목 전체의 값이다 — «n장 중 m번째» 로 줄마다 그 비중인 것처럼 읽히지 않게 한다
+    return '<div class="tkrow"><span class="tag">'+(TRADE_NAME[p.s] || p.s)+'</span>'+lottoTicketHTML(p.c)+
+      '<span class="wksub">비중 '+(k>=0 ? Number(w[k]).toFixed(1) : '—')+'%'+(many ? ' · '+perS[p.s]+'장 중 '+seen[p.s]+'번째' : '')+'</span></div>';
+  }).join('');
+  var nb=Array.isArray(base.numBand) && base.numBand.length ? base.numBand : null;
+  var nbTxt=nb ? ' (무작위 번호 '+nb.length+'벌 '+Math.min.apply(null,nb)+'~'+Math.max.apply(null,nb)+'번, 가운데 '+tradeRange(tradeMed(nb), true)+')' : '';
+  var frac=function(x){ return x ? ' (전체 역사에서 이 값 '+nf(x[0])+'/'+nf(x[1])+')' : ''; };
+  var L=[
+    '<b>재출현 개수</b> — 직전 회차 번호 중 <b>'+v.carry+'개</b>가 다시 나오는 모양 · 같은 규칙으로 지난 '+W+'회 냈다면 <b>'+B('carry')+'/'+W+'</b>'+frac(base.carry),
+    '<b>재출현 번호</b> — 직전 회차 번호 중 최근 10회 가장 많이 나온 '+ballHTML(v.rep)+' → 이번엔 '+v.rep+'? · 같은 규칙으로 지난 '+W+'회 냈다면 <b>'+B('rep')+'번</b> 맞음'+nbTxt,
+    '<b>오래 쉰 번호</b> — '+ballHTML(v.gap)+(stt.gapOf!=null ? ' ('+stt.gapOf+'회 연속 안 나옴)' : '')+' · 지난 '+W+'회 같은 규칙 <b>'+B('gap')+'번</b> 맞음'+nbTxt,
+    '<b>최근 10회 최다 출현 번호</b> — '+ballHTML(v.heat)+(stt.heatOf!=null ? ' ('+stt.heatOf+'번)' : '')+' · 지난 '+W+'회 같은 규칙 <b>'+B('heat')+'번</b> 맞음'+nbTxt,
+    '<b>합계</b> — 최근 '+W+'회 가운데 절반이 <b>'+v.sum[0]+'~'+v.sum[1]+'</b> · 같은 규칙 '+B('sum')+'/'+W+frac(base.sum),
+    '<b>연속쌍</b> — <b>'+v.cons+'쌍</b> · 같은 규칙 '+B('cons')+'/'+W+frac(base.cons),
+    '<b>홀수 개수</b> — <b>'+v.odd+'개</b> · 같은 규칙 '+B('odd')+'/'+W+frac(base.odd)
+  ];
+  return '<div class="weekcard"><div class="whead"><div><div class="wk">'+next.t+'회 운빨 제시</div>'+
+    '<div class="wksub">'+(next.date ? mmddSim(next.date)+' 추첨 · ' : '')+'재미용 · 과거 모양이 다음 추첨을 바꾸지는 않습니다</div></div></div>'+
+    '<div class="weeksec"><div class="weeklabel">주문 '+picks.length+'장 (종목 비중대로'+(frozen ? ' · CI 가 추첨 전에 기록한 줄' : '')+')</div>'+order+
+      (differs ? '<div class="wksub" style="padding-top:2px">이 기기의 계산은 기록과 달라(엔진·자료 차이 가능) 추첨 전에 기록된 줄을 보입니다.</div>' : '')+'</div>'+
+    '<div class="weeksec"><div class="weeklabel">과거가 이랬으니 이번엔? — 근거 7줄</div><div class="notelist" style="padding-top:2px">'+
+      L.map(function(x){ return '<div class="noteitem">'+x+'</div>'; }).join('')+'</div></div></div>';
+}
+
+/* ── ⑩ 회차 카드 ── */
+// 그때 기록(일지 done 행)의 5장과 이 재현의 5장을 견준다: 'same' | 'diff' | 'oldver'(기록이 옛 규칙) | 'none'
+function tradeRoundCmp(row, jmap){
+  var T=window.LOTTOTRADE, jr=jmap[row.t];
+  if(!jr || !Array.isArray(jr.picks)) return 'none';
+  if(jr.ver!==T.VER) return 'oldver';
+  try{ return JSON.stringify(T.picks(row, T.CONF.K0))===JSON.stringify(jr.picks) ? 'same' : 'diff'; }
+  catch(e){ return 'none'; }
+}
+function tradeRoundTags(row, K, f, jmap){
+  var c=tradeRoundCmp(row, jmap);
+  if(c==='same' && K===window.LOTTOTRADE.CONF.K0) return '<span class="tag ok">그때 기록 ✓</span>';
+  if(c==='diff') return '<span class="tag sig">기록과 다름</span><span class="tag noi">재현</span>';   // 숨은 불일치 없이 드러낸다
+  if(c==='oldver') return '<span class="tag noi">재현 · 기록은 옛 규칙</span>';
+  return '<span class="tag noi">재현</span>';
+}
+var TRADE_EXTRA_MAX = 6;   // 카드 하나에서 앞 5장 밖의 당첨 줄을 공으로 펼치는 최대 줄 수(높은 등수 먼저)
+// 앞 5장 밖에서 등수가 난 줄 하나 — 번호는 앞 HEAD(20)줄까지만 기록돼 있어 밖이면 번호 없이 줄 번호만 둔다
+function tradeWinLineHTML(row, w){
+  var h=(row.s && row.s[w.s] && Array.isArray(row.s[w.s].h)) ? row.s[w.s].h : [], ix=h[w.i-1];
+  var tag='<span class="tag sig">'+LOTTO_NAME[w.rank]+'</span>', nm=TRADE_NAME[w.s] || w.s;
+  if(ix==null) return '<div class="tkrow"><span class="tag">'+nm+'</span><span class="wksub">'+w.i+'번째 줄 — 번호는 앞 '+h.length+'줄까지만 기록</span>'+tag+'</div>';
+  var c=RANKCORE.lotto.combo(ix);
+  return '<div class="tkrow"><span class="tag">'+nm+'</span>'+lottoTicketHTML(c, tradeHitNums(c,row))+tag+'<span class="wksub">'+w.i+'번째 줄</span></div>';
+}
+function tradeRoundCard(st, i, K, F, jmap){
+  var T=window.LOTTOTRADE, row=st.rows[i], f=F.fund[i], d={n:row.n, b:row.b};
+  var lines=tradeLines(row, f.a), show=lines.slice(0,5), shown={};
+  show.forEach(function(l){ shown[l.s+':'+l.i]=1; });
+  var body=show.map(function(l){
+    var g=T.grade(l.c, d);
+    return '<div class="tkrow"><span class="tag">'+TRADE_NAME[l.s]+'</span>'+lottoTicketHTML(l.c, tradeHitNums(l.c,row))+
+      (g.rank ? '<span class="tag sig">'+LOTTO_NAME[g.rank]+'</span>' : '<span class="tag noi">미당첨</span>')+'</div>';
+  }).join('');
+  if(K>show.length){
+    // 앞 5장 밖의 등수 줄은 집계만 하지 않고 당첨 줄만 공으로 펼친다(첫 5만원을 낸 줄이 화면에서 사라지지 않게)
+    var rest=f.wins.filter(function(w){ return !shown[w.s+':'+w.i]; });
+    var rc={1:0,2:0,3:0,4:0,5:0};
+    rest.forEach(function(w){ rc[w.rank]++; });
+    var bits=['5등 '+rc[5]+'번','4등 '+rc[4]+'번'];
+    [3,2,1].forEach(function(r){ if(rc[r]) bits.push(LOTTO_NAME[r]+' '+rc[r]+'번'); });
+    body+='<div class="wksub" style="padding-top:2px">외 '+(K-show.length)+'장: '+bits.join(' · ')+(rest.length ? ' — 당첨 줄은 아래' : '')+'</div>';
+    var ord=rest.slice().sort(function(a,b){ return a.rank-b.rank; }), open=ord.slice(0, TRADE_EXTRA_MAX);
+    body+=open.map(function(w){ return tradeWinLineHTML(row, w); }).join('');
+    if(ord.length>open.length) body+='<div class="wksub" style="padding-top:2px">그 밖의 당첨 '+(ord.length-open.length)+'줄은 위 등수 집계에만 들어 있습니다.</div>';
+  }
+  if(tradeRoundCmp(row, jmap)==='diff'){
+    body+='<div class="wksub" style="padding-top:2px">이 재현의 5장은 그때 추첨 전에 기록한 줄과 다릅니다 — 기록은 아래 ‘실제 제시 일지’ '+row.t+'회에 있습니다.</div>';
+  }
+  var f4=TRADE_STRATS.map(function(s){
+    var p=tradeFirst4(row,s), xr=row.xr && row.xr[s] && row.xr[s]['4'];
+    return TRADE_NAME[s]+' '+(p!=null ? p+'번째' : (xr ? '약 '+tradeMan(xr[0])+'위(2,000줄 밖)' : '없음(2,000줄 안)'));
+  });
+  var tail=['최고 일치 '+((K>20 && f.bestLe) ? '2개 이하' : f.best+'개'), '4개 이상 첫 등장 — '+f4.join(' · ')];
+  if(row.win && (row.win.hot || row.win.cold)){
+    tail.push('1등 조합 순위 '+(row.win.hot ? '자주 약 '+tradeMan(row.win.hot[0])+'위' : '')+(row.win.hot && row.win.cold ? ' / ' : '')+(row.win.cold ? '오래 쉰 약 '+tradeMan(row.win.cold[0])+'위' : ''));
+  }
+  tail.push('종목별 장수 '+f.a.join('·')+' (패턴·자주·쉰·무작위)');
+  tail.push('힌트 '+row.hint.hit.reduce(function(x,y){ return x+y; },0)+'/7');
+  return '<div class="weekcard"><div class="whead"><div><div class="wk">'+row.t+'회 '+tradeRoundTags(row,K,f,jmap)+'</div>'+
+    '<div class="wksub">'+mmddSim(row.date)+' · 당첨 '+row.n.map(tradePad).join(' ')+' +'+tradePad(row.b)+'</div></div>'+
+    '<div class="net mono">'+tradeKrw(f.net)+'</div></div>'+body+
+    '<div class="wksub" style="padding-top:6px">'+tail.join(' · ')+'</div></div>';
+}
+function tradeHitNums(c, row){ return c.filter(function(n){ return row.n.indexOf(n)>=0 || row.b===n; }); }
+function tradePendingCard(st, K){
+  var T=window.LOTTOTRADE, next=st.next, sc=next.sc || [0,0,0,0], a=T.alloc(sc,K);
+  var lines=tradeLines(next, a), show=lines.slice(0,5);
+  var body=show.map(function(l){ return '<div class="tkrow"><span class="tag">'+TRADE_NAME[l.s]+'</span>'+lottoTicketHTML(l.c)+'</div>'; }).join('');
+  if(K>show.length) body+='<div class="wksub" style="padding-top:2px">외 '+(K-show.length)+'장</div>';
+  return '<div class="weekcard"><div class="whead"><div><div class="wk">'+next.t+'회 <span class="tag noi">추첨 대기</span></div>'+
+    '<div class="wksub">'+(next.date ? mmddSim(next.date)+' · ' : '')+'펀드 '+K+'장 · 종목별 장수 '+a.join('·')+'</div></div></div>'+body+'</div>';
+}
+function tradeRoundsHTML(st, K){
+  var F=tradeFunds(st,K), jmap={}, n=st.rows.length;
+  if(st.journal) st.journal.rows.forEach(function(r){ if(r && r.status==='done') jmap[r.r]=r; });
+  var cards=[];
+  for(var i=n-1;i>=0;i--) cards.push(tradeRoundCard(st,i,K,F,jmap));
+  var head=tradePendingCard(st,K)+cards.slice(0,10).join(''), rest=cards.slice(10);
+  return head+(rest.length ? '<details class="more"><summary>더 보기 ('+rest.length+'회차)</summary><div class="weeklist" style="padding-top:8px">'+rest.join('')+'</div></details>' : '');
+}
+
+/* ── ⑪ 실제 제시 일지 ── */
+function tradeJournalGood(st){
+  if(!st.journal) return 0;
+  return st.journal.rows.filter(function(r){ return r && r.status==='done' && !r.late; }).length;
+}
+// 일지 행의 얼린 줄(r.picks) — 당첨번호(d)를 알면 맞힌 번호를 강조하고, 채점된 행은 기록된 등수(res.g)를 단다
+function tradeJournalPicksHTML(r, d){
+  if(!Array.isArray(r.picks) || !r.picks.length) return '';
+  var g=(r.res && Array.isArray(r.res.g)) ? r.res.g : null, drawn=!!(d && Array.isArray(d.n));
+  var rows=r.picks.map(function(p,i){
+    if(!p || !Array.isArray(p.c)) return '';
+    var hit=drawn ? p.c.filter(function(n){ return d.n.indexOf(n)>=0 || d.b===n; }) : null;
+    var tag=(g && g[i]>0) ? '<span class="tag sig">'+LOTTO_NAME[g[i]]+'</span>' : '';   // 좁은 화면에서 줄이 꺾이지 않게 미당첨 태그는 생략(흐린 공이 미당첨)
+    return '<div class="tkrow"><span class="tag">'+(TRADE_NAME[p.s] || p.s)+'</span>'+lottoTicketHTML(p.c, hit)+tag+'</div>';
+  }).join('');
+  if(!rows) return '';
+  return '<div style="padding-top:4px">'+(drawn ? '<div class="wksub">당첨 '+d.n.map(tradePad).join(' ')+' +'+tradePad(d.b)+'</div>' : '')+rows+'</div>';
+}
+function tradeJournalHTML(st){
+  var j=st.journal, T=window.LOTTOTRADE;
+  if(!j) return '<p class="note" style="padding-bottom:0">아직 일지가 없습니다. CI 가 추첨 전에 줄을 기록하면 여기에 쌓입니다. (이 기기에서 계산한 재현은 일지가 아닙니다.)</p>';
+  var rows=j.rows.slice().sort(function(a,b){ return b.r-a.r; });
+  var done=rows.filter(function(r){ return r.status==='done'; }), late=done.filter(function(r){ return r.late; }), good=done.filter(function(r){ return !r.late; });
+  var first=j.from!=null ? j.from : (rows.length ? rows[rows.length-1].r : '—');
+  var head='<p class="note">추첨 전에 CI 가 기록한 줄입니다. 기록 뒤에는 고치지 않습니다. 첫 기록 '+first+'회 · 지금 '+rows.length+'회 쌓임 · 늦은 기록 '+late.length+'회 제외'+
+    ((j.missed && j.missed.length) ? ' · 기록이 빠진 주 '+j.missed.length+'회' : '')+
+    (st.jLatest!=null && st.jLatest!==st.latest ? ' · CI 기록 '+st.jLatest+'회 기준' : '')+'</p>';
+  var item=function(r){
+    var K=r.K || T.CONF.K0, made=tradeKst(r.made), d=tradeLotto ? tradeLotto[r.r] : null;
+    var pk=tradeJournalPicksHTML(r, d);   // CI 가 추첨 전에 얼린 번호 — 창 밖으로 나가도, 재현과 달라도 여기서 본다
+    if(r.status!=='done') return '<div class="noteitem"><b>'+r.r+'회</b> · 제시 '+made+' KST · '+(r.r<=st.latest ? '추첨 끝 · CI 채점 대기' : '추첨 대기')+' · '+K+'장'+pk+'</div>';
+    var res=r.res || {}, hh=Array.isArray(res.hintHit) ? res.hintHit.reduce(function(x,y){ return x+y; },0) : 0;
+    return '<div class="noteitem"><b>'+r.r+'회</b> · 제시 '+made+' KST ('+(r.late ? '늦은 기록 — 집계 제외' : '추첨 전 ✓')+') · '+K+'장 최고 '+(res.best!=null ? res.best : '—')+'개 · '+tradeFull(res.ret || 0)+' · 힌트 '+hh+'/7'+pk+'</div>';
+  };
+  var list=rows.map(item), listHTML='<div class="notelist">'+list.slice(0,10).join('')+'</div>'+
+    (list.length>10 ? '<details class="more"><summary>더 보기 ('+(list.length-10)+'회)</summary><div class="notelist">'+list.slice(10).join('')+'</div></details>' : '');
+  var sum='';
+  if(good.length){
+    var net=0, c={}, hs=[0,0,0,0,0,0,0];
+    good.forEach(function(r){
+      var res=r.res || {};
+      net+=(res.ret || 0)-(r.K || T.CONF.K0)*1000;
+      (res.g || []).forEach(function(g){ if(g>0) c[g]=(c[g] || 0)+1; });
+      (res.hintHit || []).forEach(function(x,i){ if(i<7) hs[i]+=x; });
+    });
+    var hn=['재출현 개수','재출현 번호','오래 쉰 번호','최근 최다 번호','합계','연속쌍','홀수'];
+    sum='<p class="wksub" style="padding-top:8px">일지 손익 '+tradeFull(net)+' · 5등 '+(c[5] || 0)+'번 · 4등 '+(c[4] || 0)+'번'+[3,2,1].map(function(r){ return c[r] ? ' · '+LOTTO_NAME[r]+' '+c[r]+'번' : ''; }).join('')+
+      ' · 힌트 누적: '+hn.map(function(nm,i){ return nm+' '+hs[i]+'/'+good.length; }).join(' · ')+'</p>';
+  } else {
+    sum='<p class="wksub" style="padding-top:8px">아직 채점된 회차가 없습니다 — 첫 추첨이 끝나면 손익과 힌트 성적이 여기에 쌓입니다.</p>';
+  }
+  return head+listHTML+sum;
+}
+function tradePlaceJournal(){
+  var box=tradeEl('tradeJournalBox'), body=tradeEl('tradeBody'), kbox=tradeEl('tradeKBox');
+  if(!box || !body || !kbox || !tradeS) return;
+  // 일지가 50회 이상 쌓이면 재현보다 일지를 주 화면으로 올린다(JOURNAL_PRIMARY_MIN)
+  if(tradeJournalGood(tradeS) >= window.LOTTOTRADE.CONF.JOURNAL_PRIMARY_MIN) body.insertBefore(box, kbox);
+  else body.appendChild(box);
+}
+
+/* ── 그리기(K 가 바뀔 때마다 — 재계산 없음) ── */
+function tradeChips(){
+  var el=tradeEl('tradeK'); if(!el) return;
+  el.innerHTML=window.LOTTOTRADE.CONF.KS.map(function(k){
+    return '<button class="btn" type="button" data-k="'+k+'" aria-pressed="'+(k===tradeK ? 'true' : 'false')+'">'+k+'장</button>';
+  }).join('');
+}
+function tradePress(){
+  var bs=document.querySelectorAll('#tradeK .btn');
+  for(var i=0;i<bs.length;i++) bs[i].setAttribute('aria-pressed', Number(bs[i].getAttribute('data-k'))===tradeK ? 'true' : 'false');
+}
+function tradeDraw(){
+  var st=tradeS, K=tradeK, bad=0;
+  function put(id, fn){
+    var el=tradeEl(id); if(!el) return;
+    try{ el.innerHTML=fn(); }catch(e){ bad++; el.innerHTML='<p class="note" style="padding-bottom:0">이 블록을 표시하지 못했습니다.</p>'; }
+  }
+  try{ tradeKPI(st,K); }catch(e){ bad++; var kp=tradeEl('kpiTrade'); if(kp) kp.innerHTML=''; }
+  put('tradeStory', function(){ return tradeStoryHTML(st,K); });
+  put('tradeChart', function(){ return tradeChartHTML(st,K); });
+  put('tradeLadder', function(){ return tradeLadderHTML(st,K); });
+  put('tradeBoard', function(){ return tradeBoardHTML(st,K); });
+  put('tradeSteps', function(){ return tradeStepsHTML(st,K); });
+  put('tradeNext', function(){ return tradeNextHTML(st); });
+  put('tradeRounds', function(){ return tradeRoundsHTML(st,K); });
+  put('tradeJournal', function(){ return tradeJournalHTML(st); });
+  tradePress();
+  return bad;
+}
+function tradeScrollOnce(){
+  if(tradeShown) return; tradeShown=true;
+  try{ if(location.hash==='#trade'){ var a=tradeEl('trade'); if(a && a.scrollIntoView) a.scrollIntoView(); } }catch(e){}
+}
+function tradeShow(){
+  var body=tradeEl('tradeBody');
+  tradeChips();
+  var bad=tradeDraw();
+  tradePlaceJournal();
+  if(body) body.hidden=false;
+  tradeScrollOnce();
+  return bad;
+}
+function tradeBindChips(){
+  var el=tradeEl('tradeK'); if(!el || el.getAttribute('data-bound')) return;
+  el.setAttribute('data-bound','1');
+  el.addEventListener('click', function(ev){
+    var b=ev.target && ev.target.closest ? ev.target.closest('button[data-k]') : null;
+    if(!b || !tradeS) return;
+    var k=Number(b.getAttribute('data-k'));
+    if(!(k>0) || k===tradeK) return;
+    tradeK=k;
+    try{ localStorage.setItem(TRADE_K_KEY, String(k)); }catch(e){}
+    tradeDraw();
+  });
+}
+
+/* ── 이 기기 재계산 대조(빠른 길의 꼬리) ── */
+function tradeVerify(norm, st){
+  var T=window.LOTTOTRADE, t0=tradeNow(), base='CI 기록 '+st.latest+'회 기준 · ';
+  tradeMeta(base+'이 기기 재계산 중 0/'+(T.CONF.WARM+T.CONF.WINDOW+1));
+  T.runAsync(norm,{to:st.latest},function(d,tot){ if(d%6===0 || d===tot) tradeMeta(base+'이 기기 재계산 중 '+d+'/'+tot); }).then(function(run){
+    if(tradeS!==st) return;   // 그 사이 화면이 다른 상태로 바뀌었으면 쓰지 않는다
+    var sec=((tradeNow()-t0)/1000).toFixed(1), same=run.window.digest===st.digest, self=false;
+    try{ self=T.selfTest()===T.GOLDEN; }catch(e){}
+    var txt= same ? base+'이 기기 재계산 일치 ✓ ('+sec+'초 · '+run.window.digest+')'
+                  : '이 기기 재계산과 다름 — 표는 CI 기록 기준(엔진 차이 가능) · CI '+st.digest+' / 이 기기 '+run.window.digest;
+    if(!self) txt+=' · 엔진 점검값이 달라 이 기기의 자주 나온/오래 쉰 번호 계산은 다를 수 있습니다';
+    tradeMeta(txt);
+  }).catch(function(e){
+    if(tradeS===st) tradeMeta(base+'이 기기 재계산을 하지 못했습니다: '+(e && e.message || e));
+  });
+}
+function tradeVerifyLater(norm, st){
+  var go=function(){ tradeVerify(norm, st); };
+  try{
+    if(window.requestIdleCallback) window.requestIdleCallback(go,{timeout:2500}); else setTimeout(go,400);
+  }catch(e){ setTimeout(go,400); }
+}
+
+/* ── 느린 길: 이 기기에서 계산 ── */
+function tradeCompute(norm, jr, pre){
+  var T=window.LOTTOTRADE, t0=tradeNow(), tot0=T.CONF.WARM+T.CONF.WINDOW+1;
+  pre=pre ? pre+' — ' : '';
+  tradeNote(pre+'이 기기에서 계산 중 0/'+tot0+'회차');
+  T.runAsync(norm,{to:norm.latest},function(d,tot){ if(d%6===0 || d===tot) tradeNote(pre+'이 기기에서 계산 중 '+d+'/'+tot+'회차'); }).then(function(run){
+    var st=tradeFromRun(run, jr, norm.latest);
+    tradeS=st;
+    var sec=((tradeNow()-t0)/1000).toFixed(1), self=false;
+    try{ self=T.selfTest()===T.GOLDEN; }catch(e){}
+    tradeNote('');
+    tradeShow();
+    tradeMeta('이 기기에서 계산한 결과('+sec+'초 · '+run.window.digest+')'+(self ? '' : ' · 엔진 점검값이 달라 자주 나온/오래 쉰 번호 계산이 CI 와 다를 수 있습니다')+
+      (st.band ? '' : ' · 무작위 20벌 띠는 CI 기록 뒤 표시')+
+      (st.journal && st.jLatest!==norm.latest ? ' · 일지는 CI 기록 '+st.jLatest+'회 기준' : '')+
+      (st.journal ? '' : ' · 일지는 CI 기록 뒤 표시'));
+  }).catch(function(e){
+    tradeNote('매매 일지를 계산하지 못했습니다: '+(e && e.message || e));
+  });
+}
+
+function renderTrade(lottoMap){
+  var wrap=tradeEl('tradeWrap'); if(!wrap) return;
+  wrap.hidden=false;
+  tradeLotto=lottoMap || null;
+  var T=window.LOTTOTRADE;
+  if(!T || !window.RANKCORE || !RANKCORE.lotto){ tradeNote('계산 엔진(lotto-trade.js)을 불러오지 못해 매매 일지를 표시하지 않습니다.'); return; }
+  if(!lottoMap){ tradeNote('로또 이력(lotto-history.json)을 불러오지 못해 매매 일지를 표시하지 않습니다.'); return; }
+  var norm;
+  try{ norm=T.normalize(lottoMap); }
+  catch(e){
+    var m=/^(gap|bad) (\d+)/.exec(e && e.message || '');
+    tradeNote(m ? (m[1]==='gap' ? '자료 구멍 '+m[2]+'회 — 계산하지 않습니다.' : '자료 형식 오류 '+m[2]+'회 — 계산하지 않습니다.') : '로또 이력을 읽을 수 없어 계산하지 않습니다.');
+    return;
+  }
+  tradeK=T.CONF.K0;
+  try{ var sv=Number(localStorage.getItem(TRADE_K_KEY)); if(T.CONF.KS.indexOf(sv)>=0) tradeK=sv; }catch(e){}
+  tradeBindChips();
+  tradeNote('매매 일지 불러오는 중…');
+  fetchJSON('./brief/trade-lotto.json').then(function(j){
+    var ok=tradeJSONUsable(j,T), same=false, stale=false;
+    if(ok && j.ver===T.VER){
+      try{
+        var dg=T.sourceDigest(norm, j.source.latest);          // 이 기기의 이력 1..r 과 같은 입력인지(r ≤ latest)
+        if(j.source.latest<=norm.latest && dg===j.source.digest){ same=(j.source.latest===norm.latest); stale=!same; }
+      }catch(e){}
+    }
+    if(same){
+      tradeS=tradeFromCI(j);
+      tradeNote('');
+      if(tradeShow()>0){ tradeS=null; tradeCompute(norm, null, ''); return; }   // CI 값이 화면을 못 채우면 버리고 이 기기에서 계산
+      tradeMeta('CI 기록 '+j.source.latest+'회 기준 · 이 기기 재계산 대기 중');
+      tradeVerifyLater(norm, tradeS);
+      return;
+    }
+    var pre='';
+    if(stale){
+      tradeS=tradeFromCI(j);
+      pre='CI 기록 '+j.source.latest+'회 기준으로 먼저 보여 드립니다';
+      if(tradeShow()>0){ tradeS=null; pre=''; }
+      else tradeMeta('CI 기록 '+j.source.latest+'회 기준 — '+norm.latest+'회는 이 기기에서 계산 중');
+    }
+    tradeCompute(norm, tradeJSONUsable(j,T) ? j : null, pre);
+  }).catch(function(e){
+    tradeNote('매매 일지를 표시하지 못했습니다: '+(e && e.message || e));
+  });
+}
+
 /* ══════════════════ 메인 ══════════════════ */
 function main(){
   try{ if(window.SITE && SITE.theme && SITE.theme.mount) SITE.theme.mount('#themeBtn'); }catch(e){}
@@ -983,6 +1670,7 @@ function main(){
     if(degradedEl) degradedEl.hidden = !!pensionMap;
 
     renderSimLedger(lottoMap); // 모의 원장(별도 섹션) — 실패해도 위 내 기록/추천 원장 렌더링에 영향 없음
+    try{ renderTrade(lottoMap); }catch(e){ var tw=document.getElementById('tradeWrap'); if(tw) tw.hidden=true; } // 매매 일지(별도 섹션) — 실패해도 다른 섹션은 무사
     initRankMine(myLotto, myPension, ledgerRows, lottoMap); // 내가 산 번호의 순위(별도 섹션) — 실패해도 영향 없음
 
     var weeks = new Map();

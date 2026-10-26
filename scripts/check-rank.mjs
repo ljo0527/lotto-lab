@@ -581,7 +581,9 @@ async function mockRoutes(ctx, pension, lotto) {
     }
     if (u.includes('selectPstLt645InfoNew')) {
       const c = +(u.match(/srchLtEpsd=(\d+)/) || [])[1];
-      let l = lotto.rows.filter(x => +x.ltEpsd >= c - 5 && +x.ltEpsd <= c + 4);
+      // 실 API 는 하한(1회)에서 창을 위로 밀어 항상 10건을 준다(center 1 → 1~10). 검증기는 자기 코드로 같은 규칙을 둔다 (docs/bugfix-log.md)
+      const lo = Math.max(1, c - 5);
+      let l = lotto.rows.filter(x => +x.ltEpsd >= lo && +x.ltEpsd < lo + 10);
       if (!l.length) l = lotto.rows.slice(-10);
       return json({ data: { list: l.slice().sort((a, b) => b.ltEpsd - a.ltEpsd) } });
     }
@@ -603,6 +605,14 @@ async function pageLotto(browser, base, pension, lotto, rounds, combos) {
   await p.goto(base + '/index.html', { waitUntil: 'load' });
   await p.waitForFunction(() => typeof DB !== 'undefined' && DB.latest > 100 && DB.draws && DB.draws[DB.latest], { timeout: 120000 });
   await p.waitForTimeout(800);
+  // 페이지 DB 1..latest 연속성 — 구멍이 있으면 이 페이지로는 검증 자료를 만들 수 없다(최대 30초 기다림). 독립 검증기라 data-guard 를 쓰지 않는다.
+  let dbHoles = [];
+  for (let t = 0; t < 75; t++) {
+    dbHoles = await p.evaluate(() => { const m = []; for (let i = 1; i <= DB.latest; i++) if (!DB.draws[i]) m.push(i); return m; });
+    if (!dbHoles.length) break;
+    await p.waitForTimeout(400);
+  }
+  if (dbHoles.length) throw new Error('[자료 구멍] check-rank 로또 페이지 DB 에 빠진 회차 ' + dbHoles.length + '개 (' + dbHoles.slice(0, 12).join(', ') + ') — 검증 자료로 쓸 수 없습니다');
   const out = await p.evaluate(({ rounds, combos }) => {
     if (typeof fitPop !== 'function' || typeof zOf !== 'function' || typeof popFeat !== 'function' || typeof weightsFor !== 'function' || typeof bumpDB !== 'function')
       return { error: 'index.html 에 fitPop/zOf/popFeat/weightsFor/bumpDB 가 없습니다' };

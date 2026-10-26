@@ -51,6 +51,7 @@
 import fs from 'fs';
 import path from 'path';
 import http from 'http';
+import { lottoApiWindow, assertLottoRows, assertPageDb } from './data-guard.mjs';
 import vm from 'vm';
 
 const arg=(k,d)=>{ const i=process.argv.indexOf(k); return i>0?process.argv[i+1]:d; };
@@ -141,11 +142,12 @@ async function getData(){
     try{
       const o=JSON.parse(fs.readFileSync(cache,'utf8'));
       if(o.pension&&o.pension.length&&o.lotto&&o.lotto.rows&&o.lotto.rows.length){
-        console.error('      데이터 캐시 사용: '+cache); return [o.pension,o.lotto];
+        assertLottoRows(o.lotto,'데이터 캐시'); console.error('      데이터 캐시 사용: '+cache); return [o.pension,o.lotto];
       }
     }catch(e){ console.error('      캐시 읽기 실패, 새로 받습니다: '+e.message); }
   }
   const [pension, lotto] = await Promise.all([getPension(), getLotto()]);
+  assertLottoRows(lotto,'동행복권 수집');   // 1..latest 연속성 — 구멍이 있으면 여기서 실패 (data-guard.mjs)
   if(cache){ try{ fs.writeFileSync(cache, JSON.stringify({at:new Date().toISOString(),pension,lotto})); }catch(e){} }
   return [pension, lotto];
 }
@@ -188,7 +190,7 @@ async function mockRoutes(ctx, pension, lotto){
     }
     if(u.includes('selectPstLt645InfoNew')){
       const c=+(u.match(/srchLtEpsd=(\d+)/)||[])[1];
-      let l=lotto.rows.filter(x=>+x.ltEpsd>=c-5 && +x.ltEpsd<=c+4);
+      let l=lottoApiWindow(lotto.rows,c);   // 실 API 처럼 하한(1회)에서 창을 위로 민다 (data-guard.mjs)
       if(!l.length) l=lotto.rows.slice(-10);
       return json({data:{list:l.slice().sort((a,b)=>b.ltEpsd-a.ltEpsd)}});
     }
@@ -207,6 +209,7 @@ async function extractLottoParams(pension, lotto, rounds){
       await p.goto(`http://127.0.0.1:${port}/index.html`,{waitUntil:'load'});
       await p.waitForFunction(()=>typeof DB!=='undefined'&&DB.latest>100&&DB.draws&&DB.draws[DB.latest],{timeout:120000});
       await p.waitForTimeout(1500);
+      await assertPageDb(p, lotto, 'rank-tiers');   // 페이지 DB 1..latest 연속·최신 일치 단언 (data-guard.mjs)
       const out=await p.evaluate(({rounds})=>{
         if(typeof fitPop!=='function'||typeof weightsFor!=='function'||typeof bumpDB!=='function') return {error:'index.html 에 fitPop/weightsFor/bumpDB 가 없습니다'};
         const reset=()=>{ try{ POPFIT=null; POPFIT_N=-1; }catch(e){} try{ WINSET=null; WINSET_N=-1; }catch(e){} };

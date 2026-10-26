@@ -47,6 +47,15 @@ jobs:
         with:
           ref: ${{ github.ref == 'refs/heads/main' && 'main' || github.ref }}
 
+      # 실명 등 금지 문자열이 추적 파일에 있으면 계산·커밋 전에 여기서 멈춘다. node 내장만 쓰므로 설치 없이 돈다.
+      # 금지어 목록은 저장소에 없다(공개 저장소라 목록 자체가 이름 노출). 사람이 등록한 Actions 시크릿 CHECK_NAMES_LIST(줄바꿈 구분)에서 읽는다.
+      # 시크릿이 없으면 경고만 내고 통과한다 — 없을 때 실패로 막으려면 저장소 변수 CHECK_NAMES_REQUIRE 를 1 로 둔다(소유자 결정).
+      - name: 이름 검사 (scripts/check-names.mjs)
+        env:
+          CHECK_NAMES_LIST: ${{ secrets.CHECK_NAMES_LIST }}
+          CHECK_NAMES_REQUIRE: ${{ vars.CHECK_NAMES_REQUIRE }}
+        run: node scripts/check-names.mjs
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -144,6 +153,30 @@ jobs:
         continue-on-error: true
         run: node scripts/fetch-history.mjs --cache /tmp/lab-data.json
 
+      # 매매 일지 — lotto-history.json 만으로 최근 50회 재현 + 다음 회차 제시(append-only). Playwright·외부 접속 없음.
+      - name: 매매 일지 (brief/trade-lotto.json)
+        id: trade
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node scripts/trade-ledger.mjs --root . --history lotto-history.json --out brief/trade-lotto.json 2> >(tee /tmp/trade.err >&2) || {
+            echo "::error title=trade-ledger 실패::$(tail -c 1800 /tmp/trade.err | tr -s '\r\n' '  ')"; exit 1; }
+
+      # 엔진 코드를 쓰지 않는 독립 재계산 + 누수·결정성 탐침 + append-only(HEAD 대조)
+      - name: 매매 일지 독립 검증
+        id: checktrade
+        if: steps.trade.outcome == 'success' && steps.trade.outputs.wrote == 'true'
+        continue-on-error: true
+        run: node scripts/check-trade.mjs --root . --file brief/trade-lotto.json --history lotto-history.json --prev-git HEAD
+
+      # 독립 검증이 거부한 일지는 커밋하지 않는다. 일지(journal.rows)는 append-only 이고 check-trade C10 은 HEAD 와만 비교하므로,
+      # 잘못 쓰인 일지가 한 번 커밋되면 다음 주에는 그 상태가 기준이 되어 통과하고 잘못이 영구히 굳는다.
+      # 그래서 검증이 실패하면 일지 파일만 HEAD 의 것으로 되돌린다(HEAD 에 없으면 — 첫 실행 — 지운다).
+      # 브리핑 등 다른 산출물은 그대로 커밋되고, 아래 «매매 일지 실패 표시» 가 잡을 실패로 표시한다.
+      - name: 매매 일지 검증 실패 시 되돌림
+        if: steps.checktrade.outcome == 'failure'
+        run: git checkout HEAD -- brief/trade-lotto.json 2>/dev/null || rm -f brief/trade-lotto.json
+
       # 결과 요약을 notice 주석으로 남긴다(공개 API 로 확인 가능). dev 브랜치 통합 테스트의 판정 근거.
       # 주석 하나에 3,500자 안쪽 — 넘치면 JSON 이 잘려 읽을 수 없으므로 넷으로 나누고(브리핑 · 검증 · 연금 · 원장),
       # 그래도 길면 더 짧은 모양으로 바꿔 싣는다. 스크립트는 따옴표 heredoc 이라 셸이 $·따옴표를 건드리지 않는다.
@@ -234,6 +267,10 @@ jobs:
         if: steps.validate.outcome == 'failure'
         run: echo "::error::검증 보드(validate.mjs) 가 실패했습니다 — 브리핑은 커밋됨" && exit 1
 
+      - name: 매매 일지 실패 표시
+        if: steps.trade.outcome == 'failure' || steps.checktrade.outcome == 'failure'
+        run: echo "::error::매매 일지(trade-ledger/check-trade) 단계가 실패했습니다 — 브리핑·검증은 커밋됨, 독립 검증이 실패한 일지는 HEAD 로 되돌려 커밋하지 않음" && exit 1
+
   deploy:
     needs: compute
     if: always() && github.ref == 'refs/heads/main'
@@ -249,6 +286,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
+
+      # deploy 는 compute 가 실패해도 도는 구조(always)라 여기서도 막아야 금지 문자열이 사이트로 나가지 않는다.
+      # 시크릿·변수는 compute 의 이름 검사와 같다.
+      - name: 이름 검사 (scripts/check-names.mjs)
+        env:
+          CHECK_NAMES_LIST: ${{ secrets.CHECK_NAMES_LIST }}
+          CHECK_NAMES_REQUIRE: ${{ vars.CHECK_NAMES_REQUIRE }}
+        run: node scripts/check-names.mjs
 
       # enablement: true → 저장소에 Pages 가 아직 켜져 있지 않으면 워크플로가 직접 켠다.
       - uses: actions/configure-pages@v5

@@ -2,7 +2,7 @@
   LOTTO LAB · 모바일 접속 서버
   ------------------------------------------------------------------
   이 PC에서 lotto-lab.html 을 HTTP 로 띄웁니다.
-  Tailscale 이 켜져 있으면 폰에서 http://<Tailscale IP>:8765 로 접속됩니다.
+  Tailscale 이 켜져 있으면 폰에서 http://<Tailscale IP>:8766 로 접속됩니다.
 
   왜 이게 필요한가
     - file:// 로 열면 브라우저가 외부 요청(동행복권 API)을 막습니다.
@@ -12,7 +12,7 @@
   실행:  powershell -ExecutionPolicy Bypass -File serve.ps1
         또는 [모바일서버-켜기.bat] 더블클릭
 #>
-param([int]$Port = 8765)
+param([int]$Port = 8766)
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Definition
