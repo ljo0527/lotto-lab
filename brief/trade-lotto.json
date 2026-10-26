@@ -2,7 +2,7 @@
   "v": 1,
   "kind": "trade-lotto",
   "ver": "trade-1",
-  "generated": "2026-10-26T01:41:57.709Z",
+  "generated": "2026-10-26T02:06:11.319Z",
   "source": {
     "file": "lotto-history.json",
     "latest": 1247,
@@ -125,8 +125,8 @@
     ]
   },
   "checks": {
-    "kept": 0,
-    "added": 1,
+    "kept": 1,
+    "added": 0,
     "graded": 0,
     "pendingMismatch": [],
     "regradeMismatch": []
