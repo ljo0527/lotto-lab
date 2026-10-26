@@ -483,8 +483,9 @@ async function runLotto(browser, base, pension, lotto, RC, T, NF){
     if(!same(a,b)) det.mismatch.push(R);
     if(sp[R] && !same(sp[R], page.params[R])) det.paramsMismatch.push(R);
   }
-  if(det.mismatch.length) warn('순위 추적 결정성(lotto)', `기존 행과 다시 계산한 순위가 다릅니다: ${det.mismatch.join(', ')} — 기존 행을 그대로 둡니다`);
-  if(det.paramsMismatch.length) warn('순위 추적 파라미터(lotto)', `기존 파라미터와 다시 추출한 값이 다릅니다: ${det.paramsMismatch.join(', ')} — 기존 값을 그대로 둡니다`);
+  // 자료가 바로잡혀서 생긴 불일치면 기존 행이 틀린 쪽이다 — 그 행과 파라미터를 지우면 다음 실행이 다시 계산한다(docs/bugfix-log.md 2026-10-26 «1247회 행»).
+  if(det.mismatch.length) warn('순위 추적 결정성(lotto)', `기존 행과 다시 계산한 순위가 다릅니다: ${det.mismatch.join(', ')} — 기존 행을 그대로 둡니다(자료가 바로잡힌 경우면 docs/bugfix-log.md 의 수리 절차)`);
+  if(det.paramsMismatch.length) warn('순위 추적 파라미터(lotto)', `기존 파라미터와 다시 추출한 값이 다릅니다: ${det.paramsMismatch.join(', ')} — 기존 값을 그대로 둡니다(자료가 바로잡힌 경우면 docs/bugfix-log.md 의 수리 절차)`);
 
   /* 최종 행·파라미터 */
   const rows=[], params={};
