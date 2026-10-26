@@ -345,7 +345,7 @@ lottotapa.com 은 이 네 회차 중 329회는 자료가 없고, 583·723·816�
 | `scripts/check-trade.mjs` | 매매 일지를 엔진 없이 독립 재계산해 대조(누수·결정성 탐침, 일지 HEAD 대조) |
 | `docs/trade-ledger.md` | 매매 일지 규격(모델·산출 구조·일지 규칙·지문 바이트 규격) |
 | `setup/triggers/*.md` | (레거시) Cowork 예약 작업 프롬프트 — GitHub Actions 로 대체됨, 끄는 것을 권장 |
-| `깃허브-올리기.bat` / `push.ps1` | 로컬에서 커밋·push (선택 사항 — Actions 가 스케줄로도 돈다) |
+| `깃허브-올리기.bat` / `push.ps1` | 로컬에서 점검·커밋·push (선택 사항 — Actions 가 스케줄로도 돈다). 엔진은 옆 폴더 `develop/tools/github-upload.ps1`(공개 전 점검 → Actions 자동 커밋과 합치기 → 푸시). `-Trial` 은 시험 가지에서 Actions 성공을 본 뒤 main |
 | `모바일서버-켜기.bat` / `serve.ps1` | GitHub 없이 로컬/Tailscale 로 볼 때 |
 | `데이터-갱신.bat` / `update.ps1` | (레거시) 로컬 전량 재수집 — 이제 Actions 가 매주 자동으로 함 |
 | `ROADMAP.md` | 다음 단계 제안 |
