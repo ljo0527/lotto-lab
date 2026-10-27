@@ -510,8 +510,10 @@ function lottoBuyCard(L, meta, honesty){
   }).join('');
   /* F~J 접이 제목 — 갈래(spread) 회차면 10줄 구조를 사실 그대로(못 지켰으면 실측값), 아니면 예전 «예비» 문구 */
   const spreadOn=!!(L.layout && L.layout.name==='spread');
+  /* 쓴 번호 45개·최대 겹침 ≤1 인데 겹침 1인 쌍이 15개가 아니면 A~E 가 한 번호를 3번 이상 쓴 주다(쌍 수 = Σ C(사용 횟수, 2), 합계 60칸) — index.html spNote 와 같은 규칙 */
+  const spNote=(x)=>(x.used===45 && x.maxOv<=1 && x.pairs!==15) ? ' · 한 번호를 3번 이상 씀(A~E)' : '';
   const spareTitle=!spreadOn ? '예비 F~J — A~E 중 마음에 안 드는 줄 대신'
-    : L.layout.degraded ? `F~J — A~E 와 함께 10줄 · 쓴 번호 ${L.layout.used}개 · 최대 겹침 ${L.layout.maxOv}개 (이번 주는 일부 조건 미달)`
+    : L.layout.degraded ? `F~J — A~E 와 함께 10줄 · 쓴 번호 ${L.layout.used}개 · 최대 겹침 ${L.layout.maxOv}개${spNote(L.layout)} (이번 주는 일부 조건 미달)`
     : 'F~J — A~E 와 같이 10줄을 사면 45개 번호를 모두 나눠 씀 · 어느 두 줄도 번호 2개 이상 겹치지 않음';
   const drawYmd=meta.lottoDrawYmd;
   const copyText=[`로또 6/45 제${L.target}회 (${mmdd(drawYmd)} ${wdOf(drawYmd)})`,
