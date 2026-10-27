@@ -1391,6 +1391,167 @@ function valPayoutGain(){
   return (rec && typeof rec.payoutGain==='number' && isFinite(rec.payoutGain)) ? { v:rec.payoutGain, key } : null;
 }
 
+/* ═══ 갈래(spread) 배치 — F~J 를 «10줄이 45개 번호를 나눠 쓰는» 꼴로 (LAYOUT_RULES, 1248회~) ═══════════
+   A~E(portfolioPick)는 그대로 두고, F~J 5줄만 새로 고른다. 목표 구조(A~J 10줄 전체):
+     · 1~45 를 모두 쓴다 · 어느 번호도 3번 이상 쓰지 않는다 · 어느 두 줄도 번호 2개 이상 겹치지 않는다 · 역대 1등 조합은 제외한다.
+   [왜 성립하나] A~E 에서 0번 쓴 번호 집합 U 는 F~J 에 정확히 한 번씩, 1번 쓴 번호 집합 S 에서는 30−|U| 개를 한 번씩 넣고,
+     2번 쓴 번호는 F~J 에 쓰지 않는다. F~J 끼리는 번호가 겹치지 않고, 한 F~J 줄 안의 S 번호들은 서로 다른 A~E 줄 출신이어야 한다
+     (줄 쌍 겹침 ≤1). 그러면 2번 쓰인 번호가 정확히 15개, 겹치는 줄 쌍도 정확히 15개다.
+   [목적] 위 구조를 지키는 배치 가운데 F~J 의 u=max(zOf(줄), zFloor) 합(인기 회피, A~E 와 같은 기준)이 작은 것.
+   [결정성] Math.random·Date·시간 예산을 쓰지 않는다. 반복 횟수는 고정, 난수는 mulberry32(회차 시드), 동점은 작은 번호·작은 index 순
+     (개선 폭이 eps 를 넘을 때만 받아들인다). 같은 입력이면 어느 기기에서나 같은 F~J 가 나온다.
+   [C1] LAYOUT_RULES 는 덧붙이기만 한다 — 과거 항목(opts 포함)을 고치면 이미 지난 회차의 F~J 가 달라진다.
+     from 보다 작은 회차는 layoutFor()=null → 옛 diversifyLegacy 10줄 그대로. 규격: docs/spread-layout.md */
+const LAYOUT_RULES = [
+  { from:1248, name:'spread', opts:{ restarts:40, kick:4, passes:60, eps:1e-9, seed:0x5eed } }
+];
+/* target(적용 대상 회차)에 맞는 배치 규칙 — «from<=target» 인 마지막 항목. 없으면 null(= 옛 diversifyLegacy). */
+function layoutFor(target){
+  let r=null;
+  for(const x of LAYOUT_RULES) if(x.from<=target) r=x;
+  return r;
+}
+/* 줄들의 구조 실측: used=쓴 서로 다른 번호 수, maxUse=한 번호의 최대 사용 횟수, maxOv=최대 쌍 겹침, pairs=겹침이 1인 쌍 수 */
+function layoutStats(rows){
+  const cnt=new Uint8Array(46), ms=rows.map(lineMask);
+  for(const c of rows) for(const n of c) cnt[n]++;
+  let used=0, maxUse=0;
+  for(let n=1;n<=45;n++){ if(cnt[n]) used++; if(cnt[n]>maxUse) maxUse=cnt[n]; }
+  let maxOv=0, pairs=0;
+  for(let i=0;i<ms.length;i++) for(let j=i+1;j<ms.length;j++){
+    const v=ovMask(ms[i],ms[j]); if(v>maxOv) maxOv=v; if(v===1) pairs++;
+  }
+  return { used, maxUse, maxOv, pairs };
+}
+/* out[0..4]=A~E(고정) 뒤에 F~J 5줄을 덧붙여 돌려준다. A~E 가 «6개 서로 다른 1..45 오름차순» 5줄이 아니면 null(호출쪽이 옛 규칙으로 채운다).
+   A~E 가 겹침 ≥2 이거나 어떤 번호를 3번 이상 썼으면 F~J 로 고칠 수 없다 — F~J 자체는 항상 구조를 지키므로
+   그 위반은 A~E 몫으로 남고, 호출쪽이 layoutStats 로 degraded 를 표시한다. */
+function spreadComplete(out, target, opts){
+  const o=Object.assign({ restarts:40, kick:4, passes:60, eps:1e-9, seed:0x5eed }, opts||{});
+  const A=out.slice(0,5);
+  const okRow=c=>Array.isArray(c) && c.length===6 && c.every((n,i)=>Number.isInteger(n) && n>=1 && n<=45 && (i===0 || n>c[i-1]));
+  if(A.length!==5 || !A.every(okRow)) return null;
+  const cnt=new Uint8Array(46), src=new Int8Array(46).fill(-1);
+  A.forEach((c,r)=>c.forEach(n=>{ cnt[n]++; src[n]=r; }));
+  const U=[], S=[];
+  for(let n=1;n<=45;n++){ if(cnt[n]===0) U.push(n); else if(cnt[n]===1) S.push(n); }
+  const k=30-U.length;                       // F~J 에 넣을 S 번호 수
+  if(k<0 || k>S.length) return null;
+  const zf=zFloorOf(), uc=new Map();
+  /* 줄 하나(오름차순 6개)의 u — 인기 회피 점수(낮을수록 좋다). 역대 1등 조합은 크게 벌점. 이 호출 안에서만 쓰는 캐시. */
+  const uOf=r=>{
+    const key=((((r[0]*46+r[1])*46+r[2])*46+r[3])*46+r[4])*46+r[5];
+    let v=uc.get(key);
+    if(v===undefined){
+      const z=zOf(r);
+      v=Math.max(z!=null && isFinite(z) ? z : 9, zf);
+      if(everWon(r)) v+=1000;
+      uc.set(key,v);
+    }
+    return v;
+  };
+  /* r 의 S 번호가 나온 A~E 줄들의 비트마스크(skip 위치는 뺀다) — 한 F~J 줄 안에서 같은 A~E 줄 출신이 둘이면 겹침 2 */
+  const srcBits=(r,skip)=>{ let m=0; for(let i=0;i<6;i++) if(i!==skip && cnt[r[i]]===1) m|=1<<src[r[i]]; return m; };
+  /* r 의 i 번째 칸을 y 로 바꾼 오름차순 줄 */
+  const withNum=(r,i,y)=>{
+    const a=r.slice(); a[i]=y; let p=i;
+    while(p>0 && a[p-1]>a[p]){ const t=a[p]; a[p]=a[p-1]; a[p-1]=t; p--; }
+    while(p<5 && a[p+1]<a[p]){ const t=a[p]; a[p]=a[p+1]; a[p+1]=t; p++; }
+    return a;
+  };
+  /* 시작 배치(탐욕): 안 쓸 S 번호 15−|D| 개를 고르게 흩어 정하고, 쓸 S 번호는 «출신 줄이 안 겹치는 줄 중 S 가 가장 적은 줄»에,
+     U 번호는 남은 칸에 오름차순으로 돌려 넣는다. S 한 줄 최대 5개(출신 5줄)라 항상 자리가 있다. */
+  const nun=S.length-k, drop=new Set();
+  for(let i=0;i<nun;i++) drop.add(Math.floor((i+0.5)*S.length/nun));
+  const rows0=[[],[],[],[],[]], mask0=[0,0,0,0,0], un0=[];
+  let bad=false;
+  S.forEach((n,idx)=>{
+    if(drop.has(idx)){ un0.push(n); return; }
+    let b=-1;
+    for(let r=0;r<5;r++){ if((mask0[r]>>src[n])&1) continue; if(b<0 || rows0[r].length<rows0[b].length) b=r; }
+    if(b<0){ bad=true; return; }
+    rows0[b].push(n); mask0[b]|=1<<src[n];
+  });
+  let ptr=0;
+  for(const n of U){ let t=0; while(rows0[ptr%5].length>=6 && t++<5) ptr++; rows0[ptr%5].push(n); ptr++; }
+  if(bad || rows0.some(r=>r.length!==6)) return null;
+  rows0.forEach(r=>r.sort((a,b)=>a-b));
+  const total=st=>st.u[0]+st.u[1]+st.u[2]+st.u[3]+st.u[4];
+  const clone=st=>({ rows:st.rows.map(r=>r.slice()), u:st.u.slice(), un:st.un.slice() });
+  const apply=(st,m)=>{
+    if(m.t===0){                                         // 두 F~J 줄 사이 번호 맞바꾸기
+      const x=st.rows[m.a][m.i], y=st.rows[m.b][m.j];
+      st.rows[m.a]=withNum(st.rows[m.a],m.i,y); st.rows[m.b]=withNum(st.rows[m.b],m.j,x);
+      st.u[m.a]=uOf(st.rows[m.a]); st.u[m.b]=uOf(st.rows[m.b]);
+    } else {                                             // 쓰는 S 번호 ↔ 안 쓰는 S 번호
+      const x=st.rows[m.r][m.i], y=st.un[m.q];
+      st.rows[m.r]=withNum(st.rows[m.r],m.i,y); st.u[m.r]=uOf(st.rows[m.r]);
+      st.un.splice(m.q,1);
+      let p=0; while(p<st.un.length && st.un[p]<x) p++;
+      st.un.splice(p,0,x);
+    }
+  };
+  /* 지역 탐색(최선 개선): 매 단계 모든 이동을 보고 u 합을 가장 줄이는 것 하나를 적용. 동점은 먼저 본 것(작은 줄·작은 칸). */
+  const climb=st=>{
+    for(let it=0; it<o.passes; it++){
+      const mk=st.rows.map(r=>r.map((_,i)=>srcBits(r,i)));
+      let bd=0, mv=null;
+      const take=(d,m)=>{ if(mv ? d<bd-o.eps : d<-o.eps){ bd=d; mv=m; } };
+      for(let a=0;a<5;a++) for(let b=a+1;b<5;b++){
+        const ra=st.rows[a], rb=st.rows[b], base=st.u[a]+st.u[b];
+        for(let i=0;i<6;i++) for(let j=0;j<6;j++){
+          const x=ra[i], y=rb[j];
+          if(cnt[y]===1 && ((mk[a][i]>>src[y])&1)) continue;
+          if(cnt[x]===1 && ((mk[b][j]>>src[x])&1)) continue;
+          take(uOf(withNum(ra,i,y))+uOf(withNum(rb,j,x))-base, {t:0,a,b,i,j});
+        }
+      }
+      for(let r=0;r<5;r++) for(let i=0;i<6;i++){
+        if(cnt[st.rows[r][i]]!==1) continue;
+        for(let q=0;q<st.un.length;q++){
+          const y=st.un[q];
+          if((mk[r][i]>>src[y])&1) continue;
+          take(uOf(withNum(st.rows[r],i,y))-st.u[r], {t:1,r,i,q});
+        }
+      }
+      if(!mv) break;
+      apply(st,mv);
+    }
+  };
+  /* 흔들기: 지킬 조건을 깨지 않는 이동을 무작위(시드 고정)로 몇 번 적용 */
+  const kickOnce=(st,rng)=>{
+    for(let t=0;t<40;t++){
+      if(rng()<0.6 || !st.un.length){
+        const a=Math.floor(rng()*5), b=(a+1+Math.floor(rng()*4))%5, i=Math.floor(rng()*6), j=Math.floor(rng()*6);
+        const x=st.rows[a][i], y=st.rows[b][j];
+        if(cnt[y]===1 && ((srcBits(st.rows[a],i)>>src[y])&1)) continue;
+        if(cnt[x]===1 && ((srcBits(st.rows[b],j)>>src[x])&1)) continue;
+        apply(st,{t:0,a,b,i,j}); return;
+      }
+      const r=Math.floor(rng()*5), i=Math.floor(rng()*6);
+      if(cnt[st.rows[r][i]]!==1) continue;
+      const q=Math.floor(rng()*st.un.length);
+      if((srcBits(st.rows[r],i)>>src[st.un[q]])&1) continue;
+      apply(st,{t:1,r,i,q}); return;
+    }
+  };
+  let best={ rows:rows0, u:rows0.map(uOf), un:un0 };
+  const uStart=total(best);
+  climb(best);
+  const rng=mulberry32((target*2654435761 ^ o.seed)>>>0);
+  for(let t=0;t<o.restarts;t++){
+    const cur=clone(best);
+    for(let g=0;g<o.kick;g++) kickOnce(cur,rng);
+    climb(cur);
+    if(total(cur)<total(best)-o.eps) best=cur;
+  }
+  const fin=best.rows.map((r,i)=>({ r, u:best.u[i] }));
+  const cmpRow=(a,b)=>{ for(let i=0;i<6;i++) if(a[i]!==b[i]) return a[i]-b[i]; return 0; };
+  fin.sort((x,y)=>(x.u-y.u) || cmpRow(x.r,y.r));
+  for(const x of fin) out.push(x.r);
+  return { u:total(best)/5, uStart:uStart/5, evals:uc.size };
+}
+
 /* ═══ 이번주 추천 조합 ═══
    회차 번호를 시드로 고정 생성한다. 규칙:
      · 전략 = 최소 분배 (실증된 유일한 신호)
@@ -1398,9 +1559,11 @@ function valPayoutGain(){
      · 과거 1등 조합과 중복 제외
      · 후보 3,000개를 만든 뒤 분배지수 하위에서 선택
        - portfolioOptsFor(target) 이 opts 를 주는 회차부터: A~E = portfolioPick(그 회차의 opts, 두 줄 겹침 ≤maxOv), F~J = 옛 규칙 예비
+         · 단 layoutFor(target) 이 spread 인 회차(1248~)부터 F~J = spreadComplete(A~J 10줄이 45개 번호를 나눠 쓰고 어느 두 줄도 2개 이상 겹치지 않음)
        - null 을 주는(= PORTFOLIO_RULES[0].from 이전) 회차: 옛 규칙(diversifyLegacy) 10줄 — 과거 추천을 바이트 단위로 재현한다
    같은 회차면 몇 번을 새로고침해도 같은 조합이 나온다.
-   반환 {round, combos(10), tries, portfolio:{u,uStar,pAny,degraded,opts,…}|null, rule:'portfolio'|'legacy'}
+   반환 {round, combos(10), tries, portfolio:{u,uStar,pAny,degraded,opts,…}|null, rule:'portfolio'|'legacy',
+         layout:{name:'spread'|'legacy', from, used, maxOv, pairs, degraded}}  — layout 은 10줄의 구조 실측(규칙표 LAYOUT_RULES)
    force('portfolio'|'legacy') 는 진단·테스트용 — 캐시를 쓰지도 덮지도 않는다. */
 let WEEKLY=null, WEEKLY_R=0, WEEKLY_REV=-1;
 function weeklyPicks(force){
@@ -1441,7 +1604,7 @@ function weeklyPicks(force){
        과거 회차에서도 최신 규칙(PORTFOLIO)으로 시험해볼 수 있도록 그대로 둔다. */
     const ropts = portfolioOptsFor(target);
     const rule = useForce ? force : (ropts ? 'portfolio' : 'legacy');
-    let out, portfolio=null;
+    let out, portfolio=null, lrule=null, spreadFail=false;
     if(rule==='portfolio'){
       /* A~E: 인기도(u)를 거의 잃지 않는 범위에서 두 줄 겹침 ≤maxOv 로 고른다 (D1 §4).
          F~J: 옛 규칙으로 고른 예비 — A~E 와의 겹침·번호 사용 횟수까지 이어서 따진다. */
@@ -1449,7 +1612,12 @@ function weeklyPicks(force){
       const prev=DB.draws[DB.latest], prevN=prev?prev.n:null;
       const A=portfolioPick(scored.map(x=>({c:x.c, z:zOf(x.c)})), {...opts, prevN});
       out=A.picks.map(x=>x.c);
-      diversifyLegacy(pool, out, 10);
+      /* 갈래 배치(LAYOUT_RULES): spread 회차부터 F~J 는 10줄이 45개 번호를 나눠 쓰게 고른다. A~E 는 위에서 정해졌고 건드리지 않는다.
+         그 밖(null)은 옛 예비 규칙. spreadComplete 가 null 이면(A~E 가 5줄이 아님) 옛 규칙으로 채우고 degraded 로 남긴다. */
+      lrule=layoutFor(target);
+      if(lrule && lrule.name==='spread'){
+        if(!spreadComplete(out, target, lrule.opts)){ diversifyLegacy(pool, out, 10); spreadFail=true; }
+      } else diversifyLegacy(pool, out, 10);
       portfolio={ u:A.u, u1:A.u1, uStar:A.uStar, cap:A.cap, pAny:A.pAny, degraded:A.degraded,
                   maxOv:A.maxOv, passes:A.passes,
                   carry: prevN ? A.picks.reduce((s,x)=>s+carryOf(x.c,prevN),0)/Math.max(1,A.picks.length) : null,
@@ -1464,7 +1632,12 @@ function weeklyPicks(force){
       log('경고 · 후보 생성이 시간 예산에 걸렸습니다('+pool.length+'개). 다른 기기와 추천이 달라질 수 있습니다');
     if(portfolio && portfolio.degraded)
       log('경고 · '+target+'회 A~E 겹침 제한(≤'+portfolio.opts.maxOv+')을 지키지 못해 ≤'+portfolio.maxOv+' 로 완화했습니다');
-    const res={ round:target, combos:out, tries, portfolio, rule };
+    const isSp=!!(lrule && lrule.name==='spread'), lst=layoutStats(out);
+    const layout={ name:isSp?'spread':'legacy', from:isSp?lrule.from:null, used:lst.used, maxOv:lst.maxOv, pairs:lst.pairs,
+                   degraded:isSp ? (spreadFail || lst.used!==45 || lst.maxUse>2 || lst.maxOv>1) : false };
+    if(layout.degraded)
+      log('경고 · '+target+'회 10줄이 갈래 구조(45개 번호·겹침 ≤1)를 다 지키지 못했습니다(번호 '+lst.used+'개 · 최대 겹침 '+lst.maxOv+')');
+    const res={ round:target, combos:out, tries, portfolio, rule, layout };
     if(useForce) return res;
     WEEKLY_R=target; WEEKLY_REV=DB.rev;
     return (WEEKLY=res);
@@ -1481,6 +1654,11 @@ function renderWeekly(){
   nd.setDate(nd.getDate()+7);
   const PF = W.rule==='portfolio' ? W.portfolio : null;
   const buy=W.combos.slice(0,5), spare=W.combos.slice(5);
+  /* F~J 이름표 — 갈래(spread) 회차면 10줄의 구조를 사실 그대로(안 지켜졌으면 실측값으로), 아니면 예전 «예비 F~J» */
+  const SP = (W.layout && W.layout.name==='spread') ? W.layout : null;
+  const spareLabel = !SP ? '예비 F~J'
+    : SP.degraded ? 'F~J — A~E 와 함께 10줄 · 쓴 번호 '+SP.used+'개 · 최대 겹침 '+SP.maxOv+'개 (이번 주는 일부 조건 미달)'
+    : 'F~J — A~E 와 같이 10줄을 사면 45개 번호를 모두 나눠 씀 · 어느 두 줄도 번호 2개 이상 겹치지 않음';
   /* validation.json 보정값은 화면에 쓰지 않지만 한 번 받아 둔다 — CI(weekly-brief.mjs)가 인자 없이 부르는 lottoEVctx() 가 이 값(VAL_CALIB)을 읽는다. 카드를 다시 그리지는 않는다. */
   if(!VAL_CALIB_ST) loadValCalib();
   /* ── 이번 주 5게임의 수치: 1등 확률(규칙 사실)만 둔다. 기대 수령·한 장이라도 당첨 % 같은 이론값은 화면에서 뺐다(trade-1). ── */
@@ -1513,7 +1691,7 @@ function renderWeekly(){
       return '<div class="sheet"><div class="hd"><span>이번 주 용지 · A~E 5게임</span><span>5,000원</span></div>'+
         buy.map(line).join('')+'</div>'+
         stats+flag+
-        (spare.length?'<div class="mono" style="font-size:10.5px;letter-spacing:.1em;color:var(--ink-60);padding:2px 0 4px">예비 F~J</div>'+
+        (spare.length?'<div class="mono" style="font-size:10.5px;letter-spacing:.1em;color:var(--ink-60);padding:2px 0 4px">'+spareLabel+'</div>'+
           spare.map((c,i)=>line(c,i+5)).join(''):'');
     })()+
     '<div class="verdict" style="margin-bottom:0"><b>이 조합이 나온 근거</b><br>'+
@@ -1522,7 +1700,10 @@ function renderWeekly(){
     (W.rule==='portfolio'
       ? '· 그중 <b>분배 인원 모델 점수가 낮은</b> 상위 '+nf(PORTFOLIO.N)+'개에서, <b>두 줄끼리 겹치는 번호가 '+(PF?PF.maxOv:PORTFOLIO.maxOv)+'개 이하</b>가 되도록 A~E 를 골랐습니다. '+
         '점수를 거의 잃지 않는 범위(평균 z +'+PORTFOLIO.dz+' 이내)에서 겹침을 더 줄였습니다<br>'+
-        '· <b>A~E 다섯 줄이 실제로 살 용지</b>이고, F~J 는 예비(옛 규칙으로 고른 대체 후보)입니다<br>'
+        (SP
+          ? '· <b>A~E 다섯 줄이 실제로 살 용지</b>입니다. F~J 는 A~E 를 그대로 둔 채, 10줄을 함께 사면 <b>1~45 의 모든 번호를 나눠 쓰고 어느 두 줄도 번호 2개 이상 겹치지 않도록</b> 고른 5줄입니다 — F~J 끼리는 번호가 겹치지 않고, 그 안에서 분배 인원 모델 점수가 낮은 쪽을 골랐습니다'+
+            (SP.degraded?' (<b>이번 주는 일부를 지키지 못했습니다</b> · 쓴 번호 '+SP.used+'개 · 최대 겹침 '+SP.maxOv+'개)':'')+'<br>'
+          : '· <b>A~E 다섯 줄이 실제로 살 용지</b>이고, F~J 는 예비(옛 규칙으로 고른 대체 후보)입니다<br>')
       : '· 그중 <b>분배 인원 모델 점수가 가장 낮은</b> 것들을, 서로 겹치는 번호가 적도록 <b>10줄</b> 골랐습니다<br>'+
         '· <b>A~E 다섯 줄이 실제로 살 용지</b>이고, F~J 는 예비입니다 — 앞이 마음에 안 들면 다음으로 넘어가세요<br>')+
     (F.agree!=null?'· 모델 교차검증 상관 '+F.agree.toFixed(3)+' (판매 기준 × 구매방식 기준)<br>':'')+
