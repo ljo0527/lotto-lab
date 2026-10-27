@@ -239,7 +239,7 @@ label.fld{display:flex;flex-direction:column;gap:4px;font-family:"Space Mono",mo
 <!-- ══════════ 대시보드 ══════════ -->
 <section class="panel on" id="p-dash">
   <h2>이번 주 추천 조합</h2>
-  <p class="note">매 회차 자동으로 다시 계산됩니다. <b>직전 회차까지의 전체 데이터</b>를 반영하며, 같은 회차 안에서는 항상 같은 조합입니다. <b>A~E 5줄(5,000원)</b>이 실제로 살 용지이고, <b>F~J</b>는 예비입니다.</p>
+  <p class="note">매 회차 자동으로 다시 계산됩니다. <b>직전 회차까지의 전체 데이터</b>를 반영하며, 같은 회차 안에서는 항상 같은 조합입니다. <b>A~E 5줄(5,000원)</b>이 실제로 살 용지이고, <span id="dashSpareNote"><b>F~J</b>는 예비입니다.</span></p>
   <div class="card" id="weeklyCard"><span class="spin"></span></div>
   <div class="row" style="padding-top:10px">
     <button class="btn ghost" id="weeklySheet">마크시트 인쇄용 열기</button>
@@ -1397,6 +1397,7 @@ function valPayoutGain(){
    [왜 성립하나] A~E 에서 0번 쓴 번호 집합 U 는 F~J 에 정확히 한 번씩, 1번 쓴 번호 집합 S 에서는 30−|U| 개를 한 번씩 넣고,
      2번 쓴 번호는 F~J 에 쓰지 않는다. F~J 끼리는 번호가 겹치지 않고, 한 F~J 줄 안의 S 번호들은 서로 다른 A~E 줄 출신이어야 한다
      (줄 쌍 겹침 ≤1). 그러면 2번 쓰인 번호가 정확히 15개, 겹치는 줄 쌍도 정확히 15개다.
+   [자리 보장] 한 A~E 줄에서 F~J 로 쓰는 S 번호는 5개 이하로 맞춘다(F~J 가 5줄이라 6개면 넣을 줄이 없다) — spreadComplete 의 «자리 보장» 참고.
    [목적] 위 구조를 지키는 배치 가운데 F~J 의 u=max(zOf(줄), zFloor) 합(인기 회피, A~E 와 같은 기준)이 작은 것.
    [결정성] 시계·시간 예산·내장 난수를 쓰지 않는다. 반복 횟수는 고정, 난수는 mulberry32(회차 시드), 동점은 작은 번호·작은 index 순
      (개선 폭이 eps 를 넘을 때만 받아들인다). 같은 입력이면 어느 기기에서나 같은 F~J 가 나온다.
@@ -1427,7 +1428,10 @@ function layoutStats(rows){
    A~E 가 겹침 ≥2 이거나 어떤 번호를 3번 이상 썼으면 F~J 로 고칠 수 없다 — F~J 자체는 항상 구조를 지키므로
    그 위반은 A~E 몫으로 남고, 호출쪽이 layoutStats 로 degraded 를 표시한다. */
 function spreadComplete(out, target, opts){
-  const o=Object.assign({ restarts:40, kick:4, passes:60, eps:1e-9, seed:0x5eed }, opts||{});
+  /* 탐색 상수는 LAYOUT_RULES 항목(opts)에만 둔다(상수 한 곳, 규칙 11). 함수 안 기본값으로 메우지 않는다 — 항목이 일부만 갖고 있으면
+     과거 회차 결과가 조용히 달라지기 때문이다. 빠졌으면 null(호출쪽이 옛 규칙으로 채우고 degraded 로 남긴다). */
+  const o=opts;
+  if(!o || !['restarts','kick','passes','eps','seed'].every(k=>typeof o[k]==='number' && isFinite(o[k]))) return null;
   const A=out.slice(0,5);
   const okRow=c=>Array.isArray(c) && c.length===6 && c.every((n,i)=>Number.isInteger(n) && n>=1 && n<=45 && (i===0 || n>c[i-1]));
   if(A.length!==5 || !A.every(okRow)) return null;
@@ -1459,10 +1463,29 @@ function spreadComplete(out, target, opts){
     while(p<5 && a[p+1]<a[p]){ const t=a[p]; a[p]=a[p+1]; a[p+1]=t; p++; }
     return a;
   };
-  /* 시작 배치(탐욕): 안 쓸 S 번호 15−|D| 개를 고르게 흩어 정하고, 쓸 S 번호는 «출신 줄이 안 겹치는 줄 중 S 가 가장 적은 줄»에,
-     U 번호는 남은 칸에 오름차순으로 돌려 넣는다. S 한 줄 최대 5개(출신 5줄)라 항상 자리가 있다. */
+  /* 시작 배치(탐욕): 안 쓸 S 번호 15−|D| 개를 고르게 흩어 정하고(위 보정 포함), 쓸 S 번호는 «출신 줄이 안 겹치는 줄 중 S 가 가장 적은 줄»에,
+     U 번호는 남은 칸에 오름차순으로 돌려 넣는다. 출신 줄마다 쓰는 S 가 5개 이하라 항상 자리가 있다. */
   const nun=S.length-k, drop=new Set();
   for(let i=0;i<nun;i++) drop.add(Math.floor((i+0.5)*S.length/nun));
+  /* [자리 보장] 한 A~E 줄에서 F~J 로 쓰는 S 번호는 5개 이하여야 한다(F~J 는 5줄이고, 같은 출신은 한 줄에 하나뿐이다).
+     위 «고르게 흩어 정하기»가 어느 줄의 S 6개를 하나도 안 고르면(그 줄 번호 6개가 모두 S 이고 정렬된 S 의 짝수 자리에 놓인 경우) 6번째 번호를 넣을 줄이 없다.
+     그때는 그 줄의 가장 작은 S 번호를 안 쓰는 쪽으로 돌리고, 안 쓰는 번호 수(nun)를 지키려고 «쓰는 수 keep 이 4 이하이면서 안 쓰는 번호가 있는 출신 줄 가운데
+     keep 이 가장 작은 줄»(동점은 작은 줄)에서 가장 작은 안 쓰는 S 번호 하나를 되살린다. 결정적이고, 되살리는 줄의 keep 은 5 이하로만 늘어난다.
+     정상 A~E(겹침 ≤1)에서는 안 쓰는 번호가 15−|D|개(=쓰는 S 수)라 항상 끝난다. 이 보정은 예전에 null 을 내던 경우에만 일어나서 그 밖의 결과는 바뀌지 않는다. */
+  const keep=new Int8Array(5), sc=new Int8Array(5);   // 출신 줄별 «쓰기로 한 S 번호 수» / «S 번호 수»
+  S.forEach((n,idx)=>{ sc[src[n]]++; if(!drop.has(idx)) keep[src[n]]++; });
+  for(let g=0; g<5; g++){
+    let full=-1;
+    for(let r=0;r<5;r++) if(keep[r]>5){ full=r; break; }
+    if(full<0) break;
+    let from=-1;
+    for(let r=0;r<5;r++){ if(keep[r]>4 || sc[r]-keep[r]<1) continue; if(from<0 || keep[r]<keep[from]) from=r; }
+    const a=S.findIndex((n,idx)=>src[n]===full && !drop.has(idx));
+    const b=from<0 ? -1 : S.findIndex((n,idx)=>src[n]===from && drop.has(idx));
+    if(a<0 || b<0) return null;
+    drop.delete(b); drop.add(a); keep[full]--; keep[from]++;
+  }
+  if(keep.some(v=>v>5)) return null;
   const rows0=[[],[],[],[],[]], mask0=[0,0,0,0,0], un0=[];
   let bad=false;
   S.forEach((n,idx)=>{
@@ -1633,10 +1656,12 @@ function weeklyPicks(force){
     if(portfolio && portfolio.degraded)
       log('경고 · '+target+'회 A~E 겹침 제한(≤'+portfolio.opts.maxOv+')을 지키지 못해 ≤'+portfolio.maxOv+' 로 완화했습니다');
     const isSp=!!(lrule && lrule.name==='spread'), lst=layoutStats(out);
+    /* F~J 의 «역대 1등 제외»는 탐색 벌점(+1000)이라 하드 제약이 아니다 — 끝내 못 벗어난 줄이 있으면 degraded 로 드러낸다. */
+    const wonRow = isSp && out.slice(5).some(c=>everWon(c));
     const layout={ name:isSp?'spread':'legacy', from:isSp?lrule.from:null, used:lst.used, maxOv:lst.maxOv, pairs:lst.pairs,
-                   degraded:isSp ? (spreadFail || lst.used!==45 || lst.maxUse>2 || lst.maxOv>1) : false };
+                   degraded:isSp ? (spreadFail || wonRow || lst.used!==45 || lst.maxUse>2 || lst.maxOv>1) : false };
     if(layout.degraded)
-      log('경고 · '+target+'회 10줄이 갈래 구조(45개 번호·겹침 ≤1)를 다 지키지 못했습니다(번호 '+lst.used+'개 · 최대 겹침 '+lst.maxOv+')');
+      log('경고 · '+target+'회 10줄이 갈래 구조(45개 번호·겹침 ≤1·역대 1등 제외)를 다 지키지 못했습니다(번호 '+lst.used+'개 · 최대 겹침 '+lst.maxOv+(wonRow?' · F~J 에 역대 1등 조합':'')+')');
     const res={ round:target, combos:out, tries, portfolio, rule, layout };
     if(useForce) return res;
     WEEKLY_R=target; WEEKLY_REV=DB.rev;
@@ -1656,9 +1681,14 @@ function renderWeekly(){
   const buy=W.combos.slice(0,5), spare=W.combos.slice(5);
   /* F~J 이름표 — 갈래(spread) 회차면 10줄의 구조를 사실 그대로(안 지켜졌으면 실측값으로), 아니면 예전 «예비 F~J» */
   const SP = (W.layout && W.layout.name==='spread') ? W.layout : null;
+  /* 쓴 번호 45개·최대 겹침 ≤1 인데 겹침 1인 쌍이 15개가 아니면, A~E 가 한 번호를 3번 이상 쓴 주다(쌍 수 = Σ C(사용 횟수, 2), 합계 60칸) — 숫자만으로는 안 보여 덧붙인다 */
+  const spNote = x => (x.used===45 && x.maxOv<=1 && x.pairs!==15) ? ' · 한 번호를 3번 이상 씀(A~E)' : '';
   const spareLabel = !SP ? '예비 F~J'
-    : SP.degraded ? 'F~J — A~E 와 함께 10줄 · 쓴 번호 '+SP.used+'개 · 최대 겹침 '+SP.maxOv+'개 (이번 주는 일부 조건 미달)'
+    : SP.degraded ? 'F~J — A~E 와 함께 10줄 · 쓴 번호 '+SP.used+'개 · 최대 겹침 '+SP.maxOv+'개'+spNote(SP)+' (이번 주는 일부 조건 미달)'
     : 'F~J — A~E 와 같이 10줄을 사면 45개 번호를 모두 나눠 씀 · 어느 두 줄도 번호 2개 이상 겹치지 않음';
+  /* 대시보드 고정 안내문의 F~J 부분 — 갈래 회차에서는 «예비» 가 아니라 10줄의 나머지 5줄이다(legacy 회차는 예전 문구 그대로) */
+  const dashSpareNote=$('#dashSpareNote');
+  if(dashSpareNote) dashSpareNote.innerHTML = SP ? '<b>F~J</b>는 A~E 와 함께 10줄로 45개 번호를 나눠 쓰는 나머지 5줄입니다.' : '<b>F~J</b>는 예비입니다.';
   /* validation.json 보정값은 화면에 쓰지 않지만 한 번 받아 둔다 — CI(weekly-brief.mjs)가 인자 없이 부르는 lottoEVctx() 가 이 값(VAL_CALIB)을 읽는다. 카드를 다시 그리지는 않는다. */
   if(!VAL_CALIB_ST) loadValCalib();
   /* ── 이번 주 5게임의 수치: 1등 확률(규칙 사실)만 둔다. 기대 수령·한 장이라도 당첨 % 같은 이론값은 화면에서 뺐다(trade-1). ── */
@@ -1695,14 +1725,14 @@ function renderWeekly(){
           spare.map((c,i)=>line(c,i+5)).join(''):'');
     })()+
     '<div class="verdict" style="margin-bottom:0"><b>이 조합이 나온 근거</b><br>'+
-    '· 후보 '+nf(W.tries)+'개를 만들어 합계 100~175 / 홀짝 2~4 / 연속 2쌍 이하 / 한 구간 3개 이하 필터를 통과한 것만 남겼습니다<br>'+
+    '· '+(SP?'A~E 는 ':'')+'후보 '+nf(W.tries)+'개를 만들어 합계 100~175 / 홀짝 2~4 / 연속 2쌍 이하 / 한 구간 3개 이하 필터를 통과한 것만 남겼습니다<br>'+
     '· 과거 '+DB.latest+'회 1등 조합과 겹치는 것은 제외했습니다<br>'+
     (W.rule==='portfolio'
       ? '· 그중 <b>분배 인원 모델 점수가 낮은</b> 상위 '+nf(PORTFOLIO.N)+'개에서, <b>두 줄끼리 겹치는 번호가 '+(PF?PF.maxOv:PORTFOLIO.maxOv)+'개 이하</b>가 되도록 A~E 를 골랐습니다. '+
         '점수를 거의 잃지 않는 범위(평균 z +'+PORTFOLIO.dz+' 이내)에서 겹침을 더 줄였습니다<br>'+
         (SP
-          ? '· <b>A~E 다섯 줄이 실제로 살 용지</b>입니다. F~J 는 A~E 를 그대로 둔 채, 10줄을 함께 사면 <b>1~45 의 모든 번호를 나눠 쓰고 어느 두 줄도 번호 2개 이상 겹치지 않도록</b> 고른 5줄입니다 — F~J 끼리는 번호가 겹치지 않고, 그 안에서 분배 인원 모델 점수가 낮은 쪽을 골랐습니다'+
-            (SP.degraded?' (<b>이번 주는 일부를 지키지 못했습니다</b> · 쓴 번호 '+SP.used+'개 · 최대 겹침 '+SP.maxOv+'개)':'')+'<br>'
+          ? '· <b>A~E 다섯 줄이 실제로 살 용지</b>입니다. F~J 는 A~E 를 그대로 둔 채, 10줄을 함께 사면 <b>1~45 의 모든 번호를 나눠 쓰고 어느 두 줄도 번호 2개 이상 겹치지 않도록</b> 고른 5줄입니다 — F~J 끼리는 번호가 겹치지 않고, 그 안에서 분배 인원 모델 점수가 낮은 쪽을 골랐습니다. <b>F~J 는 위 합계·홀짝·연속·구간 필터를 거치지 않았습니다</b>(이 구조를 우선했습니다)'+
+            (SP.degraded?' (<b>이번 주는 일부를 지키지 못했습니다</b> · 쓴 번호 '+SP.used+'개 · 최대 겹침 '+SP.maxOv+'개'+spNote(SP)+')':'')+'<br>'
           : '· <b>A~E 다섯 줄이 실제로 살 용지</b>이고, F~J 는 예비(옛 규칙으로 고른 대체 후보)입니다<br>')
       : '· 그중 <b>분배 인원 모델 점수가 가장 낮은</b> 것들을, 서로 겹치는 번호가 적도록 <b>10줄</b> 골랐습니다<br>'+
         '· <b>A~E 다섯 줄이 실제로 살 용지</b>이고, F~J 는 예비입니다 — 앞이 마음에 안 들면 다음으로 넘어가세요<br>')+
