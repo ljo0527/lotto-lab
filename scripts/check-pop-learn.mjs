@@ -347,19 +347,36 @@ function checkRecon(J, H, PR, M, st) {
 }
 
 /* ───────── C3 z 두 구현 대조 (표본 3회차, 상대 1e-9) ───────── */
-function checkZ(J, H, PR, M, st) {
-  const ts = []; for (let t = CF.FIRST; t <= H.latest + 1; t++) if (PR.P[t] && t <= H.latest) ts.push(t);
+/* check-rank.mjs 의 zMaker 를 «소스 텍스트로만» 꺼내 격리 컨텍스트에서 실행한다(가져오기 아님). 꺼내지 못하면 경고만 — 그 파일이 고쳐졌다는 뜻이라 사람이 본다. */
+function loadRankZMaker(root) {
+  const p = path.join(path.resolve(root), 'scripts', 'check-rank.mjs');
+  if (!fs.existsSync(p)) return null;
+  const src = fs.readFileSync(p, 'utf8').split(String.fromCharCode(13)).join(''), at = src.indexOf('function zMaker(');
+  if (at < 0) return null;
+  let i = src.indexOf('{', at), depth = 0, j = i;
+  for (; j < src.length; j++) { if (src[j] === '{') depth++; else if (src[j] === '}') { depth--; if (depth === 0) break; } }
+  if (depth !== 0) return null;
+  try { return vm.runInNewContext(src.slice(at, j + 1) + ';zMaker', { Float64Array, Math, Array }, { timeout: 2000 }); } catch { return null; }
+}
+function checkZ(J, H, PR, M, opt) {
+  const ts = []; for (let t = CF.FIRST; t <= H.latest; t++) if (PR.P[t]) ts.push(t);
   if (ts.length < 3) { note('표본 회차가 3개 미만이라 건너뜀'); return; }
   const pick = [ts[0], ts[Math.floor(ts.length / 2)], ts[ts.length - 1]];
-  let worst = 0;
+  const zm = loadRankZMaker(opt.root);
+  if (!zm) wrn('scripts/check-rank.mjs 에서 zMaker 를 꺼내지 못해 그쪽과의 대조를 건너뜀(파일이 바뀌었는지 확인)');
+  let worst = 0, worstRank = 0;
   for (const t of pick) {
     const a = zDirect(PR.P[t], H.D[t].n), b = zByTable(PR.P[t], H.D[t].n);
     const rel = Math.abs(a - b) / Math.max(Math.abs(b), 1e-12); worst = Math.max(worst, rel);
     if (rel > 1e-9) err(`z(${t}회) 직접식 ${a} ↔ 특징 코드 표 ${b} 상대차 ${rel.toExponential(2)} > 1e-9`);
+    if (zm) {
+      const c = zm(PR.P[t])(featCode(H.D[t].n)), r2 = Math.abs(a - c) / Math.max(Math.abs(c), 1e-12); worstRank = Math.max(worstRank, r2);
+      if (!(r2 <= 1e-9)) err(`z(${t}회) 직접식 ${a} ↔ check-rank zMaker ${c} 상대차 ${r2.toExponential(2)} > 1e-9`);
+    }
     const rr = (J.recon && J.recon.recent || []).find((x) => x.t === t);
     if (rr && !near(rr.z, a, 2e-10, 1e-9)) err(`z(${t}회) 장부 값 ${rr.z} ↔ 재계산 ${a}`);
   }
-  note(`z 직접식 ↔ 특징 코드 표(check-rank zMaker 방식): 표본 ${pick.join(',')}회 최대 상대차 ${worst.toExponential(2)}`);
+  note(`z 직접식 ↔ 특징 코드 표: 표본 ${pick.join(',')}회 최대 상대차 ${worst.toExponential(2)}${zm ? ` · ↔ check-rank zMaker ${worstRank.toExponential(2)}` : ''}`);
 }
 
 /* ───────── C0 구조·규칙표·크기 ───────── */
@@ -391,7 +408,7 @@ function checkInput(J, H, PR) {
   const S = J.source || {};
   const dg = digestOf(H.D, H.latest);
   if (S.digest !== dg) err(`source.digest ${S.digest} ≠ 재계산 ${dg}`);
-  if (S.file !== 'lotto-history.json' && typeof S.file !== 'string') err('source.file 없음');
+  if (typeof S.file !== 'string') err('source.file 없음');
   const a = H.D[H.latest];
   const bad = []; if (!(a.sales > 0)) bad.push('sales'); if (!(a.w[3] > 0)) bad.push('w4'); if (!(a.w[4] > 0)) bad.push('w5');
   if (bad.length) err(`최신 ${H.latest}회 필드 이상(${bad.join(',')}) — 이 상태로 장부가 쓰이면 안 됨`);
@@ -642,7 +659,7 @@ function main() {
   let M = null; if (usable) M = makeModel(H, PR);
   const need = (id, title, fn) => { if (!usable) { skipCheck(id, title, '이력·파라미터 문제 또는 구조 실패로 생략'); return; } runCheck(id, title, opt, fn); };
   need('C2', '돌아보기 재계산', () => checkRecon(J, H, PR, M, st));
-  need('C3', 'z 두 구현 대조', () => checkZ(J, H, PR, M, st));
+  need('C3', 'z 두 구현 대조', () => checkZ(J, H, PR, M, opt));
   need('C4', '일지·얼린 파라미터', () => checkJournal(J, H, PR, M));
   need('C5', '채점', () => checkGrade(J, H, M));
   need('C6', '관문', () => checkGate(J));
