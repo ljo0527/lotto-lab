@@ -28,9 +28,9 @@
      점수 = (ln 예측 − ln m45)²  (로그 배수 제곱오차). 후보−base 가 음수면 후보가 낫다.
 
    일지(매매 일지·규칙 15 와 같은 틀)
-     pending(추첨 전, 얼린 파라미터) → done(추첨 뒤, 당첨번호의 모형별 예측 배수와 관측 m45·m123·mp).
+     pending(추첨 전, 얼린 파라미터) → done(추첨 뒤, 채점에 쓴 원자료 src 와 당첨번호의 모형별 예측 배수·관측 m45·m123·mp).
      J1 채점(마감 추첨일 11:00Z 이후에 만든 행은 late) · J2 빠진 주는 missed(소급 없음) · J3 latest+1 제시 · J4 동결(다시 계산해 다르면 ::warning, 처음 값 유지)
-     J5 재채점 대조 · J6 불변(행 삭제·재정렬 없음, from 고정) · 역행 가드 · 원자적 쓰기 · 1MB 확인.
+     J5 재채점 대조(얼린 src 로 다시 채점한 값 ↔ 행, 얼린 src ↔ 지금 이력 — 이력이 사후 정정돼도 경고만) · J6 불변(행 삭제·재정렬 없음, from 고정) · 역행 가드 · 원자적 쓰기 · 1MB 확인.
    관문: done&&!late ≥ GATE_MIN 이고 후보−base 부호 뒤집기 순열 p ≤ α/후보 수 이고 돌아보면(사후) 재현도 같은 방향이면 «채택 조건 충족» 상태 + ::notice.
          추천 코드를 자동으로 바꾸지 않는다 — 반영은 소유자 결정이다.
 
@@ -79,6 +79,23 @@ export const RULES = [
 ];
 export const ruleFor = (r) => { let x = RULES[0]; for (const u of RULES) if (u.from <= r) x = u; return x; };
 const CANDS = ['C1', 'C2'];
+/* CONF·RULES·CANDS 는 같은 값이 여러 곳에 적혀 있다(규칙 11 의 «상수 한 곳» 을 못 지키는 부분). 서로 어긋나면 장부 rules 가 실제 동작과 달라지므로 계산 전에 맞춰 본다 — 틀리면 Fail */
+export function configProblems(rule) {
+  const out = [];
+  const last = RULES[RULES.length - 1];
+  if (last.ver !== VER) out.push(`VER ${VER} ≠ RULES 마지막 항목 ${last.ver}`);
+  if (CANDS.length !== CONF.NCAND) out.push(`후보 수 ${CANDS.length} ≠ CONF.NCAND ${CONF.NCAND}`);
+  const ids = rule.models.map((m) => m.id);
+  if (!sameJSON(ids, ['base', ...CANDS])) out.push(`${rule.ver} 모형 ${ids} ≠ base+후보 ${['base', ...CANDS]}`);
+  const m = (id) => rule.models.find((x) => x.id === id) || {};
+  if (m('C1').halfLife !== CONF.HALF_LIFE) out.push(`${rule.ver} C1.halfLife ${m('C1').halfLife} ≠ CONF.HALF_LIFE ${CONF.HALF_LIFE}`);
+  if (typeof m('base').cal !== 'string' || !m('base').cal.includes(`최소 ${CONF.CAL_MIN}쌍`)) out.push(`${rule.ver} base.cal 의 최소 쌍 수가 CONF.CAL_MIN ${CONF.CAL_MIN} 와 다름`);
+  const g = rule.gate || {};
+  if (g.minN !== CONF.GATE_MIN) out.push(`${rule.ver} gate.minN ${g.minN} ≠ CONF.GATE_MIN ${CONF.GATE_MIN}`);
+  if (g.alpha !== CONF.ALPHA) out.push(`${rule.ver} gate.alpha ${g.alpha} ≠ CONF.ALPHA ${CONF.ALPHA}`);
+  if (g.nCand !== CONF.NCAND) out.push(`${rule.ver} gate.nCand ${g.nCand} ≠ CONF.NCAND ${CONF.NCAND}`);
+  return out;
+}
 
 /* ═════════════ 결정성 장치 ═════════════ */
 export function m32(sd) {
@@ -244,7 +261,11 @@ export function obsOf(d) {
 export const lg = (pred, obs) => (Math.log(Math.max(pred, CONF.M_FLOOR)) - Math.log(obs)) ** 2;
 
 /* ═════════════ 적합 ═════════════ */
-/* 회차 t 의 후보 적합 — t 미만 회차만 쓴다(walk-forward). 학습 표본이 모자라면 null */
+/* 실패 이유 문구 — 연속 구간 묶음(recon.skipped)과 검증기 대조가 같은 글자여야 하므로 회차마다 바뀌는 수를 넣지 않는다 */
+const WHY_TRAIN = () => `학습 회차 ${CONF.TRAIN_MIN} 미만`;
+const WHY_CAL = () => `보정 쌍 ${CONF.CAL_MIN} 미만`;
+const WHY_SING = '회귀 특이 행렬', WHY_ZVAR = 'z 분산 0';
+/* 회차 t 의 후보 적합 — t 미만 회차만 쓴다(walk-forward). 못 맞추면 {why}(표본 부족과 특이 행렬을 구분한다) */
 function fitCands(t, obs, feat) {
   const X = [], y1 = [], ss = [], X2 = [], y2 = [], se = [];
   for (let s = 1; s < t; s++) {
@@ -252,25 +273,25 @@ function fitCands(t, obs, feat) {
     X.push(feat[s]); y1.push(o.m45); ss.push(s);
     if (o.mp != null) { X2.push(feat[s]); y2.push(o.mp); se.push(o.sumE); }       // C2 는 1~3등 당첨자 수가 있는 회차만
   }
-  if (X.length < CONF.TRAIN_MIN || X2.length < CONF.TRAIN_MIN) return null;
+  if (X.length < CONF.TRAIN_MIN || X2.length < CONF.TRAIN_MIN) return { why: WHY_TRAIN() };
   const bounds = boundsOf(X);
   const w1 = ss.map((s) => Math.pow(0.5, (t - 1 - s) / CONF.HALF_LIFE));
   const m1 = mean(w1), mE = mean(se);
   const c0 = wls(X, y1, null);
   const c1 = wls(X, y1, w1.map((v) => v / m1));
   const c2 = wls(X2, y2, se.map((v) => v / mE));
-  if (!c0 || !c1 || !c2) return null;
+  if (!c0 || !c1 || !c2) return { why: WHY_SING };
   return { n: X.length, bounds, c0, C1: c1.beta, C2: c2.beta };
 }
-/* base 의 a·b — s 가 FIRST..t-1 인 «그때그때 z» 와 m45 의 단순회귀(validate.calibrate 의 fit) */
+/* base 의 a·b — s 가 FIRST..t-1 인 «그때그때 z» 와 m45 의 단순회귀(validate.calibrate 의 fit). 못 맞추면 {why} */
 function calibAt(t, zs, obs) {
   const zz = [], yy = [];
   for (let s = CONF.FIRST; s < t; s++) if (zs[s] != null && obs[s].ok) { zz.push(zs[s]); yy.push(obs[s].m45); }
-  if (zz.length < CONF.CAL_MIN) return null;
+  if (zz.length < CONF.CAL_MIN) return { why: WHY_CAL() };
   const mz = mean(zz), my = mean(yy);
   let sxy = 0, sxx = 0;
   for (let i = 0; i < zz.length; i++) { const dz = zz[i] - mz; sxy += dz * (yy[i] - my); sxx += dz * dz; }
-  if (!sxx) return null;
+  if (!sxx) return { why: WHY_ZVAR };
   const b = sxy / sxx;
   return { a: my - b * mz, b, n: zz.length };
 }
@@ -320,7 +341,7 @@ function buildRecon(D, latest, P, T) {
   for (let t = CONF.FIRST; t <= latest + 1; t++) {
     const fc = fitCands(t, obs, feat);
     /* 저장 파라미터 rows[t].pop.A 와 내 재적합(가중 없는 OLS)이 같은지 — 입력이 파라미터 생성 때와 같다는 표지 */
-    if (fc && P[t] && P[t].A) {
+    if (!fc.why && P[t] && P[t].A) {
       const A = P[t].A; refitN++;
       for (let j = 0; j < 8; j++) refitMax = Math.max(refitMax, relDiff(fc.c0.beta[j], A.beta[j]));
       refitMax = Math.max(refitMax, relDiff(fc.c0.predMean, A.predMean), relDiff(fc.c0.predSD, A.predSD));
@@ -331,8 +352,8 @@ function buildRecon(D, latest, P, T) {
     if (obs[t].mp == null) { why.push([t, '1~3등 당첨자 수 없음']); continue; }
     if (!P[t] || !P[t].A) { why.push([t, 'rank-params 행 없음']); continue; }
     const cal = calibAt(t, zs, obs);
-    if (!cal) { why.push([t, `보정 쌍 ${CONF.CAL_MIN} 미만`]); continue; }
-    if (!fc) { why.push([t, `학습 회차 ${CONF.TRAIN_MIN} 미만`]); continue; }
+    if (cal.why) { why.push([t, cal.why]); continue; }
+    if (fc.why) { why.push([t, fc.why]); continue; }
     const z = zs[t], fl = (x) => Math.max(x, CONF.M_FLOOR);
     rows.push({
       t, z, m45: obs[t].m45, m123: obs[t].m123, mp: obs[t].mp,
@@ -389,8 +410,8 @@ function freezeFit(t, P, T) {
   const { obs, feat, zs } = T;
   if (!P[t] || !P[t].A) throw new Fail(`rank-params 에 ${t}회 인기 모형 행이 없습니다 — 순위 추적이 먼저 돌아야 사전 등록을 할 수 있어 쓰지 않습니다`);
   const fc = fitCands(t, obs, feat), cal = calibAt(t, zs, obs);
-  if (!fc) throw new Fail(`${t}회 후보 적합에 학습 회차가 모자랍니다`);
-  if (!cal) throw new Fail(`${t}회 base 보정 쌍이 ${CONF.CAL_MIN} 미만입니다`);
+  if (fc.why) throw new Fail(`${t}회 후보 적합을 할 수 없습니다: ${fc.why}`);
+  if (cal.why) throw new Fail(`${t}회 base 보정을 할 수 없습니다: ${cal.why}`);
   const r = (v) => sig(v, CONF.PREC);
   return {
     nTrain: fc.n, nCal: cal.n, a: r(cal.a), b: r(cal.b), pop: roundPop(P[t]),
@@ -410,16 +431,33 @@ function closeVal(a, b, tol) {
 
 /* ═════════════ 일지 (J1~J6) ═════════════ */
 const cutoffIso = (ymd) => `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}T${String(CONF.CUTOFF_UTC_H).padStart(2, '0')}:00:00.000Z`;
-function gradeFrozen(row, D, T) {
-  const r = row.r, d = D[r], o = T.obs[r];
-  if (!d || !row.fit || !row.fit.pop || !Array.isArray(row.fit.C1)) throw new Fail(`일지 r=${r} 행 형식이 맞지 않습니다(fit)`);
+/* 채점에 쓴 원자료 — done 행에 얼린다(src). 이력이 사후 정정돼도 done 행의 채점은 이 값으로 다시 맞춰 볼 수 있다(규칙 7, check-trade 의 prizeUsed 와 같은 생각) */
+const srcOf = (d) => ({ n: d.n.slice(), sales: d.sales, w: d.w.slice() });
+function srcShapeOk(s) {
+  return !!s && Array.isArray(s.n) && s.n.length === 6 && s.n.every((v, i) => Number.isInteger(v) && v >= 1 && v <= 45 && (i === 0 || v > s.n[i - 1]))
+    && (s.sales === null || (typeof s.sales === 'number' && Number.isFinite(s.sales)))
+    && Array.isArray(s.w) && s.w.length === 5 && s.w.every((v) => v === null || (typeof v === 'number' && Number.isFinite(v)));
+}
+function gradeFrozen(row, src) {
+  const r = row.r;
+  if (!row.fit || !row.fit.pop || !Array.isArray(row.fit.C1)) throw new Fail(`일지 r=${r} 행 형식이 맞지 않습니다(fit)`);
+  if (!srcShapeOk(src)) throw new Fail(`일지 r=${r} 행 형식이 맞지 않습니다(src)`);
+  const o = obsOf(src);
   if (!o.ok) return { skip: o.why };
   if (o.mp == null) return { skip: '1~3등 당첨자 수 없음' };
-  const p = predictAll(row.fit, d.n);
+  const p = predictAll(row.fit, src.n);
   return {
     obs: { m45: o6(o.m45), m123: o.m123 == null ? null : o6(o.m123), mp: o6(o.mp) },
     pred: { base: o6(p.base), C1: o6(p.C1), C2: o6(p.C2) }
   };
+}
+/* 얼린 src ↔ 지금 이력 — 다른 항목 이름 목록(사후 정정 표지) */
+function srcDiffs(a, cur) {
+  const out = [];
+  if (!sameJSON(a.n, cur.n)) out.push(`n ${a.n}→${cur.n}`);
+  if (a.sales !== cur.sales) out.push(`sales ${a.sales}→${cur.sales}`);
+  a.w.forEach((v, i) => { if (v !== cur.w[i]) out.push(`w${i + 1} ${v}→${cur.w[i]}`); });
+  return out;
 }
 function buildJournal(D, latest, T, P, prev, nowIso, log) {
   const old = prev ? prev.journal.rows : [];
@@ -431,9 +469,10 @@ function buildJournal(D, latest, T, P, prev, nowIso, log) {
     if (row.status === 'pending' && row.r <= latest) {
       const drawDate = D[row.r].date;
       if (!/^\d{8}$/.test(drawDate)) throw new Fail(`일지 r=${row.r}: 이력에 추첨일(date)이 없어 마감 판정(늦음)을 할 수 없습니다`);
-      const g = gradeFrozen(row, D, T);
+      const src = srcOf(D[row.r]);
+      const g = gradeFrozen(row, src);
       const late = row.made >= cutoffIso(drawDate);
-      const done = Object.assign({}, row, { status: 'done', drawDate, late });
+      const done = Object.assign({}, row, { status: 'done', drawDate, late, src });
       if (g.skip) done.skip = g.skip; else { done.obs = g.obs; done.pred = g.pred; }
       done.gradedAt = nowIso;
       rows.push(done); graded++;
@@ -441,11 +480,14 @@ function buildJournal(D, latest, T, P, prev, nowIso, log) {
     }
     rows.push(row);
   }
-  /* J5 재채점 대조: 이미 done 이던 행만. 다르면 경고만, 처음 값 유지 */
+  /* J5 재채점 대조: 이미 done 이던 행만. 두 가지를 본다 — (a) 얼린 src 로 다시 채점한 값 ↔ 행의 obs/pred(어긋나면 행이 안 맞는 것),
+     (b) 얼린 src ↔ 지금 이력(다르면 자료 사후 정정). 어느 쪽이든 경고만 내고 처음 값을 유지한다(규칙 7) */
   old.forEach((row) => {
     if (row.status !== 'done') return;
     try {
-      const g = gradeFrozen(row, D, T), diffs = [];
+      const g = gradeFrozen(row, row.src), diffs = [];
+      const sd = srcDiffs(row.src, srcOf(D[row.r]));
+      if (sd.length) diffs.push(`이력 사후 정정 ${sd.join(', ')}`);
       if (g.skip) { if (row.skip !== g.skip) diffs.push(`skip ${row.skip}→${g.skip}`); }
       else if (row.skip || !row.obs || !row.pred) diffs.push('obs/pred 없음→있음');
       else {
@@ -543,6 +585,7 @@ function readPrev(outPath) {
   for (const r of jr.rows) {
     if (!r || !Number.isInteger(r.r) || r.r <= pr || (r.status !== 'pending' && r.status !== 'done')) throw new Fail(`기존 일지 행 r=${r && r.r} 이 오름차순·유일·상태(pending/done)가 아니라 덮어쓰지 않습니다`);
     if (!RULES.some((u) => u.ver === r.ver)) throw new Fail(`기존 일지 행 r=${r.r} 의 규칙 ${r.ver} 을 모릅니다(RULES 에 없음) — 덮어쓰지 않습니다`);
+    if (r.status === 'done' && !srcShapeOk(r.src)) throw new Fail(`기존 일지 done 행 r=${r.r} 에 채점 원자료(src)가 없거나 모양이 맞지 않아 덮어쓰지 않습니다`);
     pr = r.r;
   }
   return j;
@@ -602,6 +645,8 @@ function main() {
   let hist; try { hist = JSON.parse(fs.readFileSync(histPath, 'utf8')); } catch (e) { throw new Fail(`이력 ${histPath} 를 읽을 수 없거나 JSON 이 아닙니다: ${e.message}`); }
   const { D, latest } = parseHistory(hist);
   if (latest < CONF.FIRST + CONF.CAL_MIN) throw new Fail(`이력이 ${latest}회까지뿐이라 계산하지 않습니다`);
+  const cfgBad = configProblems(ruleFor(latest + 1));
+  if (cfgBad.length) throw new Fail(`CONF·RULES·후보 목록이 서로 맞지 않아 계산하지 않습니다: ${cfgBad.join(' / ')}`);
   /* 2 최신 회차 이상 — 그 회차로 학습·일지를 쓰지 않는다 */
   const bad = latestAnomaly(D[latest]);
   if (bad.length) { log.warn(`최신 ${latest}회 필드 이상(${bad.join(', ')}) — 이 회차로 학습·일지를 쓰지 않습니다(파일을 쓰지 않음)`); return; }

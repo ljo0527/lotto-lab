@@ -17,8 +17,12 @@
 
    검사 표  C0 구조·규칙표·크기 · C1 입력(이력·지문) · C2 돌아보기 재계산 · C3 z 두 구현 대조(표본 3회차, 상대 1e-9) ·
             C4 일지 구조·얼린 파라미터 재계산 · C5 채점(관측·예측·늦음) · C6 관문 · C7 append-only · C8 문구·결정성 표지
-   경고만 내는 것(이유): 오래된 행의 얼린 파라미터가 지금 이력으로 다시 계산한 값과 다름 — 일지는 «처음 공개한 값 동결» 이 원칙이라
-     이력이 사후 정정된 경우일 수 있다(J4). 단 이번 실행에서 만든 행(made = generated)이 다르면 생성기 결함이라 오류다.
+   경고만 내는 것(이유 — 규칙 7: 일지는 «처음 공개한 값 동결» 이고 rank-params 의 예전 행도 append-only 라 고쳐지지 않으므로, 이력이 사후 정정되면
+     «지금 이력으로 다시 계산한 값» 은 예전 행과 달라질 수 있다. 이것을 오류로 보면 정정 한 번에 검증기가 매주 실패해 CI 가 장부를 되돌리고 그 주들의 일지가 영구히 missed 가 된다):
+     · 오래된 행의 얼린 파라미터·inputDigest 가 지금 이력으로 다시 계산한 값과 다름(J4). 단 이번 실행에서 만든 행(made = generated)이 다르면 생성기 결함이라 오류다.
+     · done 행의 얼린 채점 원자료(src)가 지금 이력과 다름(J5 사후 정정). done 행의 obs·pred 는 «얼린 src·얼린 fit» 으로 다시 계산해 맞춰 보고 다르면 오류다
+       (그래서 값 변조는 계속 잡힌다). src 도 같이 바꾼 변조는 C7(--prev-git) 이 바이트 불변으로 잡는다.
+     · 지난 회차(t ≤ latest)의 rank-params 행이 지금 이력의 재적합과 다름. 이번 주 rank-track 이 쓴 행(t = latest+1)이 다르면 오류다.
    ═══════════════════════════════════════════════════════════════════════════════════════ */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -46,6 +50,8 @@ const EXPECT_RULES = [
     score: 'logsq-m45', gate: { minN: 52, alpha: 0.05, nCand: 2, perm: 'sign-flip' } }
 ];
 const CF = EXPECT_CONF;
+/* 건너뜀·실패 이유 문구(docs/pop-learn.md §3.1) — 생성기와 글자가 같아야 한다 */
+const WHY = { train: `학습 회차 ${CF.TRAIN_MIN} 미만`, cal: `보정 쌍 ${CF.CAL_MIN} 미만`, sing: '회귀 특이 행렬', zvar: 'z 분산 0' };
 const ruleVer = (r) => { let x = EXPECT_RULES[0]; for (const u of EXPECT_RULES) if (u.from <= r) x = u; return x.ver; };
 const TOP_KEYS = ['v', 'kind', 'ver', 'generated', 'source', 'conf', 'rules', 'recon', 'gate', 'journal', 'checks'];
 const MAX_BYTES = 1000000;
@@ -237,11 +243,11 @@ function makeModel(H, PR) {
       X.push(ft[s]); y1.push(ob[s].m45); ss.push(s);
       if (ob[s].mp !== null) { X2.push(ft[s]); y2.push(ob[s].mp); we.push(ob[s].sumE); }
     }
-    if (X.length < CF.TRAIN_MIN || X2.length < CF.TRAIN_MIN) return null;
+    if (X.length < CF.TRAIN_MIN || X2.length < CF.TRAIN_MIN) return { why: WHY.train };
     const c0 = wlsQR(X, y1, null);
     const c1 = wlsQR(X, y1, ss.map((s) => Math.pow(0.5, (t - 1 - s) / CF.HALF_LIFE)));
     const c2 = wlsQR(X2, y2, we);
-    if (!c0 || !c1 || !c2) return null;
+    if (!c0 || !c1 || !c2) return { why: WHY.sing };
     const yh = X.map((x) => dotp(x, c0)), mu = yh.reduce((a, b) => a + b, 0) / yh.length;
     const sd = Math.sqrt(yh.reduce((a, b) => a + (b - mu) * (b - mu), 0) / yh.length);
     return { n: X.length, bd: pctBounds(X), C0: { beta: c0, predMean: mu, predSD: sd }, C1: c1, C2: c2 };
@@ -249,10 +255,10 @@ function makeModel(H, PR) {
   const calAt = (t) => {
     const z = [], y = [];
     for (let s = CF.FIRST; s < t; s++) if (zs[s] !== null && !ob[s].why) { z.push(zs[s]); y.push(ob[s].m45); }
-    if (z.length < CF.CAL_MIN) return null;
+    if (z.length < CF.CAL_MIN) return { why: WHY.cal };
     const mz = z.reduce((a, b) => a + b, 0) / z.length, my = y.reduce((a, b) => a + b, 0) / y.length;
     let sxy = 0, sxx = 0; for (let i = 0; i < z.length; i++) { sxy += (z[i] - mz) * (y[i] - my); sxx += (z[i] - mz) * (z[i] - mz); }
-    if (!sxx) return null;
+    if (!sxx) return { why: WHY.zvar };
     return { a: my - (sxy / sxx) * mz, b: sxy / sxx, n: z.length };
   };
   return { ob, ft, zs, fitAt, calAt };
@@ -263,15 +269,18 @@ const mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
 const sdev = (a) => { const m = mean(a); return Math.sqrt(a.reduce((s, v) => s + (v - m) * (v - m), 0) / (a.length - 1)); };
 function reconOwn(H, PR, M) {
   const L = H.latest, rows = [], why = [];
-  let refN = 0, refMax = 0, bdDiff = 0;
+  let refN = 0, refMax = 0, refMaxOld = 0, refMaxLive = 0, bdDiff = 0, bdDiffLive = 0;
   const rel = (x, y) => Math.abs(x - y) / (Math.abs(y) + 1e-9);
   for (let t = CF.FIRST; t <= L + 1; t++) {
     const fc = M.fitAt(t);
-    if (fc && PR.P[t]) {
+    if (!fc.why && PR.P[t]) {
       refN++;
-      for (let j = 0; j < 8; j++) refMax = Math.max(refMax, rel(fc.C0.beta[j], PR.P[t].A.beta[j]));
-      refMax = Math.max(refMax, rel(fc.C0.predMean, PR.P[t].A.predMean), rel(fc.C0.predSD, PR.P[t].A.predSD));
-      if (!jeq(PR.P[t].bounds, fc.bd)) bdDiff++;
+      let m = 0;
+      for (let j = 0; j < 8; j++) m = Math.max(m, rel(fc.C0.beta[j], PR.P[t].A.beta[j]));
+      m = Math.max(m, rel(fc.C0.predMean, PR.P[t].A.predMean), rel(fc.C0.predSD, PR.P[t].A.predSD));
+      refMax = Math.max(refMax, m);
+      if (t > L) refMaxLive = Math.max(refMaxLive, m); else refMaxOld = Math.max(refMaxOld, m);     // t = latest+1 은 이번 주 rank-track 이 쓴 행
+      if (!jeq(PR.P[t].bounds, fc.bd)) { bdDiff++; if (t > L) bdDiffLive++; }
     }
     if (t > L) break;
     const o = M.ob[t];
@@ -279,14 +288,14 @@ function reconOwn(H, PR, M) {
     if (o.mp === null) { why.push([t, '1~3등 당첨자 수 없음']); continue; }
     if (!PR.P[t]) { why.push([t, 'rank-params 행 없음']); continue; }
     const cal = M.calAt(t);
-    if (!cal) { why.push([t, `보정 쌍 ${CF.CAL_MIN} 미만`]); continue; }
-    if (!fc) { why.push([t, `학습 회차 ${CF.TRAIN_MIN} 미만`]); continue; }
+    if (cal.why) { why.push([t, cal.why]); continue; }
+    if (fc.why) { why.push([t, fc.why]); continue; }
     const f = M.ft[t], fl = (x) => Math.max(x, CF.M_FLOOR);
     rows.push({ t, z: M.zs[t], m45: o.m45, m123: o.m123, mp: o.mp, base: fl(cal.a + cal.b * M.zs[t]), C1: fl(dotp(clampF(f, fc.bd), fc.C1)), C2: fl(dotp(clampF(f, fc.bd), fc.C2)) });
   }
   const skipped = [];
   for (const [t, w] of why) { const l = skipped[skipped.length - 1]; if (l && l.why === w && l.to === t - 1) { l.to = t; l.n++; } else skipped.push({ from: t, to: t, n: 1, why: w }); }
-  return { rows, skipped, refN, refMax, bdDiff };
+  return { rows, skipped, refN, refMax, refMaxOld, refMaxLive, bdDiff, bdDiffLive };
 }
 function checkRecon(J, H, PR, M, st) {
   const X = st.recon = reconOwn(H, PR, M), RC = J.recon;
@@ -299,8 +308,11 @@ function checkRecon(J, H, PR, M, st) {
   const br = RC.baseRefit || {};
   if (br.n !== X.refN) err(`baseRefit.n ${br.n} ≠ ${X.refN}`);
   if (br.boundsDiff !== X.bdDiff) err(`baseRefit.boundsDiff ${br.boundsDiff} ≠ ${X.bdDiff}`);
-  if (X.refMax > 1e-6) err(`내 재적합이 저장 파라미터 rows[t].pop.A 와 다름(최대 상대차 ${X.refMax.toExponential(2)}) — 입력 이력과 파라미터가 어긋남`);
-  if (!(typeof br.maxRel === 'number' && br.maxRel <= 1e-6)) err(`baseRefit.maxRel ${br.maxRel} 이 1e-6 보다 큼`);
+  /* 이번 주 행(t = latest+1)은 방금 같은 이력으로 rank-track 이 썼으니 어긋나면 오류. 지난 회차 행은 append-only 라 이력이 나중에 정정되면 달라질 수 있어 경고(규칙 7) */
+  if (X.refMaxLive > 1e-6) err(`이번 주 행 rows[${H.latest + 1}].pop.A 가 내 재적합과 다름(상대차 ${X.refMaxLive.toExponential(2)}) — 순위 추적 파라미터와 입력 이력이 어긋남`);
+  if (X.bdDiffLive) err(`이번 주 행 rows[${H.latest + 1}].pop.bounds 가 내 재적합의 학습 구간과 다름`);
+  if (X.refMaxOld > 1e-6) wrn(`지난 회차 행(t ≤ ${H.latest})의 저장 파라미터가 지금 이력의 재적합과 다름(최대 상대차 ${X.refMaxOld.toExponential(2)}) — 이력이 나중에 정정된 경우일 수 있음(예전 행은 append-only 라 고쳐지지 않음, 일지는 얼린 값으로 채점돼 영향 없음)`);
+  if (X.refN ? !near(br.maxRel, X.refMax, 5e-7, 2e-3) : br.maxRel !== null) err(`baseRefit.maxRel ${br.maxRel} ≠ 재계산 ${X.refN ? X.refMax.toExponential(2) : null}`);
   note(`기본 모형 재적합 ↔ 저장 파라미터: ${X.refN}행 최대 상대차 ${X.refMax.toExponential(2)} (생성기 기록 ${br.maxRel}) · 학습 구간 불일치 ${X.bdDiff}행`);
   if (!n) return;
   const lgs = (key, tgt) => rows.map((x) => logsq(x[key], x[tgt]));
@@ -359,24 +371,35 @@ function loadRankZMaker(root) {
   try { return vm.runInNewContext(src.slice(at, j + 1) + ';zMaker', { Float64Array, Math, Array }, { timeout: 2000 }); } catch { return null; }
 }
 function checkZ(J, H, PR, M, opt) {
-  const ts = []; for (let t = CF.FIRST; t <= H.latest; t++) if (PR.P[t]) ts.push(t);
-  if (ts.length < 3) { note('표본 회차가 3개 미만이라 건너뜀'); return; }
-  const pick = [ts[0], ts[Math.floor(ts.length / 2)], ts[ts.length - 1]];
+  /* 표본은 장부 recon.recent 의 첫·가운데·마지막 — 세 회차 모두 «장부 z ↔ 직접식 ↔ 특징 코드 표 ↔ zMaker» 를 맞대려면 장부에 z 가 있는 회차여야 한다 */
+  const rec = (J.recon && J.recon.recent) || [];
+  if (!rec.length) { if (J.recon && J.recon.n) err('recon.recent 가 비어 있어 z 대조 표본이 없음'); else note('recon 표본이 없어 z 대조를 건너뜀'); return; }
+  const at = [0, Math.floor(rec.length / 2), rec.length - 1].filter((v, i, a) => a.indexOf(v) === i);
   const zm = loadRankZMaker(opt.root);
   if (!zm) wrn('scripts/check-rank.mjs 에서 zMaker 를 꺼내지 못해 그쪽과의 대조를 건너뜀(파일이 바뀌었는지 확인)');
-  let worst = 0, worstRank = 0;
-  for (const t of pick) {
+  const pickT = [];
+  let worst = 0, worstRank = 0, worstBook = 0;
+  for (const k of at) {
+    const x = rec[k], t = x && x.t;
+    if (!Number.isInteger(t) || !PR.P[t] || !H.D[t]) { err(`z 대조 표본 recent[${k}] t=${t} 의 순위 파라미터 행 또는 이력이 없음`); continue; }
+    pickT.push(t);
     const a = zDirect(PR.P[t], H.D[t].n), b = zByTable(PR.P[t], H.D[t].n);
     const rel = Math.abs(a - b) / Math.max(Math.abs(b), 1e-12); worst = Math.max(worst, rel);
     if (rel > 1e-9) err(`z(${t}회) 직접식 ${a} ↔ 특징 코드 표 ${b} 상대차 ${rel.toExponential(2)} > 1e-9`);
+    const c = zm ? zm(PR.P[t])(featCode(H.D[t].n)) : null;
     if (zm) {
-      const c = zm(PR.P[t])(featCode(H.D[t].n)), r2 = Math.abs(a - c) / Math.max(Math.abs(c), 1e-12); worstRank = Math.max(worstRank, r2);
+      const r2 = Math.abs(a - c) / Math.max(Math.abs(c), 1e-12); worstRank = Math.max(worstRank, r2);
       if (!(r2 <= 1e-9)) err(`z(${t}회) 직접식 ${a} ↔ check-rank zMaker ${c} 상대차 ${r2.toExponential(2)} > 1e-9`);
     }
-    const rr = (J.recon && J.recon.recent || []).find((x) => x.t === t);
-    if (rr && !near(rr.z, a, 2e-10, 1e-9)) err(`z(${t}회) 장부 값 ${rr.z} ↔ 재계산 ${a}`);
+    /* 장부 z 는 소수 10자리로 반올림돼 있다(오차 ≤ 5e-11) — 절대 1e-10 + 상대 1e-9 */
+    if (typeof x.z !== 'number') err(`z(${t}회) 장부 recent 에 z 가 없음`);
+    else {
+      if (!near(x.z, a, 1e-10, 1e-9)) err(`z(${t}회) 장부 값 ${x.z} ↔ 직접식 ${a}`);
+      if (zm && !near(x.z, c, 1e-10, 1e-9)) err(`z(${t}회) 장부 값 ${x.z} ↔ check-rank zMaker ${c}`);
+      worstBook = Math.max(worstBook, Math.abs(x.z - a) / Math.max(Math.abs(a), 1e-12));
+    }
   }
-  note(`z 직접식 ↔ 특징 코드 표: 표본 ${pick.join(',')}회 최대 상대차 ${worst.toExponential(2)}${zm ? ` · ↔ check-rank zMaker ${worstRank.toExponential(2)}` : ''}`);
+  note(`z 직접식 ↔ 특징 코드 표: 표본 ${pickT.join(',')}회 최대 상대차 ${worst.toExponential(2)}${zm ? ` · ↔ check-rank zMaker ${worstRank.toExponential(2)}` : ''} · 장부 z ↔ 직접식 ${worstBook.toExponential(2)}`);
 }
 
 /* ───────── C0 구조·규칙표·크기 ───────── */
@@ -394,6 +417,18 @@ function checkStructure(J, opt, text, H) {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(J.generated || '')) err(`generated 형식 ${J.generated}`);
   if (!jeq(J.conf, JSON.parse(JSON.stringify(EXPECT_CONF)))) err('conf 가 규격 상수와 다름(상수를 바꿨다면 VER·RULES·이 검사기를 같이 고쳐야 함)');
   if (!jeq(J.rules, EXPECT_RULES)) err('rules 가 이 검사기의 규칙표와 다름(덧붙이기만 허용, 검사기도 같이 고친다)');
+  /* 같은 값이 conf·rules·후보 목록에 따로 적혀 있다 — 장부에 적힌 둘이 서로 맞는지(생성기 configProblems 와 같은 점검을 따로 구현) */
+  const lr = Array.isArray(J.rules) && J.rules[J.rules.length - 1], jc = J.conf || {};
+  if (!lr) err('rules 가 비어 있음');
+  else {
+    const mm = (id) => (lr.models || []).find((m) => m.id === id) || {}, g = lr.gate || {};
+    if (lr.ver !== J.ver) err(`rules 마지막 항목 ${lr.ver} ≠ ver ${J.ver}`);
+    if (CANDS.length !== jc.NCAND) err(`후보 수 ${CANDS.length} ≠ conf.NCAND ${jc.NCAND}`);
+    if (!jeq((lr.models || []).map((m) => m.id), ['base', ...CANDS])) err(`rules 모형 ${(lr.models || []).map((m) => m.id)} ≠ base+후보 ${['base', ...CANDS]}`);
+    if (mm('C1').halfLife !== jc.HALF_LIFE) err(`rules C1.halfLife ${mm('C1').halfLife} ≠ conf.HALF_LIFE ${jc.HALF_LIFE}`);
+    if (typeof mm('base').cal !== 'string' || !mm('base').cal.includes(`최소 ${jc.CAL_MIN}쌍`)) err(`rules base.cal 의 최소 쌍 수가 conf.CAL_MIN ${jc.CAL_MIN} 와 다름`);
+    if (g.minN !== jc.GATE_MIN || g.alpha !== jc.ALPHA || g.nCand !== jc.NCAND) err(`rules gate ${JSON.stringify(g)} ≠ conf GATE_MIN/ALPHA/NCAND ${jc.GATE_MIN}/${jc.ALPHA}/${jc.NCAND}`);
+  }
   const S = J.source || {};
   if (S.latest !== H.latest || S.count !== H.latest) err(`source.latest/count ${S.latest}/${S.count} ≠ 이력 ${H.latest}`);
   if (!J.recon || !J.gate || !J.journal || !Array.isArray(J.journal.rows) || !Array.isArray(J.journal.missed)) { err('recon/gate/journal 구조가 맞지 않음'); return; }
@@ -422,7 +457,7 @@ function checkInput(J, H, PR) {
 const r12 = (v) => Number(v.toPrecision(CF.PREC));
 function freezeOwn(t, M, PR) {
   const fc = M.fitAt(t), cal = M.calAt(t);
-  if (!fc || !cal || !PR.P[t]) return null;
+  if (fc.why || cal.why || !PR.P[t]) return { why: fc.why || cal.why || 'rank-params 행 없음' };
   const P = PR.P[t], m = (o) => o && { beta: o.beta.map(r12), predMean: r12(o.predMean), predSD: r12(o.predSD) };
   return {
     nTrain: fc.n, nCal: cal.n, a: r12(cal.a), b: r12(cal.b),
@@ -466,7 +501,7 @@ function checkJournal(J, H, PR, M) {
     const dg = digestOf(H.D, Math.min(x.basedOn, H.latest));
     if (x.inputDigest !== dg) { (x.made === J.generated ? err : wrn)(`r=${x.r} inputDigest ${x.inputDigest} ≠ 재계산 ${dg}`); }
     const own = freezeOwn(x.r, M, PR);
-    if (!own) { wrn(`r=${x.r} 얼린 파라미터를 재계산할 수 없음(rank-params 행·표본)`); continue; }
+    if (own.why) { wrn(`r=${x.r} 얼린 파라미터를 재계산할 수 없음: ${own.why}`); continue; }
     const d = []; fitClose(x.fit, own, 'fit', d);
     if (d.length) (x.made === J.generated ? err : wrn)(`r=${x.r} 얼린 파라미터가 재계산과 다름: ${d.slice(0, 3).join(' / ')}${d.length > 3 ? ` …외 ${d.length - 3}` : ''}`);
   }
@@ -477,29 +512,44 @@ function checkJournal(J, H, PR, M) {
 
 /* ───────── C5 채점 ───────── */
 const cutoff = (ymd) => `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}T${String(CF.CUTOFF_UTC_H).padStart(2, '0')}:00:00.000Z`;
+const isNumOrNull = (v) => v === null || (typeof v === 'number' && Number.isFinite(v));
+const srcOk = (s) => !!s && Array.isArray(s.n) && s.n.length === 6 && s.n.every((v, i) => Number.isInteger(v) && v >= 1 && v <= 45 && (i === 0 || v > s.n[i - 1]))
+  && isNumOrNull(s.sales) && Array.isArray(s.w) && s.w.length === 5 && s.w.every(isNumOrNull);
+/* done 행의 채점은 «얼린 src(채점에 쓴 원자료)·얼린 fit» 만으로 다시 계산해 맞춘다 — 다르면 오류(값 변조).
+   얼린 src ↔ 지금 이력이 다른 것은 자료 사후 정정(J5)이라 경고만. 이력으로 직접 맞추면 정정 한 번에 검증기가 매주 실패한다. */
 function checkGrade(J, H, M) {
   let nDone = 0;
+  const j5 = [];
   for (const x of J.journal.rows) {
     if (x.status === 'pending') {
-      for (const k of ['drawDate', 'late', 'obs', 'pred', 'skip', 'gradedAt']) if (k in x) err(`pending r=${x.r} 에 ${k} 가 있음`);
+      for (const k of ['drawDate', 'late', 'src', 'obs', 'pred', 'skip', 'gradedAt']) if (k in x) err(`pending r=${x.r} 에 ${k} 가 있음`);
       continue;
     }
     nDone++;
     const d = H.D[x.r];
+    if (!d) { err(`done r=${x.r} 가 이력에 없음`); continue; }
     if (x.drawDate !== d.date) err(`done r=${x.r} drawDate ${x.drawDate} ≠ 이력 ${d.date}`);
     if (!/^\d{8}$/.test(d.date)) { err(`r=${x.r} 이력에 추첨일 없음`); continue; }
     if (x.late !== (x.made >= cutoff(d.date))) err(`done r=${x.r} late ${x.late} ≠ ${x.made >= cutoff(d.date)}(made ${x.made}, 마감 ${cutoff(d.date)})`);
     if (!/^\d{4}-\d{2}-\d{2}T/.test(x.gradedAt || '')) err(`done r=${x.r} gradedAt 없음`);
-    const o = M.ob[x.r], skipWhy = o.why || (o.mp === null ? '1~3등 당첨자 수 없음' : null);
+    if (!srcOk(x.src)) { err(`done r=${x.r} 에 채점 원자료 src 가 없거나 모양이 맞지 않음(n 6개 오름차순·sales·w 5개)`); continue; }
+    const cur = [];
+    if (!jeq(x.src.n, d.n)) cur.push(`n ${x.src.n}→${d.n}`);
+    if (x.src.sales !== d.sales) cur.push(`sales ${x.src.sales}→${d.sales}`);
+    x.src.w.forEach((v, i) => { if (v !== d.w[i]) cur.push(`w${i + 1} ${v}→${d.w[i]}`); });
+    if (cur.length) j5.push(`r=${x.r} ${cur.join(', ')}`);
+    const o = observe(x.src), skipWhy = o.why || (o.mp === null ? '1~3등 당첨자 수 없음' : null);
     if (skipWhy) { if (x.skip !== skipWhy || x.obs || x.pred) err(`done r=${x.r} 는 건너뜀 «${skipWhy}» 이어야 함(skip=${x.skip})`); continue; }
     if (x.skip || !x.obs || !x.pred) { err(`done r=${x.r} 에 obs/pred 가 있어야 함`); continue; }
-    const f = x.fit, nums = d.n, F = feats(nums);
+    const f = x.fit, nums = x.src.n, F = feats(nums);
     const z = zDirect(f.pop, nums), fl = (v) => Math.max(v, CF.M_FLOOR);
     const pr = { base: fl(f.a + f.b * z), C1: fl(dotp(clampF(F, f.bd), f.C1)), C2: fl(dotp(clampF(F, f.bd), f.C2)) };
     for (const k of ['base', 'C1', 'C2']) if (!near(x.pred[k], pr[k], 1.5e-6, 0)) err(`done r=${x.r} pred.${k} ${x.pred[k]} ≠ 얼린 파라미터로 재계산 ${pr[k].toFixed(6)}`);
-    for (const k of ['m45', 'm123', 'mp']) { const w = o[k]; if (w === null ? x.obs[k] !== null : !near(x.obs[k], w, 1.5e-6, 0)) err(`done r=${x.r} obs.${k} ${x.obs[k]} ≠ 이력에서 재계산 ${w}`); }
+    for (const k of ['m45', 'm123', 'mp']) { const w = o[k]; if (w === null ? x.obs[k] !== null : !near(x.obs[k], w, 1.5e-6, 0)) err(`done r=${x.r} obs.${k} ${x.obs[k]} ≠ 얼린 src 로 재계산 ${w}`); }
   }
-  note(`done ${nDone}행 재채점 완료`);
+  for (const m of j5.slice(0, 5)) wrn(`J5 사후 정정 — 얼린 src ≠ 지금 이력: ${m} (done 행은 처음 값을 유지)`);
+  if (j5.length > 5) wrn(`J5 사후 정정 …외 ${j5.length - 5}건`);
+  note(`done ${nDone}행 재채점 완료(얼린 src 기준)${j5.length ? ` · 지금 이력과 다른 행 ${j5.length}` : ''}`);
 }
 
 /* ───────── C6 관문 (§3.7) ───────── */
