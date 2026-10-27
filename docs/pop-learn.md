@@ -122,7 +122,7 @@ live = `done && !late && !skip`. 후보마다 `d_i = 점수(후보)−점수(bas
 | C0 구조 | 최상위 키 순서·`conf`/`rules` 가 검증기 사본과 같음·크기 < 1MB·LF |
 | C1 입력 | 이력 연속·형식, `source.digest`, 최신 회차 필드 이상, `source.params` |
 | C2 돌아보기 | 관측·특징·QR 회귀·보정·돌아보기 전체와 `recon` 요약(오차·나은 회차 수·순열 p·잡음·최근 52회)을 다시 계산해 대조, 지금 모형 재적합 ↔ 저장 파라미터 |
-| C3 z 대조 | 표본 3회차를 «직접 식» 과 «특징 코드 표(check-rank `zMaker` 방식)» 두 방식으로 계산해 상대 1e-9 이내, 장부의 `recent.z` 와도 대조 |
+| C3 z 대조 | 표본 3회차(첫·가운데·마지막)를 «직접 식» · «특징 코드 표» · `check-rank.mjs` 의 `zMaker`(소스 텍스트에서 꺼내 격리 실행, 가져오기 아님) 세 가지로 계산해 상대 1e-9 이내, 장부의 `recent.z` 와도 대조. `zMaker` 를 꺼내지 못하면 경고 |
 | C4 일지 | 오름차순·유일·pending ≤ 1(마지막이 `latest+1`)·`from`·`missed`·연속성(행 삭제 탐지), 얼린 `fit` 과 `inputDigest` 를 이력 `≤ basedOn` 만으로 다시 계산해 대조(누수 탐지) |
 | C5 채점 | done 의 `drawDate`·`late`·`obs`·`pred` 재계산, pending 에 채점 필드 없음 |
 | C6 관문 | `gate` 전체 재계산(순열 p 포함) |
