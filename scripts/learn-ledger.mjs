@@ -318,7 +318,7 @@ function readRec(summaryPath, explicit, next, log) {
   if (!fs.existsSync(summaryPath)) { log.warn(`${explicit ? '--summary ' : ''}${summaryPath} 가 없어 ${next}회 rec 없이 씁니다`); return null; }
   let s; try { s = JSON.parse(fs.readFileSync(summaryPath, 'utf8')); } catch (e) { log.warn(`${summaryPath} 를 읽을 수 없어 rec 없이 씁니다: ${e.message}`); return null; }
   const L = s && s.lotto;
-  if (!L || L.next !== next) { log.warn(`추천 요약의 lotto.next=${L && L.next} 가 ${next}회가 아니라 ${next}회 rec 없이 씁니다`); return null; }
+  if (!L || L.next !== next) { log.warn(`추천 요약의 lotto.next=${L && L.next} 이 ${next} 와 달라 ${next}회 rec 없이 씁니다`); return null; }
   const picks = Array.isArray(L.picks) ? L.picks : null;
   const nums = picks && picks.length === CONF.LINES ? picks.map(parseLine) : null;
   if (!nums || nums.some((x) => x === null)) { log.warn(`추천 요약의 picks 가 ${CONF.LINES}줄(서로 다른 6개, 1..45)이 아니라 ${next}회 rec 없이 씁니다`); return null; }
@@ -390,7 +390,7 @@ function buildReplay(D, latest, simPicks, names) {
 
 /* ═════════════ 직렬화 — 키 순서는 만든 순서 그대로, journal.rows 는 한 줄에 한 행 ═════════════ */
 const ROW_PATHS = new Set(['journal.rows']);
-const EXPAND_PATHS = new Set(['summary.gate.sig', 'summary.replay.sig']);
+const EXPAND_PATHS = new Set(['summary.gate', 'summary.replay', 'summary.gate.sig', 'summary.replay.sig']);   // 신호마다 한 줄(git 차이를 작게)
 function ser(v, depth, p) {
   if (v === null || typeof v !== 'object') return JSON.stringify(v);
   const pad = (n) => '  '.repeat(n);
@@ -499,11 +499,13 @@ function main() {
   console.log(`::notice title=학습 장부::${esc(`${next}회 사전 등록 · 일지 ${journal.rows.length}행(집계 ${liveN}주, 늦음 ${out.summary.live.late}) · 추가 ${checks.added} · 채점 ${checks.graded}`)}`);
   if (gate.alarm) {
     const r = gate.rec;
-    console.log(`::warning title=낙첨 분석::${esc(`추천 10줄의 누적(${r.cum})이 같은 주 무작위 대조군 ${r.n}벌 중 ${r.rank}위(최저 ${r.min}) — 하위 1% 안입니다. 버그 의심: 추천 줄 생성·채점·입력을 점검하세요`)}`);
+    const where = r.rank > r.n ? `대조군 ${r.n}벌 모두보다 낮음` : `대조군 ${r.n}벌 중 ${r.rank}위`;
+    console.log(`::warning title=낙첨 분석::${esc(`추천 10줄의 ${r.weeks}주 누적(${r.cum})이 같은 주 무작위 ${where}(대조군 범위 ${r.min}~${r.max}) — 하위 1% 안입니다. 버그 의심: 추천 줄 생성·채점·입력을 점검하세요`)}`);
   }
   for (const s of gate.adopted) {
     const g = gate.sig[s];
-    console.log(`::notice title=학습 실험실::${esc(`신호 ${s} 채택 조건 충족(${g.weeks}주 · 누적 ${g.cum} · 대조군 ${g.n}벌 중 ${g.rank}위) — 추천 반영은 소유자 결정입니다(코드는 자동으로 바뀌지 않습니다)`)}`);
+    const where = g.rank === 1 && g.tie === 0 ? `대조군 ${g.n}벌 모두보다 높음` : `대조군 ${g.n}벌 중 ${g.rank}위`;
+    console.log(`::notice title=학습 실험실::${esc(`신호 ${s} 채택 조건 충족(${g.weeks}주 · 누적 ${g.cum} · ${where}) — 추천 반영은 소유자 결정입니다(코드는 자동으로 바뀌지 않습니다)`)}`);
   }
 }
 
