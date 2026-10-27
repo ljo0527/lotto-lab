@@ -29,9 +29,14 @@
    고른 해석(바꾸려면 여기와 검사기를 같이 고친다)
      · 줄 = «1..45 에서 서로 다른 6개», 문자열 "a,b,c,d,e,f"(오름차순). 맞힌 개수 m = 줄 ∩ 당첨 6개(보너스 제외), 보너스는 bo(0/1)로 따로.
      · 신호 풀 = 점수 상위 15개 번호. 줄 10개 = 풀에서 회차·신호 시드로 뽑은 서로 다른 조합. 같은 줄이 나오면 다시 뽑는다.
-     · 대조군 = 같은 주, 시드 (회차 t, 벌 번호 j=1..R) 마다 균등 무작위 줄 10개. 벌별 값은 저장하지 않고 시드로 다시 만든다.
+     · 대조군은 두 가지다(같은 주, 시드 (회차 t, 벌 번호 j=1..R), 벌별 값은 저장하지 않고 시드로 다시 만든다).
+         ctrl    = 균등 무작위 줄 10개              → 추천 10줄(낙첨 분석·재현의 rec)의 기준선.
+         ctrlSig = 무작위 15개 번호 풀에서 신호와 같은 절차로 뽑은 서로 다른 10줄 → 신호(관문·재현의 sig)의 기준선.
+       신호의 10줄은 한 풀에서 나와 함께 오르내리므로(맞힌 줄 수의 흩어짐이 균등 줄보다 크다) 같은 구조의 대조군과 견줘야 기준선이 정확하다.
+       정해진 풀의 맞힌 수 분포는 무작위 풀과 같아서, 정보 없는 신호에는 ctrlSig 가 정확한 기준선이다(docs §3.3·§12).
      · 꼬리 비율은 (1 + 대조군 중 같거나 나쁜/좋은 벌 수) / (R + 1) 을 정수 곱셈으로 견준다(부동소수 없음).
      · 순위 = 1 + (대조군 중 내 값보다 큰 벌 수). 같은 값은 같은 순위를 나눠 갖고 tie 에 그 벌 수를 적는다.
+     · 낙첨 분석 상태는 hold(보류) · alarm(경보) · inside(그 밖) 셋이다. 대조군 위쪽 바깥은 정보 가치가 없어 따로 두지 않는다.
    ═══════════════════════════════════════════════════════════════════════════════════════ */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -52,7 +57,7 @@ const CONF = {
   POOL: 15,                                                  // 신호 풀 크기(점수 상위 번호 수)
   LINES: 10,                                                 // 주당 줄 수(추천·신호·대조군 공통)
   MIN_HIT: 3,                                                // «맞힌 줄» = 일치 개수 ≥ 3
-  SALT: { hot: 0x484F545F, cold: 0x434F4C44, gap: 0x4741505F, repeat: 0x52455054, ctrl: 0x4354524C },
+  SALT: { hot: 0x484F545F, cold: 0x434F4C44, gap: 0x4741505F, repeat: 0x52455054, ctrl: 0x4354524C, ctrlPool: 0x43504F4C },
   CTRL_MUL: 0x85EBCA6B,                                      // 대조군 벌 번호 혼합 상수
   R: 1000,                                                   // 대조군 벌 수(관문 해상도 1/(R+1))
   ALARM_MIN_WEEKS: 26, ALARM_P: [1, 100],                    // 낙첨 경보: 주 수 ≥ 26 이고 하위 꼬리 비율 ≤ 1/100
@@ -70,6 +75,7 @@ function mulberry32(seed) {
 }
 const seedOf = (t, salt) => (Math.imul(t, 0x9E3779B1) ^ salt) >>> 0;
 const seedCtrl = (t, j) => (Math.imul(t, 0x9E3779B1) ^ Math.imul(j, CONF.CTRL_MUL) ^ CONF.SALT.ctrl) >>> 0;
+const seedCtrlPool = (t, j) => (seedCtrl(t, j) ^ CONF.SALT.ctrlPool) >>> 0;       // 신호 대조군: 벌 시드에 풀 소금을 섞는다
 function fnv(s) {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
@@ -135,17 +141,20 @@ function signalPools(D, t) {
     repeat: top((a, b) => (prev[b] - prev[a]) || (cnt[b] - cnt[a]) || (a - b))   // 직전 회차 6개 먼저, 그다음 출현 많은 순
   };
 }
-function pickLines(pool, t, salt, nLines) {
-  const rng = mulberry32(seedOf(t, salt)), seen = new Set(), lines = [];
+function drawLines(pool, rng, nLines) {                       // 풀에서 서로 다른 줄 nLines 개(오름차순 번호 배열) — 신호와 신호 대조군이 같이 쓴다
+  const keys = [], lines = [];
   for (let guard = 0; lines.length < nLines; guard++) {
     if (guard > 100000) throw new Fail('신호 줄을 만들지 못했습니다(풀이 너무 좁음)');
     const a = pool.slice();
     for (let i = 0; i < 6; i++) { const j = i + Math.floor(rng() * (a.length - i)); const v = a[i]; a[i] = a[j]; a[j] = v; }
-    const line = normLine(a.slice(0, 6));
-    if (seen.has(line)) continue;
-    seen.add(line); lines.push(line);
+    const line = a.slice(0, 6).sort(asc), key = line.join(',');
+    if (keys.includes(key)) continue;
+    keys.push(key); lines.push(line);
   }
   return lines;
+}
+function pickLines(pool, t, salt, nLines) {
+  return drawLines(pool, mulberry32(seedOf(t, salt)), nLines).map((l) => l.join(','));
 }
 function signalSet(D, t, names) {
   const pools = signalPools(D, t), out = {};
@@ -169,9 +178,9 @@ function gradeLines(lines, d) {                              // d = {n,b} → {m
   return { m, bo, g3 };
 }
 const ctrlCache = new Map();
-function ctrlWeek(D, t) {                                    // 같은 주 대조군 R벌 → 벌마다 «3개 이상 줄 수»(10줄 / 앞 5줄)
+function ctrlWeek(D, t) {                                    // 같은 주 대조군 R벌 → 벌마다 «3개 이상 줄 수»: c10(균등 10줄) · c5(그 앞 5줄) · s10(무작위 풀의 신호식 10줄)
   let c = ctrlCache.get(t); if (c) return c;
-  const mk = marksOf(D[t].n), c10 = new Uint8Array(NSET), c5 = new Uint8Array(NSET);
+  const mk = marksOf(D[t].n), c10 = new Uint8Array(NSET), c5 = new Uint8Array(NSET), s10 = new Uint8Array(NSET);
   const base = new Uint8Array(45); for (let i = 0; i < 45; i++) base[i] = i + 1;
   const a = new Uint8Array(45);
   for (let j = 1; j <= NSET; j++) {
@@ -184,13 +193,22 @@ function ctrlWeek(D, t) {                                    // 같은 주 대�
       if (h >= CONF.MIN_HIT) { k10++; if (L < CONF.SIM_LINES) k5++; }
     }
     c10[j - 1] = k10; c5[j - 1] = k5;
+
+    /* 신호 대조군: 벌 시드 + 풀 소금 → 1..45 에서 무작위 풀 POOL 개 → 같은 풀에서 신호와 같은 절차(drawLines)로 서로 다른 LINES 줄 */
+    const rp = mulberry32(seedCtrlPool(t, j));
+    a.set(base);
+    for (let i = 0; i < CONF.POOL; i++) { const q = i + Math.floor(rp() * (45 - i)); const v = a[q]; a[q] = a[i]; a[i] = v; }
+    const pool = Array.from(a.subarray(0, CONF.POOL)).sort(asc);
+    let ks = 0;
+    for (const line of drawLines(pool, rp, CONF.LINES)) { let h = 0; for (const x of line) h += mk[x]; if (h >= CONF.MIN_HIT) ks++; }
+    s10[j - 1] = ks;
   }
-  c = { c10, c5 }; ctrlCache.set(t, c);
+  c = { c10, c5, s10 }; ctrlCache.set(t, c);
   return c;
 }
-function ctrlHist(D, t) {                                    // 그 주 대조군 R벌의 «3개 이상 줄 수» 분포(0..LINES)
+function ctrlHist(D, t, key) {                               // 그 주 대조군 R벌의 «3개 이상 줄 수» 분포(0..LINES). key = c10(추천) | s10(신호)
   const h = new Array(CONF.LINES + 1).fill(0);
-  for (const k of ctrlWeek(D, t).c10) h[k]++;
+  for (const k of ctrlWeek(D, t)[key]) h[k]++;
   return h;
 }
 
@@ -231,7 +249,8 @@ function gradeRow(D, row) {
   if (row.rec) res.rec = gradeLines(row.rec.lines, d);
   res.sig = {};
   for (const s of Object.keys(row.sig)) res.sig[s] = gradeLines(row.sig[s].lines, d);
-  res.ctrl = { n: NSET, h: ctrlHist(D, row.r) };
+  res.ctrl = { n: NSET, h: ctrlHist(D, row.r, 'c10') };         // 추천 10줄의 기준선(균등 무작위 줄)
+  res.ctrlSig = { n: NSET, h: ctrlHist(D, row.r, 's10') };      // 신호의 기준선(무작위 풀에서 같은 절차로 뽑은 줄)
   return res;
 }
 
@@ -351,7 +370,7 @@ function buildGate(D, rows, nextRule) {
     let state;
     if (st.weeks < CONF.ALARM_MIN_WEEKS) state = 'hold';
     else if ((1 + st.le) * CONF.ALARM_P[1] <= CONF.ALARM_P[0] * (R + 1)) state = 'alarm';
-    else state = st.cum > st.max ? 'above' : 'inside';
+    else state = 'inside';
     rec = Object.assign({ state }, st);
   }
 
@@ -359,7 +378,7 @@ function buildGate(D, rows, nextRule) {
   for (const s of nextRule.signals) {
     const rs = live.filter((x) => x.sig && x.sig[s] && x.res.sig && x.res.sig[s]);
     if (!rs.length) { sig[s] = { weeks: 0, state: 'hold' }; continue; }
-    const st = statOf(rs.length, sumG3(rs, (x) => x.res.sig[s]), ctrlCum(D, rs.map((x) => x.r), 'c10'));
+    const st = statOf(rs.length, sumG3(rs, (x) => x.res.sig[s]), ctrlCum(D, rs.map((x) => x.r), 's10'));
     let state;
     if (st.weeks < CONF.ADOPT_MIN_WEEKS) state = 'hold';
     else if ((1 + st.ge) * CONF.ALPHA[1] * nSig <= CONF.ALPHA[0] * (R + 1)) { state = 'adopt'; adopted.push(s); }
@@ -381,9 +400,9 @@ function buildReplay(D, latest, simPicks, names) {
     const rp = simPicks.get(r);
     if (rp) { recCum += gradeLines(rp, D[r]).g3; recRounds.push(r); }
   }
-  const c10 = ctrlCum(D, rounds, 'c10');
+  const sigBase = ctrlCum(D, rounds, 's10');
   const sig = {};
-  for (const s of names) sig[s] = statOf(rounds.length, cum[s], c10);
+  for (const s of names) sig[s] = statOf(rounds.length, cum[s], sigBase);
   const rec = recRounds.length ? statOf(recRounds.length, recCum, ctrlCum(D, recRounds, 'c5')) : null;
   return { label: '돌아보면(사후)', from, to, rounds: rounds.length, lines: CONF.LINES, recLines: CONF.SIM_LINES, rec, sig };
 }

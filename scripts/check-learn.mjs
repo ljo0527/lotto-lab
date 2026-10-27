@@ -13,16 +13,23 @@
           [--summary brief/latest-summary.json] [--sim brief/sim-lotto.json] [--prev-git HEAD | --prev <이전 파일>]
           [--page record.html] [--ledger scripts/learn-ledger.mjs] [--only L2,L4] [--skip L6]
      --summary/--sim   없으면 해당 대조(rec ↔ 추천 요약 · 돌아보면의 rec ↔ 모의 원장)만 건너뛴다.
-     --prev-git REF    REF 의 같은 경로 파일과 append-only 를 대조한다(git 이 없거나 REF 에 파일이 없으면 건너뜀). --prev 는 파일 직접 지정.
+     --prev-git REF    REF 의 같은 경로 파일과 append-only 를 대조한다. REF 는 있는데 그 판에 파일만 없으면(첫 실행) «생략»(그 판에 일지가 없으니 모든 행이 새 행).
+                       REF 를 못 찾거나 git 이 실패하거나 이전 판이 학습 장부가 아니면 오류다(append-only 의 유일한 지킴이가 조용히 꺼지지 않게).
+     --prev <파일>     이전 판을 직접 지정. 없거나 읽을 수 없으면 오류.
 
    검사 표
-     L0 구조 · L1 입력(이력·source·conf·rules) · L2 신호 풀과 줄(과거만) · L3 rec(모양·추천 요약·모의 원장 대조) · L4 채점(res·late·drawDate·대조군 분포)
+     L0 구조 · L1 입력(이력·source·conf·rules) · L2 신호 풀과 줄(과거만) + 일지 연속(마지막 행 = latest+1 pending · missed 재계산) · L3 rec(모양·추천 요약·모의 원장 대조 · 새로 얼린 행은 추천 요약과 같아야 함)
+     L4 채점(res·late·drawDate·대조군 분포 두 가지)
      L5 요약(live·관문·돌아보면 재계산) · L6 append-only(done 바이트 불변·from·missed·rules 접두·행 삭제/재정렬 금지·pending 얼린 필드)
      L7 문구·크기(JSON 문자열 + record.html #learnWrap · 학습 JS 구간에 금지 문구·화면 이론값 0건, 1MB 미만) · L8 정적(Math.random·Date)
 
    경고만 내는 항목(이유 포함)
-     · L3 rec 가 지금 추천 요약·모의 원장과 다름: 일지는 «처음 공개한 값 동결» 이 원칙이라 생성기도 ::warning 만 낸다. 사람이 원인을 본다.
+     · L3 rec 가 지금 추천 요약·모의 원장과 다름 — 단 «이전 판에 이미 있던 행» 에 한한다: 일지는 «처음 공개한 값 동결» 이 원칙이라 생성기도 ::warning 만 낸다. 사람이 원인을 본다.
+       이번 실행에서 새로 얼린 행(이전 판에 같은 회차가 없음)의 rec 가 없거나 추천 요약과 다르면 오류다(생성기 회귀가 그대로 커밋돼 영구 동결되는 것을 막는다).
+       이전 판을 모르는 때(--prev/--prev-git 없음)는 새 행을 가려낼 수 없어 경고로 둔다.
      · L6 done 행이 값은 같고 글자(공백·숫자 표기)만 다름 · 키 순서 · journal.checks 의 경고 배열이 비어 있지 않음.
+   이력 정정(과거 회차 값이 바뀜)은 경고가 아니라 오류다: 생성기는 J4·J5 로 ::warning 만 내고 처음 값을 유지하지만, 이 검사기는 L2(inputDigest)·L4(채점)가 실패한다.
+     → CI 되돌림이 장부를 HEAD 로 복원해 장부가 멈춘다. 수리 절차는 docs/learn-ledger.md §11. L6 은 «이전 판의 source.digest ≠ 지금 이력의 같은 구간 지문» 으로 정정을 가려 오류 메시지에 밝힌다.
    ═══════════════════════════════════════════════════════════════════════════════════════ */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -33,7 +40,7 @@ const VER = 'learn-1';
 const RULES = [{ ver: 'learn-1', from: 1248, signals: ['hot', 'cold', 'gap', 'repeat'] }];
 const CONF = {
   W: 50, POOL: 15, LINES: 10, MIN_HIT: 3,
-  SALT: { hot: 0x484F545F, cold: 0x434F4C44, gap: 0x4741505F, repeat: 0x52455054, ctrl: 0x4354524C },
+  SALT: { hot: 0x484F545F, cold: 0x434F4C44, gap: 0x4741505F, repeat: 0x52455054, ctrl: 0x4354524C, ctrlPool: 0x43504F4C },
   CTRL_MUL: 0x85EBCA6B, R: 1000,
   ALARM_MIN_WEEKS: 26, ALARM_P: [1, 100], ADOPT_MIN_WEEKS: 52, ALPHA: [1, 20],
   REPLAY: 300, SIM_LINES: 5, CUTOFF_UTC_H: 11
@@ -43,6 +50,7 @@ const TOP_KEYS = ['v', 'kind', 'ver', 'generated', 'source', 'conf', 'rules', 's
 const FORBID = /확률을 높|잘 나오|당첨 보장|가능성이? 높|적중률 높/;
 const THEORY = /p값|σ|표준편차|기대값|몬테카를로|정확 확률|이론/;       // 화면(#learnWrap · 학습 JS)에 새로 넣지 않는 이론값 말(규칙 9)
 const ruleFor = (r) => { let x = RULES[0]; for (const u of RULES) if (u.from <= r) x = u; return x; };
+const HINT_FIX = ' (과거 이력이 정정됐다면 docs/learn-ledger.md §11 의 수리 절차)';
 
 /* ═════════════ 도구 ═════════════ */
 const imul = Math.imul;
@@ -59,6 +67,7 @@ function rng32(seed) {
 }
 const sigSeed = (t, salt) => (imul(t, 0x9E3779B1) ^ salt) >>> 0;
 const ctrlSeed = (t, j) => (imul(t, 0x9E3779B1) ^ imul(j, CONF.CTRL_MUL) ^ CONF.SALT.ctrl) >>> 0;
+const poolSeed = (t, j) => (imul(t, 0x9E3779B1) ^ imul(j, CONF.CTRL_MUL) ^ CONF.SALT.ctrl ^ CONF.SALT.ctrlPool) >>> 0;
 const esc = (s) => String(s).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
 const short = (v) => { const s = v === undefined ? '없음' : JSON.stringify(v); return s.length > 90 ? s.slice(0, 87) + '…' : s; };
 function canon(v) {                                          // 키 순서와 무관한 비교용 정규형
@@ -139,15 +148,18 @@ function expectedPools(D, t) {
     repeat: pick((n) => prevSet[n] * 100000 + cnt[n])
   };
 }
-function expectedLines(pool, t, name) {
-  const rnd = rng32(sigSeed(t, CONF.SALT[name])), have = new Set(), out = [];
+function distinctLines(pool, rnd) {                          // 풀에서 서로 다른 LINES 줄(오름차순 번호 배열) — 신호와 신호 대조군이 같은 절차
+  const have = new Set(), out = [];
   while (out.length < CONF.LINES) {
     const a = pool.slice();
     for (let i = 0; i < 6; i++) { const k = i + Math.floor(rnd() * (a.length - i)); const tmp = a[k]; a[k] = a[i]; a[i] = tmp; }
-    const s = a.slice(0, 6).sort(num).join(',');
-    if (!have.has(s)) { have.add(s); out.push(s); }
+    const line = a.slice(0, 6).sort(num), s = line.join(',');
+    if (!have.has(s)) { have.add(s); out.push(line); }
   }
   return out;
+}
+function expectedLines(pool, t, name) {
+  return distinctLines(pool, rng32(sigSeed(t, CONF.SALT[name]))).map((l) => l.join(','));
 }
 function expectedSig(D, t, names) {
   const pools = expectedPools(D, t), o = {};
@@ -170,7 +182,7 @@ const ctrlMemo = new Map();
 function ctrlOf(D, t) {
   if (ctrlMemo.has(t)) return ctrlMemo.get(t);
   const flag = new Uint8Array(46); for (const x of D[t].n) flag[x] = 1;
-  const full = new Int32Array(CONF.R), half = new Int32Array(CONF.R), deck = new Uint8Array(45);
+  const full = new Int32Array(CONF.R), half = new Int32Array(CONF.R), sig = new Int32Array(CONF.R), deck = new Uint8Array(45);
   for (let j = 1; j <= CONF.R; j++) {
     const rnd = rng32(ctrlSeed(t, j)); let a10 = 0, a5 = 0;
     for (let L = 0; L < CONF.LINES; L++) {
@@ -180,10 +192,17 @@ function ctrlOf(D, t) {
       if (h >= CONF.MIN_HIT) { a10++; if (L < CONF.SIM_LINES) a5++; }
     }
     full[j - 1] = a10; half[j - 1] = a5;
+
+    /* 신호 대조군: 무작위 풀 POOL 개(1..45 에서 앞 POOL 개를 부분 섞기) → 그 풀에서 신호와 같은 절차로 서로 다른 LINES 줄 */
+    const rp = rng32(poolSeed(t, j)), cards = [];
+    for (let n = 1; n <= 45; n++) cards.push(n);
+    for (let i = 0; i < CONF.POOL; i++) { const k = i + Math.floor(rp() * (45 - i)); const tmp = cards[k]; cards[k] = cards[i]; cards[i] = tmp; }
+    const pool = cards.slice(0, CONF.POOL).sort(num);
+    sig[j - 1] = distinctLines(pool, rp).filter((line) => line.filter((x) => flag[x]).length >= CONF.MIN_HIT).length;
   }
-  const o = { full, half }; ctrlMemo.set(t, o); return o;
+  const o = { full, half, sig }; ctrlMemo.set(t, o); return o;
 }
-function weekHist(D, t) { const h = new Array(CONF.LINES + 1).fill(0); for (const k of ctrlOf(D, t).full) h[k]++; return h; }
+function weekHist(D, t, which) { const h = new Array(CONF.LINES + 1).fill(0); for (const k of ctrlOf(D, t)[which]) h[k]++; return h; }
 function sumCtrl(D, rounds, which) { const acc = new Int32Array(CONF.R); for (const t of rounds) { const c = ctrlOf(D, t)[which]; for (let j = 0; j < CONF.R; j++) acc[j] += c[j]; } return acc; }
 
 /* 내 누적 cum 을 대조군 누적 배열과 견준 요약 — 정렬·이분 탐색으로(생성기와 다른 방식) */
@@ -202,14 +221,14 @@ function expectedGate(D, rows, names) {
   let rec = { weeks: 0, state: 'hold' };
   if (recRows.length) {
     const d = describe(recRows.length, recRows.reduce((s, x) => s + g3Of(x, x.rec.lines), 0), sumCtrl(D, recRows.map((x) => x.r), 'full'));
-    const state = d.weeks < CONF.ALARM_MIN_WEEKS ? 'hold' : ((1 + d.le) * CONF.ALARM_P[1] <= CONF.ALARM_P[0] * (R + 1) ? 'alarm' : (d.cum > d.max ? 'above' : 'inside'));
+    const state = d.weeks < CONF.ALARM_MIN_WEEKS ? 'hold' : ((1 + d.le) * CONF.ALARM_P[1] <= CONF.ALARM_P[0] * (R + 1) ? 'alarm' : 'inside');
     rec = Object.assign({ state }, d);
   }
   const sig = {}, adopted = [];
   for (const s of names) {
     const rs = live.filter((x) => x.sig && x.sig[s]);
     if (!rs.length) { sig[s] = { weeks: 0, state: 'hold' }; continue; }
-    const d = describe(rs.length, rs.reduce((a, x) => a + g3Of(x, x.sig[s].lines), 0), sumCtrl(D, rs.map((x) => x.r), 'full'));
+    const d = describe(rs.length, rs.reduce((a, x) => a + g3Of(x, x.sig[s].lines), 0), sumCtrl(D, rs.map((x) => x.r), 'sig'));
     let state;
     if (d.weeks < CONF.ADOPT_MIN_WEEKS) state = 'hold';
     else if ((1 + d.ge) * CONF.ALPHA[1] * nSig <= CONF.ALPHA[0] * (R + 1)) { state = 'adopt'; adopted.push(s); } else state = 'none';
@@ -227,7 +246,7 @@ function expectedReplay(D, latest, names, simRows /* Map|null */) {
     names.forEach((s) => { cum[s] += gradeSet(ss[s].lines, D[r]).g3; });
     if (simRows && simRows.has(r)) { recCum += gradeSet(simRows.get(r), D[r]).g3; recRounds.push(r); }
   }
-  const base = sumCtrl(D, rounds, 'full'), sig = {};
+  const base = sumCtrl(D, rounds, 'sig'), sig = {};
   names.forEach((s) => { sig[s] = describe(rounds.length, cum[s], base); });
   const rec = recRounds.length ? describe(recRounds.length, recCum, sumCtrl(D, recRounds, 'half')) : null;
   return { label: '돌아보면(사후)', from, to: latest, rounds: rounds.length, lines: CONF.LINES, recLines: CONF.SIM_LINES, rec, sig };
@@ -291,7 +310,7 @@ function checkSignals(J, H, state) {
     const rule = ruleFor(x.r);
     if (x.ver !== rule.ver) err(`r=${x.r} ver ${short(x.ver)} ≠ 규칙표 ${rule.ver}`);
     if (x.basedOn !== x.r - 1) err(`r=${x.r} basedOn ${short(x.basedOn)} ≠ ${x.r - 1}`);
-    if (x.inputDigest !== digestUpto(H.D, x.r - 1)) err(`r=${x.r} inputDigest ${short(x.inputDigest)} ≠ 재계산 ${digestUpto(H.D, x.r - 1)}`);
+    if (x.inputDigest !== digestUpto(H.D, x.r - 1)) err(`r=${x.r} inputDigest ${short(x.inputDigest)} ≠ 재계산 ${digestUpto(H.D, x.r - 1)}` + HINT_FIX);
     if (typeof x.made !== 'string' || !Number.isFinite(Date.parse(x.made))) err(`r=${x.r} made 가 ISO 시각이 아님`);
     const want = expectedSig(H.D, x.r, rule.signals);
     if (!x.sig || Object.keys(x.sig).join() !== rule.signals.join()) { err(`r=${x.r} sig 신호 목록 ${short(x.sig && Object.keys(x.sig))} ≠ ${rule.signals.join()}`); return; }
@@ -302,22 +321,44 @@ function checkSignals(J, H, state) {
     }
     state.signalsOk = true;
   });
+  /* 일지 연속: 마지막 행은 latest+1 pending, missed 는 from..latest 에서 행이 없는 회차 그대로 */
+  const jr = J.journal, last = rows[rows.length - 1];
+  if (!last) err('일지 행이 하나도 없음');
+  else if (last.status !== 'pending' || last.r !== H.latest + 1) err(`마지막 행이 latest+1(${H.latest + 1}) pending 이 아님 — r=${last.r} ${last.status} (이번 주 사전 등록이 사라짐)`);
+  const have = new Set(rows.map((x) => x.r)), wantMissed = [];
+  for (let r = jr.from; r <= H.latest; r++) if (!have.has(r)) wantMissed.push(r);
+  if (wantMissed.join() !== jr.missed.join()) err(`journal.missed [${jr.missed.join(',')}] ≠ from(${jr.from})..latest(${H.latest}) 중 행이 없는 회차 [${wantMissed.join(',')}]`);
 }
 
-function checkRec(J, H, opt, summary, simRows) {
-  const rows = J.journal.rows; let withRec = 0;
+function pickedOf(summary, r) {                              // 추천 요약이 r 회 것이고 유효한 LINES 줄이면 오름차순으로 정규화한 줄 목록, 아니면 null
+  const L = summary && summary.lotto;
+  if (!L || L.next !== r || !Array.isArray(L.picks) || L.picks.length !== CONF.LINES) return null;
+  const out = L.picks.map((p) => (typeof p === 'string' && /^\d{1,2}(,\d{1,2}){5}$/.test(p) ? p.split(',').map(Number).sort(num).join(',') : null));
+  return out.every(lineToNums) ? out : null;
+}
+function checkRec(J, H, summary, simRows, prev) {
+  const rows = J.journal.rows; let withRec = 0, fresh = 0;
+  const known = prev.kind === 'ok' || prev.kind === 'absent';       // 이전 판을 알아야 «이번에 새로 얼린 행» 을 가려낸다
+  const prevR = new Set(prev.kind === 'ok' ? prev.json.journal.rows.map((r) => r.r) : []);
+  if (!known) note('이전 판(--prev/--prev-git)을 몰라 «이번에 새로 얼린 행» 을 가려낼 수 없음 — rec 불일치는 경고로 둠');
   rows.forEach((x) => {
-    if (x.rec === undefined) return;
+    const isNew = known && x.status === 'pending' && x.r === H.latest + 1 && !prevR.has(x.r);
+    const want = pickedOf(summary, x.r);
+    if (isNew && want) fresh++;
+    if (x.rec === undefined) {
+      if (isNew && want) err(`r=${x.r} 이번에 새로 얼린 행에 rec 가 없음 — 추천 요약(lotto.next=${x.r})에는 ${CONF.LINES}줄이 있음(생성기 회귀 의심 — 커밋되면 영구 동결)`);
+      return;
+    }
     withRec++;
     if (!x.rec || !Array.isArray(x.rec.lines) || x.rec.lines.length !== CONF.LINES || !x.rec.lines.every(lineToNums)) { err(`r=${x.r} rec.lines 가 서로 다른 6개(1..45, 오름차순)의 ${CONF.LINES}줄이 아님`); return; }
     if (new Set(x.rec.lines).size !== CONF.LINES) wrn(`r=${x.r} rec 에 같은 줄이 있음`);
-    if (summary && summary.lotto && summary.lotto.next === x.r && Array.isArray(summary.lotto.picks)) {
-      const want = summary.lotto.picks.map((p) => (lineToNums(p) ? p : String(p).split(',').map(Number).sort(num).join(',')));
-      if (!same(want, x.rec.lines)) wrn(`r=${x.r} rec 가 지금 추천 요약 lotto.picks 와 다름(처음 공개한 값 유지 원칙 — 원인 확인)`);
+    if (want && !same(want, x.rec.lines)) {
+      if (isNew) err(`r=${x.r} 이번에 새로 얼린 행의 rec 가 추천 요약 lotto.picks 와 다름 — 새 행은 같아야 함(커밋되면 영구 동결)`);
+      else wrn(`r=${x.r} rec 가 지금 추천 요약 lotto.picks 와 다름(처음 공개한 값 유지 원칙 — 원인 확인)`);
     }
     if (simRows && simRows.has(x.r) && !same(simRows.get(x.r), x.rec.lines.slice(0, CONF.SIM_LINES))) wrn(`r=${x.r} rec 의 앞 5줄이 모의 원장 A~E 와 다름`);
   });
-  note(`rec 가 있는 행 ${withRec}/${rows.length}`);
+  note(`rec 가 있는 행 ${withRec}/${rows.length}` + (known ? ` · 이번에 새로 얼린 행 대조 ${fresh}개` : ''));
 }
 
 function checkGrading(J, H) {
@@ -332,9 +373,10 @@ function checkGrading(J, H) {
     const want = { n: d.n, bonus: d.b };
     if (x.rec) want.rec = gradeSet(x.rec.lines, d);
     want.sig = {}; for (const s of Object.keys(x.sig || {})) want.sig[s] = gradeSet(x.sig[s].lines, d);
-    want.ctrl = { n: CONF.R, h: weekHist(H.D, x.r) };
+    want.ctrl = { n: CONF.R, h: weekHist(H.D, x.r, 'full') };
+    want.ctrlSig = { n: CONF.R, h: weekHist(H.D, x.r, 'sig') };
     const df = firstDiff(x.res, want, `r=${x.r} res`);
-    if (df) err('채점 결과가 재계산과 다름 — ' + df);
+    if (df) err('채점 결과가 재계산과 다름 — ' + df + HINT_FIX);
     else if (Object.keys(x.res).join() !== Object.keys(want).join()) wrn(`r=${x.r} res 키 순서가 규격과 다름`);
   });
 }
@@ -355,16 +397,39 @@ function checkSummary(J, H, simRows) {
   note(`관문: 경보 ${gate.alarm} · 채택 [${gate.adopted.join(',')}] · 집계 ${wantLive.counted}주`);
 }
 
+/* 이전 판 읽기 — kind: none(옵션 없음) · absent(REF 는 있는데 그 판에 파일만 없음 = 첫 실행) · ok · error(읽지 못함 — L6 오류) */
+const gitRun = (root, args) => { try { return { ok: true, out: execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', maxBuffer: 64 << 20, stdio: ['ignore', 'pipe', 'pipe'] }) }; } catch (e) { const er = e && e.stderr ? String(e.stderr).trim().split('\n')[0] : ''; return { ok: false, why: (e && e.code) || er || (e && e.status != null ? `종료 코드 ${e.status}` : 'git 실패') }; } };
+function parsePrev(text, label) {
+  let json; try { json = JSON.parse(text); } catch { return { kind: 'error', label, why: `이전 판 ${label} 가 JSON 이 아님` }; }
+  if (!json || json.kind !== 'learn-lotto' || !json.journal || !Array.isArray(json.journal.rows) || !Array.isArray(json.journal.missed)) return { kind: 'error', label, why: `이전 판 ${label} 의 모양이 학습 장부가 아님` };
+  return { kind: 'ok', label, text, json };
+}
+function loadPrev(opt, filePath, root) {
+  if (opt.prev) {
+    let text; try { text = fs.readFileSync(path.resolve(root, opt.prev), 'utf8'); } catch (e) { return { kind: 'error', label: opt.prev, why: `--prev ${opt.prev} 를 읽을 수 없음(${e.code || e.message})` }; }
+    return parsePrev(text, opt.prev);
+  }
+  if (!opt.prevGit) return { kind: 'none' };
+  const rel = path.relative(root, filePath).split(path.sep).join('/'), label = `${opt.prevGit}:${rel}`;
+  if (rel.startsWith('..') || path.isAbsolute(rel)) return { kind: 'error', label, why: '--file 이 --root 밖이라 git 판과 대조할 수 없음' };
+  const v = gitRun(root, ['rev-parse', '--verify', '--quiet', `${opt.prevGit}^{commit}`]);
+  if (!v.ok) return { kind: 'error', label, why: `--prev-git ${opt.prevGit} 를 git 에서 찾을 수 없음(저장소가 아니거나 REF 오타, git 실행 실패: ${v.why})` };
+  if (!gitRun(root, ['cat-file', '-e', `${opt.prevGit}:${rel}`]).ok) return { kind: 'absent', label };
+  const g = gitRun(root, ['show', `${opt.prevGit}:${rel}`]);
+  if (!g.ok) return { kind: 'error', label, why: `${label} 를 읽지 못함(${g.why})` };
+  return parsePrev(g.out, label);
+}
+
 /* append-only */
-function gitShow(root, ref, rel) { try { return execFileSync('git', ['-C', root, 'show', `${ref}:${rel}`], { encoding: 'utf8', maxBuffer: 64 << 20, stdio: ['ignore', 'pipe', 'pipe'] }); } catch { return null; } }
 const rawRows = (t) => { const m = new Map(); for (const l of t.split('\n')) { const x = /^\s*\{"r":(\d+),/.exec(l); if (x) m.set(+x[1], l.trim().replace(/,$/, '')); } return m; };
-function checkAppendOnly(J, text, opt, filePath, root) {
-  let prevText = null, label;
-  if (opt.prev) { try { prevText = fs.readFileSync(path.resolve(root, opt.prev), 'utf8'); } catch { prevText = null; } label = opt.prev; }
-  else { const rel = path.relative(root, filePath).split(path.sep).join('/'); label = `${opt.prevGit}:${rel}`; prevText = rel.startsWith('..') ? null : gitShow(root, opt.prevGit, rel); }
-  if (prevText === null) { note(`이전 판 ${label} 를 읽을 수 없어(git 없음·저장소 아님·그 판에 파일 없음) 건너뜀`); return; }
-  let H; try { H = JSON.parse(prevText); } catch { note(`이전 판 ${label} 가 JSON 이 아니라 건너뜀`); return; }
-  if (!H.journal || !Array.isArray(H.journal.rows)) { note('이전 판에 일지가 없어 건너뜀'); return; }
+const DEF_KEYS = ['W', 'POOL', 'LINES', 'MIN_HIT', 'CTRL_MUL', 'R'];     // 신호·대조군의 정의 상수 — 같은 이름 신호가 있는 동안은 바꿀 수 없다(docs §11)
+function checkAppendOnly(J, text, H0, prev) {
+  if (prev.kind === 'error') { err(prev.why + ' — append-only 대조를 할 수 없음'); return; }
+  if (prev.kind === 'absent') { note(`${prev.label}: 그 판에 일지 파일이 없음(첫 실행) — 모든 행이 새 행이라 대조할 이전 판 없음`); cur.skipped = true; return; }
+  const prevText = prev.text, H = prev.json, label = prev.label;
+  if (H.source && Number.isInteger(H.source.latest) && H.source.latest <= H0.latest && H.source.digest !== digestUpto(H0.D, H.source.latest)) {
+    err(`이력 정정 감지 — 이전 판이 기록한 1..${H.source.latest}회 지문 ${short(H.source.digest)} ≠ 지금 이력 ${digestUpto(H0.D, H.source.latest)}. 과거 회차 값이 바뀌었다(docs/learn-ledger.md §11 수리 절차)`);
+  }
   if (J.journal.from !== H.journal.from) err(`journal.from ${J.journal.from} ≠ 이전 판 ${H.journal.from}`);
   const curBy = new Map(J.journal.rows.map((r) => [r.r, r]));
   const pr = H.journal.rows.map((r) => r.r), cr = J.journal.rows.map((r) => r.r);
@@ -382,6 +447,11 @@ function checkAppendOnly(J, text, opt, filePath, root) {
   if (textOnly) wrn(`done 행 ${textOnly}개가 값은 같지만 글자가 이전 판과 다름 — 바이트 불변 원칙`);
   if (H.journal.missed.join() !== J.journal.missed.slice(0, H.journal.missed.length).join()) err('missed 가 이전 판의 접두 일치가 아님(소급 수정 금지)');
   if (Array.isArray(H.rules)) { if (!same(J.rules.slice(0, H.rules.length), H.rules)) err('rules 가 이전 판의 접두 일치가 아님(덧붙이기만 허용)'); else if (J.rules.length === H.rules.length && H.conf && !same(J.conf, H.conf)) err('conf 가 바뀌었는데 VER·rules 를 올리지 않음'); }
+  if (H.conf && J.conf) {
+    const changed = DEF_KEYS.filter((k) => !same(J.conf[k], H.conf[k]));
+    for (const k of Object.keys(H.conf.SALT || {})) if (!same((J.conf.SALT || {})[k], H.conf.SALT[k])) changed.push('SALT.' + k);
+    if (changed.length) err(`신호·대조군의 정의 상수가 이전 판과 다름(${changed.join(',')}) — 같은 이름 신호의 정의는 바꿀 수 없다(옛 행을 새 상수로 다시 검증할 수 없고, 정의가 다른 행이 한 누적으로 합쳐진다). 새 신호 이름으로 추가하거나 장부를 갈아타세요(docs §11)`);
+  }
   if (H.source && J.source.latest < H.source.latest) err(`source.latest 가 줄었음 ${H.source.latest}→${J.source.latest}(역행)`);
   note(`이전 판(${label}) 일지 ${H.journal.rows.length}행 대조`);
 }
@@ -456,11 +526,12 @@ function main() {
   runCheck('L1', '입력', opt, () => checkInput(J, H));
   const usable = !H.problems.length && !st.bad;
   const need = (id, title, fn) => { if (!usable) { skipCheck(id, title, '이력 문제 또는 구조 실패'); return; } runCheck(id, title, opt, fn); };
-  need('L2', '신호 풀·줄', () => checkSignals(J, H, st));
-  need('L3', 'rec', () => checkRec(J, H, opt, summary, simRows));
+  need('L2', '신호 풀·줄·일지 연속', () => checkSignals(J, H, st));
+  const prev = loadPrev(opt, filePath, root);
+  need('L3', 'rec', () => checkRec(J, H, summary, simRows, prev));
   need('L4', '채점', () => checkGrading(J, H));
   need('L5', '요약·관문·재현', () => checkSummary(J, H, simRows));
-  if (!opt.prevGit && !opt.prev) skipCheck('L6', 'append-only', '--prev-git 또는 --prev 가 없음'); else if (!usable) skipCheck('L6', 'append-only', '구조 실패'); else runCheck('L6', 'append-only', opt, () => checkAppendOnly(J, text, opt, filePath, root));
+  if (prev.kind === 'none') skipCheck('L6', 'append-only', '--prev-git 또는 --prev 가 없음'); else if (!usable) skipCheck('L6', 'append-only', '구조 실패'); else runCheck('L6', 'append-only', opt, () => checkAppendOnly(J, text, H, prev));
   runCheck('L7', '문구·화면', opt, () => checkWording(J, opt, root));
   runCheck('L8', '정적', opt, () => checkStatic(opt, root));
 
