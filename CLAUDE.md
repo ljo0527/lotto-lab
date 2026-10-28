@@ -12,9 +12,12 @@
   이 파일(CLAUDE.md)도 마찬가지 → 여기에 실명·개인 경로·키·계정 비밀을 적지 않는다.
 - 지도
   - 페이지: `index` `pension` `brief` `rank` `validate` `record` (.html)
-  - 계산: `scripts/` 의 `rank-track` `rank-tiers` `validate` `weekly-brief` `backfill` `trade-ledger`
-  - 독립 검증: `check-rank` `check-tiers` `check-sim` `check-trade` · 가드: `data-guard` `check-names` `check-collect`
+  - 계산: `scripts/` 의 `rank-track` `rank-tiers` `validate` `weekly-brief` `backfill` `trade-ledger` `learn-ledger` `pop-learn`
+  - 독립 검증: `check-rank` `check-tiers` `check-sim` `check-trade` `check-spread` `check-learn` `check-pop-learn` · 가드: `data-guard` `check-names` `check-collect`
   - 매매 일지: 엔진 `lotto-trade.js`(루트, 브라우저·CI 공용 — `rank-core.js` 를 먼저 읽는다) · 산출 `brief/trade-lotto.json` · 규격 `docs/trade-ledger.md` · 규칙은 아래 15번
+  - 갈래 배치(이번 주 F~J): `index.html` 의 `LAYOUT_RULES`·`layoutFor`·`spreadComplete` · 독립 검증 `check-spread` · 규격 `docs/spread-layout.md` · 규칙은 아래 16번
+  - 학습 장부(기록 › 낙첨 분석·학습 실험실): 생성 `learn-ledger` · 독립 검증 `check-learn` · 산출 `brief/learn-lotto.json` · 규격 `docs/learn-ledger.md` · 규칙은 아래 17번
+  - 당첨금 학습(그림자 인기 모형, 화면 없음): 생성 `pop-learn` · 독립 검증 `check-pop-learn` · 산출 `brief/pop-learn-lotto.json` · 규격 `docs/pop-learn.md` · 규칙은 아래 18번
   - 봇 산출물: `brief/*.json` · 워크플로 사본: `setup/workflows/`
 
 ## 2. 잼족 규칙 (소유자 결정 — 어기지 않는다)
@@ -73,6 +76,38 @@
     - **CI**: `weekly.yml` 의 `로또 전 회차 스냅샷` 바로 뒤에 `매매 일지`(id `trade`) → `매매 일지 독립 검증`(id `checktrade`, `trade` 가 `wrote=true` 일 때만) → `매매 일지 검증 실패 시 되돌림`(`checktrade` 가 실패했을 때만), 끝쪽 `검증 보드 실패 표시` 뒤에 `매매 일지 실패 표시`. 앞 둘은 `continue-on-error` 라 실패해도 브리핑 등 다른 산출물의 커밋·배포는 이어진다(`brief/` 아래라 커밋 화이트리스트는 그대로). **검증 실패 시 일지만 되돌린다**: 되돌림 단계가 `brief/trade-lotto.json` 을 HEAD 것으로 복원하고(HEAD 에 없으면 지움) `결과 커밋` 이 그 파일을 올리지 않게 한다 — 일지는 append-only 이고 C10 은 HEAD 와만 비교하므로, 잘못 쓰인 일지가 한 번 커밋되면 다음 주에 그 상태가 기준이 되어 영구히 굳기 때문이다. 두 워크플로 사본은 `diff -q`(6번).
     - **PWA·크기**: `record.html` 이 `rank-core.js`·`lotto-trade.js` 를 읽으므로 `sw.js` PRECACHE 에 넣고 `CACHE_NAME` 을 올린다(13번). 산출은 1MB 미만이어야 하고(4번) `trade-ledger` 는 쓰기 직전에 되읽어 확인한다.
 
+16. **갈래 배치**(이번 주 추천 F~J · 규격 `docs/spread-layout.md`): 1248회부터 F~J 5줄은 A~E(`portfolioPick`)를 그대로 둔 채 «A~J 10줄이 1~45 를 모두 쓰고, 어느 두 줄도 번호 2개 이상 겹치지 않고, 번호당 2회 이하» 가 되도록 고른다(목적은 F~J 의 인기 점수 u 합 최소).
+    - 구매 장부(5줄)·`validate`·`backfill`·`check-sim`·`PORTFOLIO_RULES` 는 이 규칙과 무관하다.
+    - **규칙표 `LAYOUT_RULES` 는 덧붙이기만** 한다. from 보다 작은 회차는 옛 `diversifyLegacy` 10줄이 바이트 그대로 나와야 한다(11번). 새 캐시 전역을 만들지 않는다(weekly-brief·backfill·validate 의 reset 목록 불변).
+    - **결정성**: 시계·내장 난수·시간 예산을 쓰지 않는다(mulberry32 회차 시드, 고정 반복, 동점은 작은 번호·작은 index).
+    - **정직성**: 화면은 구조를 사실로만 적고 확률·기대·«높인다» 류와 이론값을 넣지 않는다(9번). 10줄 «한 줄이라도 3개 이상» 정확 확률은 `check-spread` 의 `::notice` 에만 둔다.
+    - A~E 가 한 번호를 3번 쓰는 주(1000~1248회 중 2회)는 F~J 로 못 고쳐 `layout.degraded=true` 로 표시한다.
+    - **독립 검증·CI**: `check-spread` 는 `brief/latest-summary.json`·`brief/week.json`·`lotto-history.json` 만으로 10줄 구조를 다시 센다. legacy 이거나 layout 이 없으면 «건너뜀» exit 0.
+      - CI 위치: `로또 전 회차 스냅샷` 뒤 `갈래 배치 독립 검증`(id `checkspread`, `continue-on-error`) + 끝쪽 실패 표시. 브리핑은 매 실행 덮어쓰는 파일이라 되돌리지 않는다.
+17. **학습 장부**(`brief/learn-lotto.json` · 기록 › 낙첨 분석·학습 실험실 · 규격 `docs/learn-ledger.md`)
+    - **append-only 일지**: 매매 일지(15번)와 같은 틀(done 바이트 불변, 같은 `ver` pending 재계산이 다르면 `::warning` 후 처음 값 유지, 마감 11:00Z 뒤 `late`, 빠진 주 `missed`, 역행 `wrote=false`, 구멍 exit 1·출력 불변).
+      - `latest+1` 회차에 추천 10줄 `rec` 를 추첨 **전에** 얼린다. `rec` 는 `latest-summary.json` 의 `lotto.next` 가 그 회차일 때만 넣는다.
+      - 같은 회차에 후보 신호 4개(hot·cold·gap·repeat, 각 10줄)도 얼리고, 추첨 뒤 채점한다.
+    - **기준선 = 같은 주 무작위 대조군의 실제 결과**: 1000벌, 시드 = 회차·벌 번호. 분포만 저장한다.
+      - 화면에는 대조군 순위·범위만 쓰고 p·σ·기대값은 넣지 않는다(9번).
+      - 재현은 «돌아보면(사후)» 라벨을 달고 관문에 쓰지 않는다.
+    - **관문은 매 실행 다시 계산하는 파생값**(live = done 이고 late 아님).
+      - 낙첨 경보: 26주 이상 + 추천 누적이 대조군 하위 1% → `::warning`.
+      - 채택: 52주 이상 + 상위 꼬리 비율 ≤ α/신호 수(본페로니) → `::notice`.
+      - **채택은 표시·알림까지다 — 추천 코드를 자동으로 바꾸지 않는다(반영은 소유자 결정).**
+    - **상수 한 곳·VER**: `CONF` 상수를 바꾸면 `VER` 을 올리고 `RULES` 에 덧붙인다. `check-learn` 의 사본 상수도 따로 고친다(10번). 주당 약 1.9KB — 1MB 에 닿기(약 9년) 전에 장부 갈아타기를 소유자와 정한다.
+    - **CI**: `매매 일지 검증 실패 시 되돌림` 뒤 `학습 장부`(id `learn`) → `학습 장부 독립 검증`(id `checklearn`, `wrote=true` 일 때) → `학습 장부 검증 실패 시 되돌림`, 끝쪽 실패 표시. 앞 둘은 `continue-on-error`. `weekly-brief` 뒤여야 `rec` 가 얼려진다.
+18. **당첨금 학습**(`brief/pop-learn-lotto.json` · 규격 `docs/pop-learn.md`): 등수별 당첨자 수로 인기 예측(m45)을 다시 학습하는 그림자 후보 2개(C1 지수 감쇠 OLS, C2 1~5등 풀드 WLS)를 지금 모형(base)과 walk-forward 로 견준다.
+    - **추천은 바꾸지 않는다**: z·`portfolioPick`·구매 장부는 그대로다.
+      - 관문: live 52회 이상, 부호 뒤집기 순열 p ≤ 0.05/후보 수, 돌아보기에서도 같은 방향.
+      - 관문을 넘으면 «채택 조건 충족» 상태와 `::notice` 까지이고, 반영은 소유자 결정이다.
+    - **append-only 일지**: 17번과 같은 틀이다. pending 에 추첨 전 적합 파라미터를 얼리고, done 에 당첨번호의 모형별 예측과 관측 배수를 적는다.
+      - 최신 회차 필드 이상(w4·w5·sales ≤ 0, firstType 합 ≠ 1등 수)이면 쓰지 않고 `wrote=false`.
+      - `rank-params-lotto.json` 에 `latest+1` 행이 없으면 exit 1 이다(순위 추적이 실패한 주).
+    - **독립 검증**: `check-pop-learn` 은 생성기·`index.html`·`rank-core.js` 를 가져오지 않는다. base z 는 `check-rank` `zMaker` 와 상대 1e-9 이내로 대조한다.
+    - **화면은 아직 없다**: 올릴 때는 «대조군 N벌 중 M위» 같은 실제 결과형 기준선을 먼저 정한다(9번). 이 장부는 줄을 고르지 않으므로 균등 무작위 줄 대조군은 맞지 않는다.
+    - **CI**: 학습 장부 단계 뒤 `당첨금 학습`(id `poplearn`) → `당첨금 학습 독립 검증`(id `checkpoplearn`) → `당첨금 학습 검증 실패 시 되돌림`, 끝쪽 실패 표시. 앞 둘은 `continue-on-error`.
+
 ## 3. 로컬 검증 (이 PC 한정)
 
 - PATH 에 node 가 없다 → 편집기에 내장된 런타임을 `ELECTRON_RUN_AS_NODE=1` 로 Node 22 처럼 실행한다. 셸마다 부르는 법이 다르다.
@@ -105,6 +140,14 @@
     7. e2e: `$N .lab/e2e/run.mjs` 의 `trade-ledger`·`check-trade` 두 단계가 필수로 통과하고, pass3 증가량 표에서 `journal.rows` +1행·`window.rows` 변화 없음(외부 접속 없이는 `--passes 2,3`).
        - e2e 는 작업 사본의 append-only 산출물(`brief/trade-lotto.json`·`rank-*`·`rank-params-*`·`rank-tiers-*`·`sim-*`)을 지우고 캐시(1242회·합성 1243회)로 처음부터 다시 쌓는다. 저장소 사본이 캐시보다 앞서(1247회) 있으면 `rank-track` 이 «기존 파일이 앞서 있어 쓰지 않습니다» 로 실제 1243회 행을 그대로 둬서 합성 1243회와 어긋나고, pass3 의 `check-trade` C2(가중치)·C6(정확 순위)와 `check-rank`·`check-tiers`·`check-sim` 이 실패한다(결함이 아니라 입력 불일치). `--rank`·`--params` 를 빈 경로로 주면 통과하지만 그 두 대조를 건너뛰므로 쓰지 않는다.
     8. `diff -q` 두 워크플로 사본 · 금지 문구(C13) 0건.
+- 갈래 배치(16번): `$N scripts/weekly-brief.mjs --root . --out .lab/out-x --cache <구멍 없는 캐시 사본>` → `$N scripts/check-spread.mjs --summary .lab/out-x/brief/latest-summary.json --week .lab/out-x/brief/week.json --history lotto-history.json` (0 = 통과).
+  - 1247회까지 캐시가 필요하면 `lotto-history.json` 을 API 필드명으로 바꾼 사본을 만든다(외부 접속 없음).
+  - 게시본(legacy)은 «건너뜀» 이고, `--force-check` 는 옛 10줄에도 구조 검사를 강제한다.
+- 학습 장부(17번)·당첨금 학습(18번): 캐시·외부 접속이 없다. `--out` 을 빼면 추적 장부에 이어 쓰니 시험은 반드시 `--out .lab/out-x/brief/…` 로 한다.
+  - 학습 장부: 생성 `$N scripts/learn-ledger.mjs --history lotto-history.json --summary <latest-summary.json> --sim brief/sim-lotto.json --out .lab/out-x/brief/learn-lotto.json [--now <ISO>]` → 검사 `$N scripts/check-learn.mjs --root . --file .lab/out-x/brief/learn-lotto.json --history lotto-history.json --summary <같은 파일> --sim brief/sim-lotto.json [--prev <이전 파일>]`.
+  - 당첨금 학습: 생성 `$N scripts/pop-learn.mjs --history lotto-history.json --params brief/rank-params-lotto.json --out .lab/out-x/brief/pop-learn-lotto.json [--now <ISO>]` → 검사 `$N scripts/check-pop-learn.mjs --root . --file <그 파일> --history lotto-history.json --params brief/rank-params-lotto.json`.
+  - 완료 기준은 매매 일지와 같다: 생성·검사 exit 0, 멱등(시각·checks 제외 바이트 동일), 다음 주 합성(가짜 회차 → done/pending, 구멍 사본 exit 1·출력 불변).
+- 작업 트리(`git worktree`)에서 `.lab` 을 주 저장소로 이어 쓸 때 `.lab/snap.mjs` 는 `--root <작업 트리>` 를 줘야 새 코드가 뜬다.
 - 캐시 `.lab/lab-data.json` 은 낡을 수 있다(파일이 있으면 신선도 검사 없이 그대로 쓴다).
   - **캐시에 구멍(1..latest 연속성 실패)이 있으면 스크립트가 묻지 않는다.** 가드 예외가 «캐시 읽기 실패, 새로 받습니다» 로 넘어가 동행복권을 약 130회 호출하고 그 파일을 덮어쓴다
     (`rank-track` `rank-tiers` `validate` `weekly-brief` `backfill` 모두).

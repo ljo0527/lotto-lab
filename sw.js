@@ -5,7 +5,7 @@
    200 이 아닌 응답은 캐시하지 않는다. skipWaiting + clients.claim 으로 즉시 갱신. */
 "use strict";
 
-var CACHE_NAME = 'll-v3';
+var CACHE_NAME = 'll-v4';
 var NETWORK_TIMEOUT_MS = 3500;
 var PRECACHE = ['./brief.html', './record.html', './site.css', './site.js', './icon.svg',
   './rank.html', './rank-core.js', './rank-explorer.js', './rank-worker.js', './rank-tiers-view.js', './lotto-trade.js'];

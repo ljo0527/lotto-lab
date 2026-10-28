@@ -153,6 +153,15 @@ jobs:
         continue-on-error: true
         run: node scripts/fetch-history.mjs --cache /tmp/lab-data.json
 
+      # 갈래 배치 독립 검증 — 이번 주 추천 10줄(A~E + F~J)이 45개 번호를 모두 나눠 쓰고 어느 두 줄도 2개 이상 겹치지 않는지
+      # 산출 JSON 만으로 다시 센다(index.html 을 쓰지 않음). layout 이 없거나 legacy 회차면 «건너뜀» 으로 통과한다.
+      # 브리핑 산출은 매 실행 덮어쓰는 파일이라 일지처럼 되돌리지 않고, 실패하면 끝쪽 «갈래 배치 실패 표시» 로 잡을 빨갛게 한다.
+      - name: 갈래 배치 독립 검증
+        id: checkspread
+        if: steps.brief.outcome == 'success'
+        continue-on-error: true
+        run: node scripts/check-spread.mjs --summary brief/latest-summary.json --week brief/week.json --history lotto-history.json
+
       # 매매 일지 — lotto-history.json 만으로 최근 50회 재현 + 다음 회차 제시(append-only). Playwright·외부 접속 없음.
       - name: 매매 일지 (brief/trade-lotto.json)
         id: trade
@@ -176,6 +185,47 @@ jobs:
       - name: 매매 일지 검증 실패 시 되돌림
         if: steps.checktrade.outcome == 'failure'
         run: git checkout HEAD -- brief/trade-lotto.json 2>/dev/null || rm -f brief/trade-lotto.json
+
+      # 학습 장부 — 낙첨 분석(이번 주 추천 10줄 vs 같은 주 무작위 대조군) + 관문 있는 학습 실험실(후보 신호 사전 등록). append-only.
+      # 주간 브리핑(latest-summary.json)·모의 원장(sim-lotto.json)·로또 전 회차 스냅샷 뒤여야 한다. Playwright·외부 접속 없음.
+      - name: 학습 장부 (brief/learn-lotto.json)
+        id: learn
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node scripts/learn-ledger.mjs --root . --history lotto-history.json --summary brief/latest-summary.json --sim brief/sim-lotto.json --out brief/learn-lotto.json 2> >(tee /tmp/learn.err >&2) || {
+            echo "::error title=learn-ledger 실패::$(tail -c 1800 /tmp/learn.err | tr -s '\r\n' '  ')"; exit 1; }
+
+      - name: 학습 장부 독립 검증
+        id: checklearn
+        if: steps.learn.outcome == 'success' && steps.learn.outputs.wrote == 'true'
+        continue-on-error: true
+        run: node scripts/check-learn.mjs --root . --file brief/learn-lotto.json --history lotto-history.json --summary brief/latest-summary.json --sim brief/sim-lotto.json --prev-git HEAD
+
+      # 매매 일지와 같은 이유로 독립 검증이 거부한 장부만 HEAD 로 되돌린다(HEAD 에 없으면 — 첫 실행 — 지운다).
+      - name: 학습 장부 검증 실패 시 되돌림
+        if: steps.checklearn.outcome == 'failure'
+        run: git checkout HEAD -- brief/learn-lotto.json 2>/dev/null || rm -f brief/learn-lotto.json
+
+      # 당첨금 학습 — 등수별 당첨자 수로 인기 예측을 다시 학습하는 그림자 후보를 사전 등록하고 지금 모형과 견준다(추천은 바꾸지 않음).
+      # 순위 추적(rank-params 갱신)·로또 전 회차 스냅샷 뒤여야 한다. Playwright·외부 접속 없음.
+      - name: 당첨금 학습 (brief/pop-learn-lotto.json)
+        id: poplearn
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node scripts/pop-learn.mjs --root . --history lotto-history.json --params brief/rank-params-lotto.json --out brief/pop-learn-lotto.json 2> >(tee /tmp/poplearn.err >&2) || {
+            echo "::error title=pop-learn 실패::$(tail -c 1800 /tmp/poplearn.err | tr -s '\r\n' '  ')"; exit 1; }
+
+      - name: 당첨금 학습 독립 검증
+        id: checkpoplearn
+        if: steps.poplearn.outcome == 'success' && steps.poplearn.outputs.wrote == 'true'
+        continue-on-error: true
+        run: node scripts/check-pop-learn.mjs --root . --file brief/pop-learn-lotto.json --history lotto-history.json --params brief/rank-params-lotto.json --prev-git HEAD
+
+      - name: 당첨금 학습 검증 실패 시 되돌림
+        if: steps.checkpoplearn.outcome == 'failure'
+        run: git checkout HEAD -- brief/pop-learn-lotto.json 2>/dev/null || rm -f brief/pop-learn-lotto.json
 
       # 결과 요약을 notice 주석으로 남긴다(공개 API 로 확인 가능). dev 브랜치 통합 테스트의 판정 근거.
       # 주석 하나에 3,500자 안쪽 — 넘치면 JSON 이 잘려 읽을 수 없으므로 넷으로 나누고(브리핑 · 검증 · 연금 · 원장),
@@ -233,6 +283,13 @@ jobs:
           note('rank', {lotto:rkS(rl), pension:rkS(rpn)});
           note('sim', {lotto:simS(sl), pension:simS(sp),
                        order:od?{source:od.source&&od.source.name, rounds:ok.length, max:ok.length?Math.max(...ok):null}:null});
+          /* 갈래 배치 · 학습 장부 · 당첨금 학습 요약 */
+          const ln=j('brief/learn-lotto.json'), pl=j('brief/pop-learn-lotto.json');
+          const jr=x=>{ const r=(x&&x.journal&&x.journal.rows)||[], t=r[r.length-1];
+            return {rows:r.length, from:x&&x.journal&&x.journal.from, last:t&&{r:t.r,status:t.status,late:!!t.late}}; };
+          note('learn', {layout:(s.lotto||{}).layout||null, learn:ln&&{...jr(ln),gate:ln.summary&&ln.summary.gate},
+                         poplearn:pl&&{...jr(pl),gate:pl.gate&&{status:pl.gate.status,n:pl.gate.n,adopt:pl.gate.adopt}}},
+                        {layout:(s.lotto||{}).layout||null, learn:ln&&jr(ln), poplearn:pl&&jr(pl)});
           JS
 
       - name: 결과 커밋
@@ -270,6 +327,18 @@ jobs:
       - name: 매매 일지 실패 표시
         if: steps.trade.outcome == 'failure' || steps.checktrade.outcome == 'failure'
         run: echo "::error::매매 일지(trade-ledger/check-trade) 단계가 실패했습니다 — 브리핑·검증은 커밋됨, 독립 검증이 실패한 일지는 HEAD 로 되돌려 커밋하지 않음" && exit 1
+
+      - name: 갈래 배치 실패 표시
+        if: steps.checkspread.outcome == 'failure'
+        run: echo "::error::갈래 배치(check-spread) 검증이 실패했습니다 — 브리핑은 커밋됨, 이번 주 10줄이 구조를 못 지켰거나 산출이 어긋났습니다" && exit 1
+
+      - name: 학습 장부 실패 표시
+        if: steps.learn.outcome == 'failure' || steps.checklearn.outcome == 'failure'
+        run: echo "::error::학습 장부(learn-ledger/check-learn) 단계가 실패했습니다 — 브리핑·검증은 커밋됨, 독립 검증이 실패한 장부는 HEAD 로 되돌려 커밋하지 않음" && exit 1
+
+      - name: 당첨금 학습 실패 표시
+        if: steps.poplearn.outcome == 'failure' || steps.checkpoplearn.outcome == 'failure'
+        run: echo "::error::당첨금 학습(pop-learn/check-pop-learn) 단계가 실패했습니다 — 브리핑·검증은 커밋됨, 독립 검증이 실패한 장부는 HEAD 로 되돌려 커밋하지 않음" && exit 1
 
   deploy:
     needs: compute
