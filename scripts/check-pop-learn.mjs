@@ -73,6 +73,9 @@ function runCheck(id, title, opt, fn) {
 function skipCheck(id, title, why) { R.items.push({ id, title, errors: [], warnings: [], notices: [why], ms: 0, skipped: true }); }
 const near = (a, b, abs, rel) => typeof a === 'number' && typeof b === 'number' && Math.abs(a - b) <= abs + rel * Math.abs(b);
 const jeq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+/* 생성기는 baseRefit.maxRel 을 유효숫자 3자리로 반올림해 적는다. 그래서 같은 값이어도 최대 «끝자리의 절반»(앞자리가 1이면 상대 5e-3)까지 어긋난다 —
+   반올림 한계(×1.001 은 부동소수 여유)와 계산 잡음(상대 1e-9)과 절대 abs 만 허용하고, 그보다 큰 차이는 그대로 오류다 */
+const near3 = (a, b, abs) => typeof a === 'number' && typeof b === 'number' && Math.abs(a - b) <= abs + 0.5 * 10 ** (Math.floor(Math.log10(Math.abs(b))) - 2) * 1.001 + 1e-9 * Math.abs(b);
 
 /* ───────── 결정성 장치 (§3.1) ───────── */
 function mulberry(seed) {
@@ -312,7 +315,7 @@ function checkRecon(J, H, PR, M, st) {
   if (X.refMaxLive > 1e-6) err(`이번 주 행 rows[${H.latest + 1}].pop.A 가 내 재적합과 다름(상대차 ${X.refMaxLive.toExponential(2)}) — 순위 추적 파라미터와 입력 이력이 어긋남`);
   if (X.bdDiffLive) err(`이번 주 행 rows[${H.latest + 1}].pop.bounds 가 내 재적합의 학습 구간과 다름`);
   if (X.refMaxOld > 1e-6) wrn(`지난 회차 행(t ≤ ${H.latest})의 저장 파라미터가 지금 이력의 재적합과 다름(최대 상대차 ${X.refMaxOld.toExponential(2)}) — 이력이 나중에 정정된 경우일 수 있음(예전 행은 append-only 라 고쳐지지 않음, 일지는 얼린 값으로 채점돼 영향 없음)`);
-  if (X.refN ? !near(br.maxRel, X.refMax, 5e-7, 2e-3) : br.maxRel !== null) err(`baseRefit.maxRel ${br.maxRel} ≠ 재계산 ${X.refN ? X.refMax.toExponential(2) : null}`);
+  if (X.refN ? !near3(br.maxRel, X.refMax, 5e-7) : br.maxRel !== null) err(`baseRefit.maxRel ${br.maxRel} ≠ 재계산 ${X.refN ? X.refMax.toExponential(2) : null}`);
   note(`기본 모형 재적합 ↔ 저장 파라미터: ${X.refN}행 최대 상대차 ${X.refMax.toExponential(2)} (생성기 기록 ${br.maxRel}) · 학습 구간 불일치 ${X.bdDiff}행`);
   if (!n) return;
   const lgs = (key, tgt) => rows.map((x) => logsq(x[key], x[tgt]));
