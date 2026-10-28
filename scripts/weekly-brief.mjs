@@ -358,6 +358,7 @@ async function readLotto(browser, base, pension, lotto){
       latest:L, last:{r:last.r,ymd:last.ymd,n:last.n,b:last.b,w:last.w,a:last.a,s:last.s,t:last.t},
       target:W.round, picks:W.combos, buy:buy5, spares:spares5,
       rule: W.rule || (W.portfolio ? 'portfolio' : 'legacy'), degraded: W.portfolio ? !!W.portfolio.degraded : null,
+      layout: W.layout || null, prevLayout: prev.layout || null,   // 갈래 배치(index.html LAYOUT_RULES) — 옛 index.html 이면 null
       prevPicks: graded, prevBuy:prevBuyGraded, prevSpares:prevSparesGraded, prevTarget:prev.round,
       agree: F&&F.agree!=null?F.agree:null,
       cover, p0, evBuy, evRandom: 5*500, evCalib,
@@ -507,6 +508,13 @@ function lottoBuyCard(L, meta, honesty){
       <span class="balls">${c.map(n=>ball(n,true)).join('')}</span>
       <span class="slip-meta mono">합 ${s} · 홀${odd}:짝${6-odd}</span></div>`;
   }).join('');
+  /* F~J 접이 제목 — 갈래(spread) 회차면 10줄 구조를 사실 그대로(못 지켰으면 실측값), 아니면 예전 «예비» 문구 */
+  const spreadOn=!!(L.layout && L.layout.name==='spread');
+  /* 쓴 번호 45개·최대 겹침 ≤1 인데 겹침 1인 쌍이 15개가 아니면 A~E 가 한 번호를 3번 이상 쓴 주다(쌍 수 = Σ C(사용 횟수, 2), 합계 60칸) — index.html spNote 와 같은 규칙 */
+  const spNote=(x)=>(x.used===45 && x.maxOv<=1 && x.pairs!==15) ? ' · 한 번호를 3번 이상 씀(A~E)' : '';
+  const spareTitle=!spreadOn ? '예비 F~J — A~E 중 마음에 안 드는 줄 대신'
+    : L.layout.degraded ? `F~J — A~E 와 함께 10줄 · 쓴 번호 ${L.layout.used}개 · 최대 겹침 ${L.layout.maxOv}개${spNote(L.layout)} (이번 주는 일부 조건 미달)`
+    : 'F~J — A~E 와 같이 10줄을 사면 45개 번호를 모두 나눠 씀 · 어느 두 줄도 번호 2개 이상 겹치지 않음';
   const drawYmd=meta.lottoDrawYmd;
   const copyText=[`로또 6/45 제${L.target}회 (${mmdd(drawYmd)} ${wdOf(drawYmd)})`,
     ...L.buy.map((c,i)=>`${'ABCDE'[i]} ${c.map(n=>String(n).padStart(2,'0')).join(' ')}`)].join('\\n');
@@ -535,7 +543,7 @@ function lottoBuyCard(L, meta, honesty){
     <button class="btn" data-act="buy" data-kind="lotto" data-round="${L.target}">샀어요</button>
     <a class="btn" href="./index.html#sheet">마크시트</a>
   </div>
-  <details><summary>예비 F~J — A~E 중 마음에 안 드는 줄 대신</summary><div class="slip">${spareRows}</div></details>
+  <details><summary>${spareTitle}</summary><div class="slip">${spareRows}</div></details>
   <p class="honest">1등 확률은 1/8,145,060 그대로입니다. 바뀌는 건 당첨 시 나눠 갖는 인원이며,
     검증 보드 walk-forward 실측 효과는 <b>${honesty.label}</b>입니다 → <a href="./validate.html">검증</a>.
     ${L.degraded?'<span class="tag sig">주의 · 이번 주는 다양성 제약을 일부 완화했습니다</span>':''}</p>
@@ -612,15 +620,16 @@ function lastWeekLotto(L){
     <td><span class="balls">${x.c.map(n=>ball(n, L.last.n.includes(n)||n===L.last.b)).join('')}</span></td>
     <td class="num">${x.hit}개${(x.bonus&&x.hit===5)?'+보너스':''} ${x.g?`<span class="tag sig">${GRADE[x.g]}</span>`:'<span class="tag noi">미당첨</span>'}</td></tr>`).join('');
   const hitBuy=L.prevBuy.filter(x=>x.g>0);
+  const prevSp=!!(L.prevLayout && L.prevLayout.name==='spread');   // 그 주가 갈래 회차면 F~J 는 «예비» 가 아니라 10줄의 나머지
   return `
 <div class="card flat">
   <h3>로또 · ${L.last.r}회</h3>
   <div class="balls" style="padding-bottom:8px">${L.last.n.map(n=>ball(n,true)).join('')}
     <span style="color:var(--ink-40);padding:0 4px">+</span>${ball(L.last.b,true)}</div>
-  <p class="note" style="padding:0 0 8px">산 5장 중 <b>${hitBuy.length}</b> · 예비 <b>${L.prevSpares.filter(x=>x.g>0).length}</b>
+  <p class="note" style="padding:0 0 8px">산 5장 중 <b>${hitBuy.length}</b> · ${prevSp?'F~J':'예비'} <b>${L.prevSpares.filter(x=>x.g>0).length}</b>
     ${hitBuy.length?'· '+hitBuy.map(x=>GRADE[x.g]).join(', '):''}</p>
   <div class="scroll"><table><tr><th>순위</th><th>번호</th><th class="num">결과</th></tr>${buyRows}</table></div>
-  <details><summary>예비였다면(F~J)</summary><div class="scroll"><table>${spareRows}</table></div></details>
+  <details><summary>${prevSp?'같이 샀다면(F~J)':'예비였다면(F~J)'}</summary><div class="scroll"><table>${spareRows}</table></div></details>
 </div>`;
 }
 function lastWeekPension(P){
@@ -1254,7 +1263,8 @@ try{
   const weekBlob={
     generated:meta.stamp, date:meta.date, weekday:meta.weekday,
     lotto:{round:L.target, drawDate:meta.lottoDrawYmd, buy:L.buy, spares:L.spares, rule:L.rule,
-      cover:L.cover, evBuy:L.evBuy, lambda:L.lambda, med52:L.med52, overlapK:L.overlapK},
+      cover:L.cover, evBuy:L.evBuy, lambda:L.lambda, med52:L.med52, overlapK:L.overlapK,
+      layout:L.layout},
     pension:{round:P.next.ep, drawDate:meta.pensionDrawYmd, mode:P.mode, buy:P.buy, alts:P.alts,
       planSpread:P.planSpread, planSet:P.planSet},
     honesty
@@ -1308,7 +1318,8 @@ ${sharedGnav('brief','../')}
     lotto:{last:L.last.r, next:L.target, hits:lHit.length,
       hitDetail:lHit.map(x=>`${x.c.join(',')} → ${GRADE[x.g]}`),
       picks:L.picks.map(c=>c.join(',')),
-      rule:L.rule, degraded:L.degraded}
+      rule:L.rule, degraded:L.degraded,
+      layout:L.layout}   // 갈래 배치 구조 실측 {name,from,used,maxOv,pairs,degraded} — check-spread.mjs 가 읽는다(없으면 건너뜀)
   };
   fs.writeFileSync(path.join(OUT,'brief','latest-summary.json'),JSON.stringify(summary,null,2));
   console.log(JSON.stringify(summary,null,2));
