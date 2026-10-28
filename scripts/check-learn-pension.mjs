@@ -140,7 +140,7 @@ function ser(v, depth, p) {
 }
 
 /* ═════════════ 결과 수집 ═════════════ */
-const R_ = { items: [], crashed: false };
+const R_ = { items: [] };
 let cur = null;
 const err = (m) => cur.errors.push(m), wrn = (m) => cur.warnings.push(m), note = (m) => cur.notices.push(m);
 function runCheck(id, title, selected, fn) {
@@ -148,7 +148,7 @@ function runCheck(id, title, selected, fn) {
   R_.items.push(it);
   if (!selected) { it.skipped = true; it.notices.push('생략(옵션)'); return it; }
   cur = it; const t0 = performance.now();
-  try { fn(); } catch (e) { R_.crashed = true; err('검사 중 예외: ' + (e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e)); }
+  try { fn(); } catch (e) { it.crashed = true; err('검사 중 예외: ' + (e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e)); }
   it.ms = performance.now() - t0; cur = null;
   return it;
 }
@@ -507,6 +507,7 @@ function checkRec(J, H, summary, simRows, prev) {
       if (want && candidateNew) {
         if (isNew) err(`r=${x.r} 이번에 새로 얼린 행에 rec 가 없음 — 추천 요약(pension.next=${x.r})에는 앞 5장이 있음(생성기 회귀 의심 — 커밋되면 영구 동결)`);
         else if (!known) wrn(`r=${x.r} 행에 rec 가 없는데 추천 요약에는 앞 5장이 있음(이전 판을 몰라 새 행인지 가릴 수 없음)`);
+        else wrn(`r=${x.r} 이전 판에 이미 있던 행에 rec 가 없는데 추천 요약에는 앞 5장이 있음(처음 값 동결 — rec 를 끼워 넣지 않음)`);
       }
       return;
     }
@@ -657,7 +658,7 @@ function checkStatic(opt, root) {
   const bads = [];
   for (const m of src.matchAll(IMPORT_FROM)) if (!IMPORT_OK.has(m[1])) bads.push(m[1]);
   if (bads.length) err(`생성기가 허용 밖 모듈을 import 함: ${bads.join(', ')}`);
-  note(`생성기 Date 쓰임 ${dates.length}줄(모두 허용 모양)`);
+  note(`생성기 Date 쓰임 ${dates.length}줄` + (bad.length ? ` 중 허용 밖 ${bad.length}줄` : '(모두 허용 모양)'));
 }
 
 function checkBytes(J, text, H, histFile, simInfo) {
@@ -723,11 +724,12 @@ function main() {
   const prev = loadPrev(opt, filePath, root);
 
   const p0 = runCheck('P0', '구조', true, () => { cur.shape = checkStructure(J, text, rawLen); if (rawText.includes('\r')) wrn('파일에 CRLF 가 있음 — LF 로 바꿔 비교함(체크아웃 사본일 수 있음, 규격 §8.1)'); });
-  const shapeBad = !!(p0.shape && p0.shape.bad) || R_.crashed;
+  const shapeBad = !!(p0.shape && p0.shape.bad) || !!p0.crashed;
   if (!sel('P0')) { p0.skipped = true; p0.errors = []; p0.warnings = []; p0.notices = ['생략(옵션)']; }
   runCheck('P1', '입력', sel('P1'), () => checkInput(J, H, histFile));
   const usable = !H.problems.length && !shapeBad;
-  const need = (id, title, fn) => { if (!sel(id)) { runCheck(id, title, false, fn); return; } if (!usable) { skipCheck(id, title, H.problems.length ? '이력 문제' : '지금 판 모양 실패'); return; } runCheck(id, title, true, fn); };
+  let blocked = 0;
+  const need = (id, title, fn) => { if (!sel(id)) { runCheck(id, title, false, fn); return; } if (!usable) { blocked++; skipCheck(id, title, H.problems.length ? '이력 문제' : '지금 판 모양 실패'); return; } runCheck(id, title, true, fn); };
   need('P2', '신호·일지 연속', () => checkSignals(J, H, prev));
   need('P3', 'rec', () => checkRec(J, H, summary, simInfo.rows, prev));
   need('P4', '채점', () => checkGrading(J, H, prev));
@@ -736,14 +738,19 @@ function main() {
   else if (prev.kind === 'error') runCheck('P6', 'append-only', true, () => err(`이전 판을 읽지 못함: ${prev.why}`));
   else if (prev.kind === 'none') skipCheck('P6', 'append-only', '이전 판 없음(--prev-git 또는 --prev 가 없음)');
   else if (prev.kind === 'absent') skipCheck('P6', 'append-only', `이전 판에 파일 없음(${prev.label})`);
-  else if (!usable) skipCheck('P6', 'append-only', '지금 판 모양 실패');
+  else if (!usable) { blocked++; skipCheck('P6', 'append-only', H.problems.length ? '이력 문제' : '지금 판 모양 실패'); }
   else runCheck('P6', 'append-only', true, () => checkAppendOnly(J, text, H, prev));
   runCheck('P7', '문구·화면', sel('P7'), () => checkWording(J, opt, root));
   runCheck('P8', '정적', sel('P8'), () => checkStatic(opt, root));
   need('P9', '바이트 재구성', () => checkBytes(J, text, H, histFile, simInfo));
   R_.items.sort((x, y) => CHECK_IDS.indexOf(x.id) - CHECK_IDS.indexOf(y.id));
 
-  let nErr = 0, nWarn = 0, dataFail = R_.crashed, tailFail = false;
+  let nErr = 0, nWarn = 0, dataFail = false, tailFail = false;
+  /* --only/--skip 으로 P1·P0 을 빼도 깨진 이력(§3.1)·깨진 판 모양 때문에 고른 검사를 못 돌렸으면 조용히 통과시키지 않는다 */
+  const forced = [];
+  if (H.problems.length && !sel('P1')) forced.push('이력 정규화 실패(P1 을 고르지 않았어도 실패로 봄, §3.1): ' + H.problems.slice(0, 6).join('; ') + (H.problems.length > 6 ? ` …외 ${H.problems.length - 6}건` : ''));
+  if (!H.problems.length && shapeBad && blocked > 0 && !sel('P0')) forced.push('지금 판 모양 실패로 고른 검사를 돌리지 못함(P0 을 고르지 않았어도 실패로 봄)');
+  if (forced.length) dataFail = true;
   for (const it of R_.items) {
     nErr += it.errors.length; nWarn += it.warnings.length;
     if (it.errors.length) { if (it.id === 'P7' || it.id === 'P8') tailFail = true; else dataFail = true; }
@@ -751,6 +758,7 @@ function main() {
     console.log(`[${it.id}] ${it.title} — ${s}${it.warnings.length ? ` · 경고 ${it.warnings.length}` : ''} (${(it.ms / 1000).toFixed(1)}s)`);
     for (const n of it.notices) console.log(`  · ${n}`);
   }
+  for (const m of forced) console.log(`::error title=${TITLE}::${esc(m)}`);
   for (const m of pre.warnings) console.log(`::warning title=${TITLE}::${esc(m)}`);
   for (const it of R_.items) {
     for (const m of it.errors.slice(0, 12)) console.log(`::error title=${TITLE}::${esc(`${it.id} ${m}`)}`);
