@@ -227,6 +227,32 @@ jobs:
         if: steps.checkpoplearn.outcome == 'failure'
         run: git checkout HEAD -- brief/pop-learn-lotto.json 2>/dev/null || rm -f brief/pop-learn-lotto.json
 
+      # 연금 학습 장부 — 낙첨 분석·학습 실험실의 연금판(docs/learn-pension.md). 주간 브리핑(pension-history·latest-summary)·
+      # 모의 원장(sim-pension) 뒤여야 rec·재현이 채워진다. 검증기 종료 코드 2(화면 문구·생성기 소스 점검만 실패)는 장부를 되돌리지 않는다.
+      - name: 연금 학습 장부 (brief/learn-pension.json)
+        id: learnpen
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node scripts/learn-pension.mjs --root . --history brief/pension-history.json --summary brief/latest-summary.json --sim brief/sim-pension.json --out brief/learn-pension.json 2> >(tee /tmp/learnpen.err >&2) || {
+            echo "::error title=learn-pension 실패::$(tail -c 1800 /tmp/learnpen.err | tr -s '\r\n' '  ')"; exit 1; }
+
+      - name: 연금 학습 장부 독립 검증
+        id: checklearnpen
+        if: steps.learnpen.outcome == 'success' && steps.learnpen.outputs.wrote == 'true'
+        continue-on-error: true
+        run: |
+          set +e
+          node scripts/check-learn-pension.mjs --root . --file brief/learn-pension.json --history brief/pension-history.json --summary brief/latest-summary.json --sim brief/sim-pension.json --prev-git HEAD
+          code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          exit $code
+
+      # 장부 데이터 실패(종료 코드 1)만 되돌린다. 2(화면 문구·생성기 소스 점검만 실패)는 장부를 커밋하고 실패 표시만 한다.
+      - name: 연금 학습 장부 검증 실패 시 되돌림
+        if: steps.checklearnpen.outcome == 'failure' && steps.checklearnpen.outputs.code != '2'
+        run: git checkout HEAD -- brief/learn-pension.json 2>/dev/null || rm -f brief/learn-pension.json
+
       # 결과 요약을 notice 주석으로 남긴다(공개 API 로 확인 가능). dev 브랜치 통합 테스트의 판정 근거.
       # 주석 하나에 3,500자 안쪽 — 넘치면 JSON 이 잘려 읽을 수 없으므로 넷으로 나누고(브리핑 · 검증 · 연금 · 원장),
       # 그래도 길면 더 짧은 모양으로 바꿔 싣는다. 스크립트는 따옴표 heredoc 이라 셸이 $·따옴표를 건드리지 않는다.
@@ -284,12 +310,13 @@ jobs:
           note('sim', {lotto:simS(sl), pension:simS(sp),
                        order:od?{source:od.source&&od.source.name, rounds:ok.length, max:ok.length?Math.max(...ok):null}:null});
           /* 갈래 배치 · 학습 장부 · 당첨금 학습 요약 */
-          const ln=j('brief/learn-lotto.json'), pl=j('brief/pop-learn-lotto.json');
+          const ln=j('brief/learn-lotto.json'), pl=j('brief/pop-learn-lotto.json'), lp=j('brief/learn-pension.json');
           const jr=x=>{ const r=(x&&x.journal&&x.journal.rows)||[], t=r[r.length-1];
             return {rows:r.length, from:x&&x.journal&&x.journal.from, last:t&&{r:t.r,status:t.status,late:!!t.late}}; };
           note('learn', {layout:(s.lotto||{}).layout||null, learn:ln&&{...jr(ln),gate:ln.summary&&ln.summary.gate},
-                         poplearn:pl&&{...jr(pl),gate:pl.gate&&{status:pl.gate.status,n:pl.gate.n,adopt:pl.gate.adopt}}},
-                        {layout:(s.lotto||{}).layout||null, learn:ln&&jr(ln), poplearn:pl&&jr(pl)});
+                         poplearn:pl&&{...jr(pl),gate:pl.gate&&{status:pl.gate.status,n:pl.gate.n,adopt:pl.gate.adopt}},
+                         learnpen:lp&&{...jr(lp),gate:lp.summary&&lp.summary.gate}},
+                        {layout:(s.lotto||{}).layout||null, learn:ln&&jr(ln), poplearn:pl&&jr(pl), learnpen:lp&&jr(lp)});
           JS
 
       - name: 결과 커밋
@@ -339,6 +366,10 @@ jobs:
       - name: 당첨금 학습 실패 표시
         if: steps.poplearn.outcome == 'failure' || steps.checkpoplearn.outcome == 'failure'
         run: echo "::error::당첨금 학습(pop-learn/check-pop-learn) 단계가 실패했습니다 — 브리핑·검증은 커밋됨, 독립 검증이 실패한 장부는 HEAD 로 되돌려 커밋하지 않음" && exit 1
+
+      - name: 연금 학습 장부 실패 표시
+        if: steps.learnpen.outcome == 'failure' || steps.checklearnpen.outcome == 'failure'
+        run: echo "::error::연금 학습 장부(learn-pension/check-learn-pension) 단계가 실패했습니다 — 브리핑·검증은 커밋됨, 장부 데이터 검증(종료 코드 1) 실패면 HEAD 로 되돌림, 2 면 장부는 커밋하고 record.html·생성기 소스를 고칠 것" && exit 1
 
   deploy:
     needs: compute

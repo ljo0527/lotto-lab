@@ -3,3 +3,4 @@ node_modules/
 .claude/
 scratchpad/
 .lab/
+*.tmp-*
