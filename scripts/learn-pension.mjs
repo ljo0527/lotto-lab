@@ -17,7 +17,8 @@
 
    고른 해석(규격이 모호한 곳 — 바꾸려면 규격·검증기와 같이 고친다)
      · 기존 파일 보호의 «행이 일반 객체가 아니면 같다» 는 모든 행에 적용하고, 모든 행의 sig 가 일반 객체이고 신호마다 picks 가 5장 표여야 한다.
-     · J1 로 채점할 pending 행의 made 가 문자열이 아니면 마감 판정을 못 하므로 실패(쓰기 없음)로 둔다.
+     · J1 로 채점할 pending 행의 made 가 해석 가능한 시각 문자열이 아니면 마감 판정을 못 하므로 실패(쓰기 없음)로 둔다.
+     · done 행은 res.rec(rec 가 있으면)·res.sig.<신호>(sig 의 모든 신호)가 객체이고 g 가 정수여야 한다 — 관문이 g 를 그대로 더하므로. 어긋나면 실패(쓰기 없음).
      · rec 끝자리 겹침 경고는 추천 요약에서 rec 가 만들어진 모든 실행에서 낸다(J3 새 행이든 J4 대조든).
    ═══════════════════════════════════════════════════════════════════════════════════════ */
 import fs from 'node:fs';
@@ -243,6 +244,11 @@ function readPrev(outPath) {
     if (!isObj(r.sig)) bad('sig 가 일반 객체가 아니라');
     for (const s of Object.keys(r.sig)) if (!(isObj(r.sig[s]) && picksOk(r.sig[s].picks))) bad(`sig.${s}.picks(5장 표)가 아니라`);
     if (r.status === 'done' && !(typeof r.made === 'string' && typeof r.gradedAt === 'string' && isObj(r.res))) bad('done 인데 made·gradedAt·res 가 없어');
+    if (r.status === 'done') {
+      const gOk = (x) => isObj(x) && Number.isInteger(x.g);
+      if (hasOwn(r, 'rec') && !gOk(r.res.rec)) bad('done 행의 res 점수 모양이 아니라(res.rec.g)');
+      for (const s of Object.keys(r.sig)) if (!(isObj(r.res.sig) && gOk(r.res.sig[s]))) bad(`done 행의 res 점수 모양이 아니라(res.sig.${s}.g)`);
+    }
   }
   return j;
 }
@@ -264,7 +270,7 @@ function buildJournal(D, latest, prev, next, rec, nowIso, log) {
   const rows = [];
   for (const row of old) {
     if (row.status === 'pending' && row.r <= latest) {
-      if (typeof row.made !== 'string') throw new Fail(`일지 r=${row.r} 의 made 가 문자열이 아니라 마감 판정을 못 합니다`);
+      if (typeof row.made !== 'string' || !Number.isFinite(Date.parse(row.made))) throw new Fail(`일지 r=${row.r} 의 made 가 해석 가능한 시각 문자열이 아니라 마감 판정을 못 합니다`);
       const drawDate = D[row.r].date;
       rows.push(Object.assign({}, row, { status: 'done', drawDate, late: Date.parse(row.made) >= cutoffMs(drawDate), res: buildRes(D, row), gradedAt: nowIso }));
       graded++;
