@@ -123,6 +123,28 @@ details.more summary{font-size:12px;color:var(--ink-60);font-weight:700;cursor:p
 /* 칩 5개를 한 줄에 · 긴 값은 줄바꿈(360px 가로 스크롤 방지) */
 #tradeK{gap:6px}#tradeK .btn{flex:1 1 0;min-width:0;justify-content:center;padding:9px 4px}
 #tradeWrap .crossval{white-space:normal;overflow-wrap:anywhere}#tradeWrap .kpi .v{overflow-wrap:anywhere}
+/* 학습 장부(#learn) — 낙첨 분석·학습 실험실. 기존 .card/.kpi/.tag/.crossrow 재사용, 줄 행·표만 추가 */
+#learnWrap .crossval{white-space:normal;overflow-wrap:anywhere}#learnWrap .kpi .v{font-size:21px;overflow-wrap:anywhere}
+.lhead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding-bottom:6px}
+.lrow{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--ink-12)}
+.lrow:last-child{border-bottom:0}
+.lbl{font-family:var(--f-mono);font-weight:800;font-size:12px;width:14px;flex:none;color:var(--ink-60)}
+.lcnt{font-family:var(--f-mono);font-size:12px;margin-left:auto;white-space:nowrap;color:var(--ink-60)}
+.lcnt.hit{color:var(--ink);font-weight:800}
+.lsub{font-size:12px;color:var(--ink-60);padding-top:8px;line-height:1.6}.lsub b{color:var(--ink)}
+.ltab{width:100%;border-collapse:collapse;font-size:12.5px}
+.ltab th{font:700 10px ui-monospace,monospace;letter-spacing:.08em;color:var(--ink-60);text-align:left;padding:0 8px 6px 0;border-bottom:1px solid var(--ink-12)}
+.ltab td{padding:8px 8px 8px 0;border-bottom:1px solid var(--ink-12);vertical-align:top}
+.ltab tr:last-child td{border-bottom:0}
+.ltab .nm b{display:block}.ltab .nm small{color:var(--ink-60);font-size:11px}
+@media(max-width:559px){
+  .ltab thead{display:none}
+  .ltab,.ltab tbody,.ltab tr,.ltab td{display:block;width:100%}
+  .ltab tr{padding:8px 0;border-bottom:1px solid var(--ink-12)}.ltab tr:last-child{border-bottom:0}
+  .ltab td{display:flex;justify-content:space-between;gap:12px;border:0;padding:2px 0;text-align:right}
+  .ltab td::before{content:attr(data-l);color:var(--ink-60);text-align:left;flex:none}
+  .ltab td.nm{display:block;text-align:left}.ltab td.nm::before{content:none}
+}
 </style>
 </head><body>
 <nav class="gnav" aria-label="사이트">
@@ -202,6 +224,17 @@ details.more summary{font-size:12px;color:var(--ink-60);font-weight:700;cursor:p
 <p class="note mono" id="tradeMeta" style="padding-top:6px"></p>
 </div>
 
+
+<a id="learn"></a>
+<section id="learnWrap" hidden>
+<h2>낙첨 분석 · 학습 실험실</h2>
+<p class="note" id="learnIntro"></p>
+<h3>낙첨 분석<span class="sub">— 이번 주 추천이 같은 주 무작위 줄보다 뚜렷이 나쁜가(운인가 버그인가)</span></h3>
+<div class="card" id="learnLoss"></div>
+<h3>학습 실험실<span class="sub">— 후보 신호를 추첨 전에 등록하고, 추첨 뒤 채점해 대조군과 견줍니다</span></h3>
+<div class="card flat" id="learnLab"></div>
+<p class="note mono" id="learnMeta" style="padding-top:6px"></p>
+</section>
 
 <div id="simWrap" hidden>
 <h2>모의 원장 <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-40)">— 로또 1000회·연금 100회부터 매주 추천대로 샀다면(가정)</span></h2>
@@ -1655,9 +1688,167 @@ function renderTrade(lottoMap){
   });
 }
 
+/* ══════════════════ 학습 장부 — 낙첨 분석 + 학습 실험실 ══════════════════
+   brief/learn-lotto.json(CI 가 씀, 규격 docs/learn-ledger.md)을 읽어 채운다. 파일이 없거나 모양이 어긋나면 섹션째 숨긴다.
+   화면의 기준선은 «같은 주 무작위 대조군의 실제 결과»(순위·범위)뿐이다. 계산은 CI 가 하고 여기서는 보여 주기만 한다. */
+/* LEARN-BEGIN */
+/* 신호 이름·설명 — 설명 속 숫자는 JSON 의 conf 에서 조립한다(W·POOL 을 여기 다시 박지 않는다) */
+var LEARN_SIGS = {
+  hot:    ['자주 나온 번호', function(c){ return '최근 '+nf(c.W)+'회에 많이 나온 '+nf(c.POOL)+'개에서 고름'; }],
+  cold:   ['적게 나온 번호', function(c){ return '최근 '+nf(c.W)+'회에 적게 나온 '+nf(c.POOL)+'개에서 고름'; }],
+  gap:    ['오래 쉰 번호', function(c){ return '마지막으로 나온 지 가장 오래된 '+nf(c.POOL)+'개에서 고름'; }],
+  repeat: ['직전 번호 다시', function(c){ return '직전 회차 6개와 많이 나온 '+nf(c.POOL-6)+'개에서 고름'; }]
+};
+var LEARN_LBL = 'ABCDEFGHIJ';
+var LEARN_NEED = ['W','POOL','LINES','MIN_HIT','R','ALARM_MIN_WEEKS','ADOPT_MIN_WEEKS'];
+var learnConf = {}, learnNSig = 0;
+function learnNum(x){ return typeof x==='number' && isFinite(x); }
+function learnEsc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function learnFull(s){ return !!s && learnNum(s.weeks) && s.weeks>0 && learnNum(s.cum) && learnNum(s.n) && learnNum(s.min) && learnNum(s.max) && learnNum(s.rank) && learnNum(s.tie); }
+function learnShape(j){
+  try{
+    if(!j || j.kind!=='learn-lotto' || j.v!==1) return false;
+    var c=j.conf, i;
+    if(!c) return false;
+    for(i=0;i<LEARN_NEED.length;i++){ if(!learnNum(c[LEARN_NEED[i]])) return false; }
+    if(!Array.isArray(c.ALARM_P) || c.ALARM_P.length!==2 || !learnNum(c.ALARM_P[0]) || !learnNum(c.ALARM_P[1]) || c.ALARM_P[1]<=0) return false;
+    var g=j.summary.gate, rp=j.summary.replay;
+    if(!g || !g.rec || !g.sig || !learnNum(g.rec.weeks) || typeof g.rec.state!=='string') return false;
+    for(var k in g.sig){ if(!g.sig[k] || !learnNum(g.sig[k].weeks) || typeof g.sig[k].state!=='string') return false; }
+    if(!rp || !rp.sig || !Array.isArray(j.journal.rows)) return false;
+    return true;
+  }catch(e){ return false; }
+}
+function learnHit(){ return nf(learnConf.MIN_HIT)+'개 이상'; }                      // «3개 이상» — MIN_HIT 에서
+function learnSigName(k){ var d=LEARN_SIGS[k]; return d ? [d[0], d[1](learnConf)] : [k,'']; }
+/* 대조군 n벌과 견준 자리 — 순위는 큰 값이 앞(1위), 같은 값은 공동 */
+function learnRank(s){
+  var n=nf(s.n);
+  if(s.rank>s.n) return '대조군 '+n+'벌 모두보다 낮음';
+  if(s.rank===1 && s.tie===0) return '대조군 '+n+'벌 모두보다 높음';
+  return '<span style="white-space:nowrap">대조군 '+n+'벌 중 '+nf(s.rank)+'위</span>'+(s.tie>0?' <span style="white-space:nowrap">(같은 값 '+nf(s.tie)+'벌)</span>':'');
+}
+function learnRange(s){ return nf(s.min)+'~'+nf(s.max)+'줄 (가운데 '+nf(s.med)+')'; }
+function learnRowKV(label, val){ return '<div class="crossrow"><span class="crosslabel">'+label+'</span><span class="crossval">'+val+'</span></div>'; }
+function learnKpi(items){
+  return '<div class="kpi">'+items.map(function(it){ return '<div><div class="k">'+it[0]+'</div><div class="v">'+it[1]+'</div><div class="s">'+it[2]+'</div></div>'; }).join('')+'</div>';
+}
+function learnRecTag(s){
+  if(s.state==='alarm') return '<span class="tag sig">경보 · 버그 의심</span>';
+  if(s.state==='inside') return (learnNum(s.max) && s.cum>s.max) ? '<span class="tag noi">경보 없음</span>' : '<span class="tag ok">대조군 범위 안</span>';
+  return '<span class="tag noi">판단 보류 · '+nf(s.weeks)+'/'+nf(learnConf.ALARM_MIN_WEEKS)+'주</span>';
+}
+function learnSigTag(s){
+  if(s.state==='adopt') return '<span class="tag ok">채택 조건 충족</span>';
+  if(s.state==='none') return '<span class="tag noi">채택 없음</span>';
+  return '<span class="tag noi">판단 보류 · '+nf(s.weeks)+'/'+nf(learnConf.ADOPT_MIN_WEEKS)+'주</span>';
+}
+
+/* 지난 회차 한 주: 줄 결과 + 같은 주 대조군 안의 자리 */
+function learnWeekHTML(row){
+  var res=row.res, h='';
+  h+='<div class="lhead"><b>'+row.r+'회 결과</b>'+(row.late===true?'<span class="tag noi">마감 뒤 등록 · 집계 제외</span>':'')+'</div>';
+  if(!row.rec || !res || !res.rec || !res.ctrl || !Array.isArray(res.n) || !Array.isArray(row.rec.lines) || !Array.isArray(res.rec.m) || !Array.isArray(res.ctrl.h)){
+    return h+'<p class="note" style="padding-bottom:0">이 주는 추천 줄이 추첨 전에 기록되지 않아 대조군과 견줄 수 없습니다.</p>';
+  }
+  var lines='';
+  row.rec.lines.forEach(function(ln,i){
+    var m=res.rec.m[i], bo=res.rec.bo && res.rec.bo[i];
+    lines+='<div class="lrow"><span class="lbl">'+LEARN_LBL.charAt(i)+'</span>'+lottoTicketHTML(parseLottoPick(ln), res.n)+
+      '<span class="lcnt'+(m>=learnConf.MIN_HIT?' hit':'')+'">'+m+'개'+(m===5&&bo?'+보너스':'')+'</span></div>';
+  });
+  var g3=res.rec.g3, hh=res.ctrl.h, better=0, same=hh[g3]||0, k;
+  for(k=g3+1;k<hh.length;k++) better+=hh[k];
+  var dist=hh.map(function(c,i){ return c>0 ? i+'줄 '+nf(c)+'벌' : ''; }).filter(Boolean).join(' · ');
+  h+=learnKpi([
+    [learnHit()+' 맞힌 줄', g3+'줄', '추천 '+row.rec.lines.length+'줄 중'],
+    ['같은 주 대조군', nf(1+better)+'위', '대조군 '+nf(res.ctrl.n)+'벌 중 · 같은 값 '+nf(same)+'벌']
+  ]);
+  h+='<div id="learnLines">'+lines+'</div>';
+  h+='<p class="lsub">같은 주 대조군 '+nf(res.ctrl.n)+'벌(각 '+row.rec.lines.length+'줄)의 실제 분포 — <b>'+dist+'</b></p>';
+  return h;
+}
+
+function learnLossHTML(j){
+  var g=j.summary.gate.rec, rows=j.journal.rows, h='', lastDone=null, pend=null, i, nl=nf(learnConf.LINES);
+  for(i=0;i<rows.length;i++){ if(rows[i].status==='done') lastDone=rows[i]; else if(rows[i].status==='pending') pend=rows[i]; }
+  if(lastDone) h+=learnWeekHTML(lastDone);
+  else h+='<p class="note">아직 채점된 주가 없습니다.'+(pend ? ' '+pend.r+'회 추천 '+nl+'줄과 신호 '+nf(Object.keys(pend.sig||{}).length)+'개(줄 '+nl+'개씩)가 추첨 전에 기록되어 있습니다 — 추첨 뒤 첫 채점이 쌓입니다.' : '')+'</p>';
+  h+='<div class="crosshead" style="padding-top:16px">누적 — 추첨 전에 기록한 추천 '+nl+'줄만 집계</div><div class="crossgrid">';
+  h+=learnRowKV('집계한 주', nf(g.weeks)+'주');
+  if(learnFull(g)){
+    h+=learnRowKV('추천 누적 («'+learnHit()+' 줄 수»)', '<b>'+nf(g.cum)+'줄</b>');
+    h+=learnRowKV('같은 기간 대조군 범위', learnRange(g));
+    h+=learnRowKV('대조군 안의 자리', learnRank(g));
+  }
+  h+=learnRowKV('상태', learnRecTag(g))+'</div>';
+  var pct=Math.round(learnConf.ALARM_P[0]*10000/learnConf.ALARM_P[1])/100;
+  h+='<p class="lsub"><b>떨어지는 주가 대부분인 것이 정상</b> — 대조군과 비교해 버그만 가려냄. 추천 누적이 같은 기간 대조군의 아래쪽 '+nf(pct)+'% 안으로 내려가면 경보를 냅니다.</p>';
+  var rp=j.summary.replay;
+  if(rp && learnFull(rp.rec) && learnNum(rp.recLines) && rp.recLines>=1){
+    var rl=nf(rp.recLines);
+    h+='<div class="crosshead" style="padding-top:16px"><span class="tag noi">돌아보면(사후)</span> 모의 원장 '+LEARN_LBL.charAt(0)+'~'+LEARN_LBL.charAt(rp.recLines-1)+' '+rl+'줄을 매주 샀다면</div><div class="crossgrid">';
+    h+=learnRowKV('기간', nf(rp.rec.weeks)+'주 (최근 '+nf(rp.rounds)+'회 안)');
+    h+=learnRowKV('누적 («'+learnHit()+' 줄 수»)', '<b>'+nf(rp.rec.cum)+'줄</b>');
+    h+=learnRowKV('같은 기간 대조군('+rl+'줄씩) 범위', learnRange(rp.rec));
+    h+=learnRowKV('대조군 안의 자리', learnRank(rp.rec))+'</div>';
+  }
+  return h;
+}
+
+function learnLabHTML(j){
+  var g=j.summary.gate, rp=j.summary.replay, keys=Object.keys(g.sig), h='', hit=learnHit();
+  h+='<p class="note">신호 '+nf(learnNSig)+'개는 <b>그 직전 회차까지의 당첨번호만</b> 보고 정한 '+nf(learnConf.POOL)+'개 번호에서 매주 '+nf(learnConf.LINES)+'줄을 뽑습니다. '+
+    '비교 기준(대조군)도 같은 방식입니다 — 같은 주에 <b>무작위로 고른 '+nf(learnConf.POOL)+'개 번호</b>에서 같은 절차로 '+nf(learnConf.LINES)+'줄을 뽑은 '+nf(learnConf.R)+'벌의 실제 결과입니다. '+
+    '사전 등록 주 수가 '+nf(learnConf.ADOPT_MIN_WEEKS)+'주 이상이고 같은 기간 대조군의 가장 위쪽에 들 때만 «채택 조건 충족» 으로 표시합니다. 이 표시는 상태일 뿐이고, <b>추천에 반영할지는 소유자가 정합니다</b>(코드는 저절로 바뀌지 않습니다).</p>';
+  h+='<table class="ltab"><thead><tr><th>신호</th><th>사전 등록</th><th>'+hit+' 줄 누적</th><th>대조군 안의 자리</th><th>상태</th></tr></thead><tbody>';
+  keys.forEach(function(k){
+    var s=g.sig[k], nm=learnSigName(k);
+    h+='<tr><td class="nm"><b>'+learnEsc(nm[0])+'</b><small>'+learnEsc(nm[1])+'</small></td>'+
+      '<td data-l="사전 등록">'+nf(s.weeks)+'주</td>'+
+      '<td data-l="'+hit+' 줄 누적">'+(learnFull(s)?nf(s.cum)+'줄':'—')+'</td>'+
+      '<td data-l="대조군 안의 자리">'+(learnFull(s)?learnRank(s):'—')+'</td>'+
+      '<td data-l="상태">'+learnSigTag(s)+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  h+='<div class="crosshead" style="padding-top:18px"><span class="tag noi">돌아보면(사후)</span> 최근 '+nf(rp.rounds)+'회에 같은 규칙을 적용해 보면</div>';
+  h+='<p class="lsub" style="padding-top:0;padding-bottom:6px">결과를 알고 난 뒤 다시 계산한 표입니다. 채택 판단에는 쓰지 않고, 위 표(추첨 전 등록)만 관문에 씁니다.</p>';
+  h+='<table class="ltab"><thead><tr><th>신호</th><th>주 수</th><th>'+hit+' 줄 누적</th><th>같은 기간 대조군 범위</th><th>대조군 안의 자리</th></tr></thead><tbody>';
+  keys.forEach(function(k){
+    var s=rp.sig[k], nm=learnSigName(k);
+    if(!learnFull(s)) return;
+    h+='<tr><td class="nm"><b>'+learnEsc(nm[0])+'</b></td>'+
+      '<td data-l="주 수">'+nf(s.weeks)+'주</td>'+
+      '<td data-l="'+hit+' 줄 누적">'+nf(s.cum)+'줄</td>'+
+      '<td data-l="대조군 범위">'+learnRange(s)+'</td>'+
+      '<td data-l="대조군 안의 자리">'+learnRank(s)+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  return h;
+}
+
+function renderLearn(){
+  var wrap=document.getElementById('learnWrap'); if(!wrap) return;
+  fetchJSON('./brief/learn-lotto.json').then(function(j){
+    if(!learnShape(j)){ wrap.hidden=true; return; }
+    try{
+      learnConf=j.conf; learnNSig=Object.keys(j.summary.gate.sig).length;
+      var nl=nf(learnConf.LINES), intro=document.getElementById('learnIntro');
+      if(intro) intro.innerHTML='매주 추첨 <b>전에</b> 이번 주 추천 '+nl+'줄과 후보 신호 '+nf(learnNSig)+'개(줄 '+nl+'개씩)를 기록해 두고, 추첨 <b>뒤에</b> 맞힌 개수를 채점합니다. 비교의 기준선은 같은 주에 무작위로 뽑은 <b>대조군의 실제 결과</b>입니다. 어느 줄이든 당첨 확률은 같습니다.';
+      document.getElementById('learnLoss').innerHTML=learnLossHTML(j);
+      document.getElementById('learnLab').innerHTML=learnLabHTML(j);
+      var lv=j.summary.live||{}, meta=document.getElementById('learnMeta');
+      if(meta) meta.textContent='이력 '+(j.source&&j.source.latest)+'회 기준 · 집계 '+nf(lv.counted)+'주'+(lv.late?'(마감 뒤 등록 '+nf(lv.late)+'주 제외)':'')+' · 매주 대조군 '+nf(learnConf.R)+'벌 · 생성 '+learnEsc(String(j.generated||'').slice(0,10));
+      wrap.hidden=false;
+    }catch(e){ wrap.hidden=true; }
+  }).catch(function(){ wrap.hidden=true; });
+}
+/* LEARN-END */
+
 /* ══════════════════ 메인 ══════════════════ */
 function main(){
   try{ if(window.SITE && SITE.theme && SITE.theme.mount) SITE.theme.mount('#themeBtn'); }catch(e){}
+  try{ renderLearn(); }catch(e){ var lw=document.getElementById('learnWrap'); if(lw) lw.hidden=true; } // 학습 장부(별도 섹션) — 실패해도 다른 섹션은 무사
 
   var myLotto = storeGet(MY_LOTTO_KEY);
   var myPension = storeGet(MY_PENSION_KEY);
