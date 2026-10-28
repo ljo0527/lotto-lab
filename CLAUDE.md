@@ -12,11 +12,12 @@
   이 파일(CLAUDE.md)도 마찬가지 → 여기에 실명·개인 경로·키·계정 비밀을 적지 않는다.
 - 지도
   - 페이지: `index` `pension` `brief` `rank` `validate` `record` (.html)
-  - 계산: `scripts/` 의 `rank-track` `rank-tiers` `validate` `weekly-brief` `backfill` `trade-ledger` `learn-ledger` `pop-learn`
-  - 독립 검증: `check-rank` `check-tiers` `check-sim` `check-trade` `check-spread` `check-learn` `check-pop-learn` · 가드: `data-guard` `check-names` `check-collect`
+  - 계산: `scripts/` 의 `rank-track` `rank-tiers` `validate` `weekly-brief` `backfill` `trade-ledger` `learn-ledger` `pop-learn` `learn-pension`
+  - 독립 검증: `check-rank` `check-tiers` `check-sim` `check-trade` `check-spread` `check-learn` `check-pop-learn` `check-learn-pension` · 가드: `data-guard` `check-names` `check-collect`
   - 매매 일지: 엔진 `lotto-trade.js`(루트, 브라우저·CI 공용 — `rank-core.js` 를 먼저 읽는다) · 산출 `brief/trade-lotto.json` · 규격 `docs/trade-ledger.md` · 규칙은 아래 15번
   - 갈래 배치(이번 주 F~J): `index.html` 의 `LAYOUT_RULES`·`layoutFor`·`spreadComplete` · 독립 검증 `check-spread` · 규격 `docs/spread-layout.md` · 규칙은 아래 16번
   - 학습 장부(기록 › 낙첨 분석·학습 실험실): 생성 `learn-ledger` · 독립 검증 `check-learn` · 산출 `brief/learn-lotto.json` · 규격 `docs/learn-ledger.md` · 규칙은 아래 17번
+  - 연금 학습 장부(기록 › 연금 낙첨 분석·학습 실험실): 생성 `learn-pension` · 독립 검증 `check-learn-pension` · 산출 `brief/learn-pension.json` · 규격 `docs/learn-pension.md` · 규칙은 아래 19번
   - 당첨금 학습(그림자 인기 모형, 화면 없음): 생성 `pop-learn` · 독립 검증 `check-pop-learn` · 산출 `brief/pop-learn-lotto.json` · 규격 `docs/pop-learn.md` · 규칙은 아래 18번
   - 봇 산출물: `brief/*.json` · 워크플로 사본: `setup/workflows/`
 
@@ -108,6 +109,13 @@
     - **화면은 아직 없다**: 올릴 때는 «대조군 N벌 중 M위» 같은 실제 결과형 기준선을 먼저 정한다(9번). 이 장부는 줄을 고르지 않으므로 균등 무작위 줄 대조군은 맞지 않는다.
     - **CI**: 학습 장부 단계 뒤 `당첨금 학습`(id `poplearn`) → `당첨금 학습 독립 검증`(id `checkpoplearn`) → `당첨금 학습 검증 실패 시 되돌림`, 끝쪽 실패 표시. 앞 둘은 `continue-on-error`.
 
+19. **연금 학습 장부**(`brief/learn-pension.json` · 기록 › 연금 낙첨 분석·학습 실험실 · 규격 `docs/learn-pension.md`): 17번(로또 학습 장부)의 연금판이다. 로또 장부·스크립트와 파일을 나누고 서로 import 하지 않는다.
+    - 연금에는 펼친 배치(16번)·당첨금 학습(18번)을 만들지 않는다. spread@334 의 구매 5장은 끝자리가 모두 달라 이미 5장 배치의 상한이고, 연금 당첨금은 고정액이다.
+    - 점수는 장마다 «끝에서부터 이어서 맞힌 자리 수» L(0~6, 보너스 제외), 한 주 g = 5장 합. rec = `latest-summary` 의 pension 앞 5장(구매분)이고 `next === r`·`rule === 'portfolio'` 일 때만 얼린다.
+    - 기준선은 구조를 맞춘 무작위 대조군 하나(`ctrl`, 1000벌, 끝자리 서로 다른 5장)가 rec·신호 모두에 쓰인다. 관문 상수·채택은 알림까지라는 점은 17번과 같다.
+    - late = 추첨일 0시 KST 뒤에 얼린 행(판매 마감 시각 미확인이라 보수적 [확인 필요]). 일지 규칙(J1~J6·역행·구멍·기존 파일 보호)은 17번과 같다. 정의 상수를 바꾸면 장부를 갈아탄다(규격 §11).
+    - **CI**: 당첨금 학습 단계들 뒤 `연금 학습 장부`(id `learnpen`) → `연금 학습 장부 독립 검증`(id `checklearnpen`, `--prev-git HEAD`) → 되돌림 → 끝쪽 실패 표시. 검증기 종료 코드 2(화면 문구·생성기 소스 점검만 실패)는 **되돌리지 않는다** — 되돌리면 그 주가 영영 `missed` 가 된다. 임시 파일 `*.tmp-*` 는 `.gitignore`.
+
 ## 3. 로컬 검증 (이 PC 한정)
 
 - PATH 에 node 가 없다 → 편집기에 내장된 런타임을 `ELECTRON_RUN_AS_NODE=1` 로 Node 22 처럼 실행한다. 셸마다 부르는 법이 다르다.
@@ -147,6 +155,7 @@
   - 학습 장부: 생성 `$N scripts/learn-ledger.mjs --history lotto-history.json --summary <latest-summary.json> --sim brief/sim-lotto.json --out .lab/out-x/brief/learn-lotto.json [--now <ISO>]` → 검사 `$N scripts/check-learn.mjs --root . --file .lab/out-x/brief/learn-lotto.json --history lotto-history.json --summary <같은 파일> --sim brief/sim-lotto.json [--prev <이전 파일>]`.
   - 당첨금 학습: 생성 `$N scripts/pop-learn.mjs --history lotto-history.json --params brief/rank-params-lotto.json --out .lab/out-x/brief/pop-learn-lotto.json [--now <ISO>]` → 검사 `$N scripts/check-pop-learn.mjs --root . --file <그 파일> --history lotto-history.json --params brief/rank-params-lotto.json`.
   - 완료 기준은 매매 일지와 같다: 생성·검사 exit 0, 멱등(시각·checks 제외 바이트 동일), 다음 주 합성(가짜 회차 → done/pending, 구멍 사본 exit 1·출력 불변).
+- 연금 학습 장부(19번): 규격 `docs/learn-pension.md` §9.2 의 두 명령(생성 `--out .lab/out-learnpen/brief/learn-pension.json` → 검사 `--prev-git HEAD`). 시험 폴더는 `--root` 안 `.lab/` 아래(밖이면 `--prev-git` 판정이 error). 완료 기준·기준 sha 는 §9.3.
 - 작업 트리(`git worktree`)에서 `.lab` 을 주 저장소로 이어 쓸 때 `.lab/snap.mjs` 는 `--root <작업 트리>` 를 줘야 새 코드가 뜬다.
 - 캐시 `.lab/lab-data.json` 은 낡을 수 있다(파일이 있으면 신선도 검사 없이 그대로 쓴다).
   - **캐시에 구멍(1..latest 연속성 실패)이 있으면 스크립트가 묻지 않는다.** 가드 예외가 «캐시 읽기 실패, 새로 받습니다» 로 넘어가 동행복권을 약 130회 호출하고 그 파일을 덮어쓴다
