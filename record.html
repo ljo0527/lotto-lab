@@ -1868,6 +1868,7 @@ var LEARNPEN_SIGS = {
   gap:    ['오래 쉰 숫자', function(){ return '자리마다 마지막으로 나온 지 가장 오래된 숫자'; }],
   repeat: ['직전 번호 다시', function(c){ return '자리마다 직전 회차 숫자 먼저, 그다음 최근 '+nf(c.W)+'회에 많이 나온 숫자'; }]
 };
+var LEARNPEN_REC_STATES = ['hold','inside','alarm'], LEARNPEN_SIG_STATES = ['hold','none','adopt'];
 var LEARNPEN_NEED = ['W','TICKETS','R','ALARM_MIN_WEEKS','ADOPT_MIN_WEEKS'];
 var learnPenConf = {}, learnPenNSig = 0;
 function learnPenNum(x){ return typeof x==='number' && isFinite(x); }
@@ -1879,11 +1880,12 @@ function learnPenShape(j){
     var c=j.conf, i;
     if(!c) return false;
     for(i=0;i<LEARNPEN_NEED.length;i++){ if(!learnPenNum(c[LEARNPEN_NEED[i]])) return false; }
+    if(!Number.isInteger(c.TICKETS) || c.TICKETS<1) return false;
     if(!Array.isArray(c.ALARM_P) || c.ALARM_P.length!==2 || !learnPenNum(c.ALARM_P[0]) || !learnPenNum(c.ALARM_P[1]) || c.ALARM_P[1]<=0) return false;
     var g=j.summary.gate, rp=j.summary.replay;
-    if(!g || !g.rec || !g.sig || !learnPenNum(g.rec.weeks) || typeof g.rec.state!=='string') return false;
-    for(var k in g.sig){ if(!g.sig[k] || !learnPenNum(g.sig[k].weeks) || typeof g.sig[k].state!=='string') return false; }
-    if(!rp || !rp.sig || typeof rp.sig!=='object' || !Array.isArray(j.journal.rows)) return false;
+    if(!g || !g.rec || !g.sig || typeof g.sig!=='object' || Array.isArray(g.sig) || !learnPenNum(g.rec.weeks) || LEARNPEN_REC_STATES.indexOf(g.rec.state)<0) return false;
+    for(var k in g.sig){ if(!g.sig[k] || !learnPenNum(g.sig[k].weeks) || LEARNPEN_SIG_STATES.indexOf(g.sig[k].state)<0) return false; }
+    if(!rp || !rp.sig || typeof rp.sig!=='object' || Array.isArray(rp.sig) || !Array.isArray(j.journal.rows)) return false;
     return true;
   }catch(e){ return false; }
 }
@@ -1903,12 +1905,14 @@ function learnPenKpi(items){
 function learnPenRecTag(s){
   if(s.state==='alarm') return '<span class="tag sig">경보 · 버그 의심</span>';
   if(s.state==='inside') return (learnPenNum(s.max) && s.cum>s.max) ? '<span class="tag noi">경보 없음</span>' : '<span class="tag ok">대조군 범위 안</span>';
-  return '<span class="tag noi">판단 보류 · '+nf(s.weeks)+'/'+nf(learnPenConf.ALARM_MIN_WEEKS)+'주</span>';
+  if(s.state==='hold') return '<span class="tag noi">판단 보류 · '+nf(s.weeks)+'/'+nf(learnPenConf.ALARM_MIN_WEEKS)+'주</span>';
+  throw new Error('state');
 }
 function learnPenSigTag(s){
   if(s.state==='adopt') return '<span class="tag ok">채택 조건 충족</span>';
   if(s.state==='none') return '<span class="tag noi">채택 없음</span>';
-  return '<span class="tag noi">판단 보류 · '+nf(s.weeks)+'/'+nf(learnPenConf.ADOPT_MIN_WEEKS)+'주</span>';
+  if(s.state==='hold') return '<span class="tag noi">판단 보류 · '+nf(s.weeks)+'/'+nf(learnPenConf.ADOPT_MIN_WEEKS)+'주</span>';
+  throw new Error('state');
 }
 /* 표 한 장 — 모양이 어긋나면 예외(섹션째 숨김) */
 function learnPenTk(band, num, hi){
@@ -1920,21 +1924,24 @@ function learnPenTk(band, num, hi){
 function learnPenWeekHTML(row){
   var res=row.res, T=learnPenConf.TICKETS, h='', i;
   h+='<div class="lhead"><b>'+nf(row.r)+'회 결과</b>'+(row.late===true?'<span class="tag noi">마감 뒤 등록 · 집계 제외</span>':'')+'</div>';
-  if(res && learnPenNum(res.band) && /^\d{6}$/.test(String(res.num)) && /^\d{6}$/.test(String(res.bonus))){
-    h+='<div class="lrow"><span class="lbl" style="width:auto">당첨</span>'+learnPenTk(res.band, res.num, 0)+'<span class="lcnt">보너스 '+learnPenEsc(res.bonus)+'</span></div>';
-  }
-  if(!row.rec || !res || !res.rec || !res.ctrl || !Array.isArray(row.rec.picks) || !Array.isArray(res.rec.L) || !Array.isArray(res.rec.gr) || !Array.isArray(res.ctrl.h)){
+  /* 채점한 주(done)는 res 가 객체이고 당첨번호 모양이 맞아야 한다 — 어긋나면 줄만 빼지 않고 섹션째 숨긴다 */
+  if(!res || typeof res!=='object' || Array.isArray(res) || !learnPenNum(res.band) || !/^\d{6}$/.test(String(res.num)) || !/^\d{6}$/.test(String(res.bonus))) throw new Error('res');
+  h+='<div class="lrow"><span class="lbl" style="width:auto">당첨</span>'+learnPenTk(res.band, res.num, 0)+'<span class="lcnt">보너스 '+learnPenEsc(res.bonus)+'</span></div>';
+  if(!row.rec || !res.rec || !res.ctrl){
     return h+'<p class="note" style="padding-bottom:0">이 주는 구매 표가 추첨 전에 기록되지 않아 대조군과 견줄 수 없습니다.</p>';
   }
+  if(!Array.isArray(row.rec.picks) || !Array.isArray(res.rec.L) || !Array.isArray(res.rec.gr) || !Array.isArray(res.ctrl.h) || !res.ctrl.h.length) throw new Error('row');
+  var nd=String(res.num).length;
   var lines='';
   for(i=0;i<T;i++){
     var pk=String(row.rec.picks[i]||''), mm=/^([1-5])조 (\d{6})$/.exec(pk), L=res.rec.L[i], gr=res.rec.gr[i];
-    if(!mm || !learnPenNum(L) || !learnPenNum(gr)) throw new Error('row');
+    if(!mm || !Number.isInteger(L) || L<0 || L>nd || !Number.isInteger(gr) || !PENSION_NAME[gr]) throw new Error('row');
     lines+='<div class="lrow"><span class="lbl">'+(i+1)+'</span>'+learnPenTk(+mm[1], mm[2], L)+
       '<span class="lcnt'+(L>0?' hit':'')+'">끝 '+nf(L)+'자리'+(gr>0 && PENSION_NAME[gr]?' · '+PENSION_NAME[gr]:'')+'</span></div>';
   }
   var g=res.rec.g, hh=res.ctrl.h, better=0, same, k;
-  if(!learnPenNum(g) || !learnPenNum(res.ctrl.n)) throw new Error('g');
+  if(!Number.isInteger(g) || g<0 || g>=hh.length || !learnPenNum(res.ctrl.n)) throw new Error('g');
+  for(k=0;k<hh.length;k++){ if(!Number.isInteger(hh[k]) || hh[k]<0) throw new Error('h'); }
   same=hh[g]||0;
   for(k=g+1;k<hh.length;k++) better+=hh[k];
   var dist=hh.map(function(c,x){ return c>0 ? x+'자리 '+nf(c)+'벌' : ''; }).filter(Boolean).join(' · ');
@@ -1969,7 +1976,7 @@ function learnPenLossHTML(j){
   });
   if(ov>=1) h+='<p class="lsub">끝자리가 겹친 주 '+nf(ov)+'주 포함 — 이 주들은 대조군과 구조가 달라 비교가 정확하지 않음</p>';
   var pct=Math.round(c.ALARM_P[0]*10000/c.ALARM_P[1])/100;
-  h+='<p class="lsub"><b>0자리인 주가 흔한 것이 정상</b> — 대조군과 비교해 버그만 가려냄. 구매 누적이 같은 기간 대조군의 아래쪽 '+nf(pct)+'% 안으로 내려가면 경보를 냅니다.</p>';
+  h+='<p class="lsub"><b>0자리인 주가 흔한 것이 정상</b> — 대조군과 비교해 버그만 가려냄. 구매 누적이 같은 기간 대조군의 아래쪽 '+String(pct)+'% 안으로 내려가면 경보를 냅니다.</p>';
   var rp=j.summary.replay;
   if(rp && learnPenFull(rp.rec) && learnPenNum(rp.rounds)){
     h+='<div class="crosshead" style="padding-top:16px"><span class="tag noi">돌아보면(사후)</span> 모의 원장 '+nt+'장을 매주 샀다면</div><div class="crossgrid">';
@@ -2024,7 +2031,7 @@ function renderLearnPen(){
       document.getElementById('learnPenLoss').innerHTML=loss;
       document.getElementById('learnPenLab').innerHTML=lab;
       var lv=j.summary.live||{}, meta=document.getElementById('learnPenMeta');
-      if(meta) meta.textContent='이력 '+(j.source&&j.source.latest)+'회 기준 · 집계 '+nf(lv.counted)+'주'+(lv.late?'(마감 뒤 등록 '+nf(lv.late)+'주 제외)':'')+' · 매주 대조군 '+nf(learnPenConf.R)+'벌 · 생성 '+learnPenEsc(String(j.generated||'').slice(0,10));
+      if(meta) meta.textContent='이력 '+nf(j.source&&j.source.latest)+'회 기준 · 집계 '+nf(lv.counted)+'주'+(lv.late?'(마감 뒤 등록 '+nf(lv.late)+'주 제외)':'')+' · 매주 대조군 '+nf(learnPenConf.R)+'벌 · 생성 '+String(j.generated||'').slice(0,10);
       wrap.hidden=false;
     }catch(e){ wrap.hidden=true; }
   }).catch(function(){ wrap.hidden=true; });
