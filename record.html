@@ -125,6 +125,7 @@ details.more summary{font-size:12px;color:var(--ink-60);font-weight:700;cursor:p
 #tradeWrap .crossval{white-space:normal;overflow-wrap:anywhere}#tradeWrap .kpi .v{overflow-wrap:anywhere}
 /* 학습 장부(#learn) — 낙첨 분석·학습 실험실. 기존 .card/.kpi/.tag/.crossrow 재사용, 줄 행·표만 추가 */
 #learnWrap .crossval{white-space:normal;overflow-wrap:anywhere}#learnWrap .kpi .v{font-size:21px;overflow-wrap:anywhere}
+#learnPenWrap .crossval{white-space:normal;overflow-wrap:anywhere}#learnPenWrap .kpi .v{font-size:21px;overflow-wrap:anywhere}
 .lhead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding-bottom:6px}
 .lrow{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--ink-12)}
 .lrow:last-child{border-bottom:0}
@@ -234,6 +235,17 @@ details.more summary{font-size:12px;color:var(--ink-60);font-weight:700;cursor:p
 <h3>학습 실험실<span class="sub">— 후보 신호를 추첨 전에 등록하고, 추첨 뒤 채점해 대조군과 견줍니다</span></h3>
 <div class="card flat" id="learnLab"></div>
 <p class="note mono" id="learnMeta" style="padding-top:6px"></p>
+</section>
+
+<a id="learnpen"></a>
+<section id="learnPenWrap" hidden>
+<h2>연금 낙첨 분석 · 학습 실험실</h2>
+<p class="note" id="learnPenIntro"></p>
+<h3>연금 낙첨 분석<span class="sub">— 이번 주 구매 표가 같은 주 무작위 표보다 뚜렷이 나쁜가(운인가 버그인가)</span></h3>
+<div class="card" id="learnPenLoss"></div>
+<h3>연금 학습 실험실<span class="sub">— 후보 신호를 추첨 전에 등록하고, 추첨 뒤 채점해 대조군과 견줍니다</span></h3>
+<div class="card flat" id="learnPenLab"></div>
+<p class="note mono" id="learnPenMeta" style="padding-top:6px"></p>
 </section>
 
 <div id="simWrap" hidden>
@@ -1845,10 +1857,185 @@ function renderLearn(){
 }
 /* LEARN-END */
 
+/* ══════════════════ 연금 학습 장부 — 낙첨 분석 + 학습 실험실 ══════════════════
+   brief/learn-pension.json(CI 가 씀, 규격 docs/learn-pension.md)을 읽어 채운다. 파일이 없거나 모양이 어긋나면 섹션째 숨긴다.
+   화면의 기준선은 «같은 주 무작위 대조군의 실제 결과»(순위·범위·분포)뿐이다. 계산은 CI 가 하고 여기서는 보여 주기만 한다. */
+/* LEARNPEN-BEGIN */
+/* 신호 이름·설명 — 설명 속 숫자는 JSON 의 conf 에서 조립한다(W 를 여기 다시 박지 않는다) */
+var LEARNPEN_SIGS = {
+  hot:    ['자주 나온 숫자', function(c){ return '자리마다 최근 '+nf(c.W)+'회에 가장 많이 나온 숫자'; }],
+  cold:   ['적게 나온 숫자', function(c){ return '자리마다 최근 '+nf(c.W)+'회에 가장 적게 나온 숫자'; }],
+  gap:    ['오래 쉰 숫자', function(){ return '자리마다 마지막으로 나온 지 가장 오래된 숫자'; }],
+  repeat: ['직전 번호 다시', function(c){ return '자리마다 직전 회차 숫자 먼저, 그다음 최근 '+nf(c.W)+'회에 많이 나온 숫자'; }]
+};
+var LEARNPEN_NEED = ['W','TICKETS','R','ALARM_MIN_WEEKS','ADOPT_MIN_WEEKS'];
+var learnPenConf = {}, learnPenNSig = 0;
+function learnPenNum(x){ return typeof x==='number' && isFinite(x); }
+function learnPenEsc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function learnPenFull(s){ return !!s && learnPenNum(s.weeks) && s.weeks>0 && learnPenNum(s.cum) && learnPenNum(s.n) && learnPenNum(s.min) && learnPenNum(s.med) && learnPenNum(s.max) && learnPenNum(s.rank) && learnPenNum(s.tie); }
+function learnPenShape(j){
+  try{
+    if(!j || j.kind!=='learn-pension' || j.v!==1) return false;
+    var c=j.conf, i;
+    if(!c) return false;
+    for(i=0;i<LEARNPEN_NEED.length;i++){ if(!learnPenNum(c[LEARNPEN_NEED[i]])) return false; }
+    if(!Array.isArray(c.ALARM_P) || c.ALARM_P.length!==2 || !learnPenNum(c.ALARM_P[0]) || !learnPenNum(c.ALARM_P[1]) || c.ALARM_P[1]<=0) return false;
+    var g=j.summary.gate, rp=j.summary.replay;
+    if(!g || !g.rec || !g.sig || !learnPenNum(g.rec.weeks) || typeof g.rec.state!=='string') return false;
+    for(var k in g.sig){ if(!g.sig[k] || !learnPenNum(g.sig[k].weeks) || typeof g.sig[k].state!=='string') return false; }
+    if(!rp || !rp.sig || typeof rp.sig!=='object' || !Array.isArray(j.journal.rows)) return false;
+    return true;
+  }catch(e){ return false; }
+}
+function learnPenSigName(k){ var d=LEARNPEN_SIGS[k]; return d ? [d[0], d[1](learnPenConf)] : [k,'']; }
+/* 대조군 n벌과 견준 자리 — 순위는 큰 값이 앞(1위), 같은 값은 공동 */
+function learnPenRank(s){
+  var n=nf(s.n);
+  if(s.rank>s.n) return '대조군 '+n+'벌 모두보다 낮음';
+  if(s.rank===1 && s.tie===0) return '대조군 '+n+'벌 모두보다 높음';
+  return '<span><span style="white-space:nowrap">대조군 '+n+'벌 중 '+nf(s.rank)+'위</span>'+(s.tie>0?' <span style="white-space:nowrap">(같은 값 '+nf(s.tie)+'벌)</span>':'')+'</span>';
+}
+function learnPenRange(s){ return nf(s.min)+'~'+nf(s.max)+'자리 (가운데 '+nf(s.med)+')'; }
+function learnPenRowKV(label, val){ return '<div class="crossrow"><span class="crosslabel">'+label+'</span><span class="crossval">'+val+'</span></div>'; }
+function learnPenKpi(items){
+  return '<div class="kpi">'+items.map(function(it){ return '<div><div class="k">'+it[0]+'</div><div class="v">'+it[1]+'</div><div class="s">'+it[2]+'</div></div>'; }).join('')+'</div>';
+}
+function learnPenRecTag(s){
+  if(s.state==='alarm') return '<span class="tag sig">경보 · 버그 의심</span>';
+  if(s.state==='inside') return (learnPenNum(s.max) && s.cum>s.max) ? '<span class="tag noi">경보 없음</span>' : '<span class="tag ok">대조군 범위 안</span>';
+  return '<span class="tag noi">판단 보류 · '+nf(s.weeks)+'/'+nf(learnPenConf.ALARM_MIN_WEEKS)+'주</span>';
+}
+function learnPenSigTag(s){
+  if(s.state==='adopt') return '<span class="tag ok">채택 조건 충족</span>';
+  if(s.state==='none') return '<span class="tag noi">채택 없음</span>';
+  return '<span class="tag noi">판단 보류 · '+nf(s.weeks)+'/'+nf(learnPenConf.ADOPT_MIN_WEEKS)+'주</span>';
+}
+/* 표 한 장 — 모양이 어긋나면 예외(섹션째 숨김) */
+function learnPenTk(band, num, hi){
+  if(!learnPenNum(band) || !/^\d{6}$/.test(String(num)) || !learnPenNum(hi)) throw new Error('ticket');
+  return pensionTicketHTML(band, num, hi);
+}
+
+/* 지난 회차 한 주: 장별 결과 + 같은 주 대조군 안의 자리 */
+function learnPenWeekHTML(row){
+  var res=row.res, T=learnPenConf.TICKETS, h='', i;
+  h+='<div class="lhead"><b>'+nf(row.r)+'회 결과</b>'+(row.late===true?'<span class="tag noi">마감 뒤 등록 · 집계 제외</span>':'')+'</div>';
+  if(res && learnPenNum(res.band) && /^\d{6}$/.test(String(res.num)) && /^\d{6}$/.test(String(res.bonus))){
+    h+='<div class="lrow"><span class="lbl" style="width:auto">당첨</span>'+learnPenTk(res.band, res.num, 0)+'<span class="lcnt">보너스 '+learnPenEsc(res.bonus)+'</span></div>';
+  }
+  if(!row.rec || !res || !res.rec || !res.ctrl || !Array.isArray(row.rec.picks) || !Array.isArray(res.rec.L) || !Array.isArray(res.rec.gr) || !Array.isArray(res.ctrl.h)){
+    return h+'<p class="note" style="padding-bottom:0">이 주는 구매 표가 추첨 전에 기록되지 않아 대조군과 견줄 수 없습니다.</p>';
+  }
+  var lines='';
+  for(i=0;i<T;i++){
+    var pk=String(row.rec.picks[i]||''), mm=/^([1-5])조 (\d{6})$/.exec(pk), L=res.rec.L[i], gr=res.rec.gr[i];
+    if(!mm || !learnPenNum(L) || !learnPenNum(gr)) throw new Error('row');
+    lines+='<div class="lrow"><span class="lbl">'+(i+1)+'</span>'+learnPenTk(+mm[1], mm[2], L)+
+      '<span class="lcnt'+(L>0?' hit':'')+'">끝 '+nf(L)+'자리'+(gr>0 && PENSION_NAME[gr]?' · '+PENSION_NAME[gr]:'')+'</span></div>';
+  }
+  var g=res.rec.g, hh=res.ctrl.h, better=0, same, k;
+  if(!learnPenNum(g) || !learnPenNum(res.ctrl.n)) throw new Error('g');
+  same=hh[g]||0;
+  for(k=g+1;k<hh.length;k++) better+=hh[k];
+  var dist=hh.map(function(c,x){ return c>0 ? x+'자리 '+nf(c)+'벌' : ''; }).filter(Boolean).join(' · ');
+  h+=learnPenKpi([
+    ['끝자리부터 맞힌 자리 합', nf(g)+'자리', '구매 '+nf(T)+'장 합'],
+    ['같은 주 대조군', nf(1+better)+'위', '대조군 '+nf(res.ctrl.n)+'벌 중 · 같은 값 '+nf(same)+'벌']
+  ]);
+  h+='<div id="learnPenLines">'+lines+'</div>';
+  h+='<p class="lsub">같은 주 대조군 '+nf(res.ctrl.n)+'벌(각 '+nf(T)+'장)의 실제 분포 — <b>'+dist+'</b></p>';
+  return h;
+}
+
+function learnPenLossHTML(j){
+  var g=j.summary.gate.rec, rows=j.journal.rows, c=learnPenConf, T=c.TICKETS, h='', lastDone=null, pend=null, i, nt=nf(T);
+  for(i=0;i<rows.length;i++){ if(rows[i].status==='done') lastDone=rows[i]; else if(rows[i].status==='pending') pend=rows[i]; }
+  if(lastDone) h+=learnPenWeekHTML(lastDone);
+  else h+='<p class="note">아직 채점된 주가 없습니다.'+(pend ? ' '+nf(pend.r)+'회 '+(pend.rec?'구매 '+nt+'장과 ':'')+'신호 '+nf(Object.keys(pend.sig||{}).length)+'개('+nt+'장씩)가 추첨 전에 기록되어 있습니다 — 추첨 뒤 첫 채점이 쌓입니다.' : '')+'</p>';
+  h+='<div class="crosshead" style="padding-top:16px">누적 — 추첨 전에 기록한 구매 표만 집계</div><div class="crossgrid">';
+  h+=learnPenRowKV('집계한 주', nf(g.weeks)+'주');
+  if(learnPenFull(g)){
+    h+=learnPenRowKV('구매 누적(맞힌 자리 합)', '<b>'+nf(g.cum)+'자리</b>');
+    h+=learnPenRowKV('같은 기간 대조군 범위', learnPenRange(g));
+    h+=learnPenRowKV('대조군 안의 자리', learnPenRank(g));
+  }
+  h+=learnPenRowKV('상태', learnPenRecTag(g))+'</div>';
+  var ov=0;
+  rows.forEach(function(r){
+    if(r && r.status==='done' && r.late===false && r.rec && Array.isArray(r.rec.picks)){
+      var ends={}; r.rec.picks.forEach(function(s){ ends[String(s).slice(-1)]=1; });
+      if(Object.keys(ends).length<T) ov++;
+    }
+  });
+  if(ov>=1) h+='<p class="lsub">끝자리가 겹친 주 '+nf(ov)+'주 포함 — 이 주들은 대조군과 구조가 달라 비교가 정확하지 않음</p>';
+  var pct=Math.round(c.ALARM_P[0]*10000/c.ALARM_P[1])/100;
+  h+='<p class="lsub"><b>0자리인 주가 흔한 것이 정상</b> — 대조군과 비교해 버그만 가려냄. 구매 누적이 같은 기간 대조군의 아래쪽 '+nf(pct)+'% 안으로 내려가면 경보를 냅니다.</p>';
+  var rp=j.summary.replay;
+  if(rp && learnPenFull(rp.rec) && learnPenNum(rp.rounds)){
+    h+='<div class="crosshead" style="padding-top:16px"><span class="tag noi">돌아보면(사후)</span> 모의 원장 '+nt+'장을 매주 샀다면</div><div class="crossgrid">';
+    h+=learnPenRowKV('기간', nf(rp.rec.weeks)+'주 (최근 '+nf(rp.rounds)+'회 안)');
+    h+=learnPenRowKV('누적(맞힌 자리 합)', '<b>'+nf(rp.rec.cum)+'자리</b>');
+    h+=learnPenRowKV('같은 기간 대조군('+nt+'장씩) 범위', learnPenRange(rp.rec));
+    h+=learnPenRowKV('대조군 안의 자리', learnPenRank(rp.rec))+'</div>';
+  }
+  return h;
+}
+
+function learnPenLabHTML(j){
+  var g=j.summary.gate, rp=j.summary.replay, keys=Object.keys(g.sig), h='', c=learnPenConf, nt=nf(c.TICKETS);
+  h+='<p class="note">신호 '+nf(learnPenNSig)+'개는 <b>그 직전 회차까지의 당첨번호만</b> 보고 자리마다 숫자 순위를 매겨 매주 '+nt+'장을 만듭니다 — 끝자리를 뺀 자리는 자리마다 1위 숫자, 끝자리는 1~'+nt+'위 숫자를 한 장씩, 조도 1~'+nt+'위를 한 장씩. '+
+    '비교 기준(대조군)은 같은 주에 <b>끝자리가 서로 다른 '+nt+'장을 무작위로</b> 고른 '+nf(c.R)+'벌의 실제 결과입니다. '+
+    '사전 등록 주 수가 '+nf(c.ADOPT_MIN_WEEKS)+'주 이상이고 같은 기간 대조군의 가장 위쪽에 들 때만 «채택 조건 충족» 으로 표시합니다. 이 표시는 상태일 뿐이고, <b>추천에 반영할지는 소유자가 정합니다</b>(코드는 저절로 바뀌지 않습니다).</p>';
+  h+='<table class="ltab"><thead><tr><th>신호</th><th>사전 등록</th><th>맞힌 자리 누적</th><th>대조군 안의 자리</th><th>상태</th></tr></thead><tbody>';
+  keys.forEach(function(k){
+    var s=g.sig[k], nm=learnPenSigName(k);
+    h+='<tr><td class="nm"><b>'+learnPenEsc(nm[0])+'</b><small>'+learnPenEsc(nm[1])+'</small></td>'+
+      '<td data-l="사전 등록">'+nf(s.weeks)+'주</td>'+
+      '<td data-l="맞힌 자리 누적">'+(learnPenFull(s)?nf(s.cum)+'자리':'—')+'</td>'+
+      '<td data-l="대조군 안의 자리">'+(learnPenFull(s)?learnPenRank(s):'—')+'</td>'+
+      '<td data-l="상태">'+learnPenSigTag(s)+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  h+='<div class="crosshead" style="padding-top:18px"><span class="tag noi">돌아보면(사후)</span> 최근 '+nf(rp.rounds)+'회에 같은 규칙을 적용해 보면</div>';
+  h+='<p class="lsub" style="padding-top:0;padding-bottom:6px">결과를 알고 난 뒤 다시 계산한 표입니다. 채택 판단에는 쓰지 않고, 위 표(추첨 전 등록)만 관문에 씁니다.</p>';
+  h+='<table class="ltab"><thead><tr><th>신호</th><th>주 수</th><th>맞힌 자리 누적</th><th>같은 기간 대조군 범위</th><th>대조군 안의 자리</th></tr></thead><tbody>';
+  keys.forEach(function(k){
+    var s=rp.sig[k], nm=learnPenSigName(k);
+    if(!learnPenFull(s)) return;
+    h+='<tr><td class="nm"><b>'+learnPenEsc(nm[0])+'</b></td>'+
+      '<td data-l="주 수">'+nf(s.weeks)+'주</td>'+
+      '<td data-l="맞힌 자리 누적">'+nf(s.cum)+'자리</td>'+
+      '<td data-l="대조군 범위">'+learnPenRange(s)+'</td>'+
+      '<td data-l="대조군 안의 자리">'+learnPenRank(s)+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  return h;
+}
+
+function renderLearnPen(){
+  var wrap=document.getElementById('learnPenWrap'); if(!wrap) return;
+  fetchJSON('./brief/learn-pension.json').then(function(j){
+    if(!learnPenShape(j)){ wrap.hidden=true; return; }
+    try{
+      learnPenConf=j.conf; learnPenNSig=Object.keys(j.summary.gate.sig).length;
+      var nt=nf(learnPenConf.TICKETS), intro=document.getElementById('learnPenIntro');
+      if(intro) intro.innerHTML='매주 추첨 <b>전에</b> 이번 주 구매 '+nt+'장과 후보 신호 '+nf(learnPenNSig)+'개('+nt+'장씩)를 기록해 두고, 추첨 <b>뒤에</b> 장마다 끝자리부터 몇 자리가 당첨번호와 같은지 채점합니다(보너스 번호는 점수에 넣지 않습니다). 비교의 기준선은 같은 주에 무작위로 고른 <b>대조군의 실제 결과</b>입니다. 어느 장이든 당첨 확률은 같습니다.';
+      var loss=learnPenLossHTML(j), lab=learnPenLabHTML(j);
+      document.getElementById('learnPenLoss').innerHTML=loss;
+      document.getElementById('learnPenLab').innerHTML=lab;
+      var lv=j.summary.live||{}, meta=document.getElementById('learnPenMeta');
+      if(meta) meta.textContent='이력 '+(j.source&&j.source.latest)+'회 기준 · 집계 '+nf(lv.counted)+'주'+(lv.late?'(마감 뒤 등록 '+nf(lv.late)+'주 제외)':'')+' · 매주 대조군 '+nf(learnPenConf.R)+'벌 · 생성 '+learnPenEsc(String(j.generated||'').slice(0,10));
+      wrap.hidden=false;
+    }catch(e){ wrap.hidden=true; }
+  }).catch(function(){ wrap.hidden=true; });
+}
+/* LEARNPEN-END */
+
 /* ══════════════════ 메인 ══════════════════ */
 function main(){
   try{ if(window.SITE && SITE.theme && SITE.theme.mount) SITE.theme.mount('#themeBtn'); }catch(e){}
   try{ renderLearn(); }catch(e){ var lw=document.getElementById('learnWrap'); if(lw) lw.hidden=true; } // 학습 장부(별도 섹션) — 실패해도 다른 섹션은 무사
+  try{ renderLearnPen(); }catch(e){ var lpw=document.getElementById('learnPenWrap'); if(lpw) lpw.hidden=true; }
 
   var myLotto = storeGet(MY_LOTTO_KEY);
   var myPension = storeGet(MY_PENSION_KEY);
