@@ -2,7 +2,7 @@
 <script>try{var t=localStorage.getItem('lottolab.theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#16302B">
-<title>로직 검증 보드 · 2026-10-28</title>
+<title>로직 검증 보드 · 2026-10-30</title>
 <link rel="icon" href="./icon.svg" type="image/svg+xml"><link rel="manifest" href="./manifest.webmanifest">
 <style>/* site.css — 일확천금 공유 디자인 토큰 + 전역 내비(gnav)
    손으로 쓴 페이지: <link rel="stylesheet" href="./site.css"> 를 자기 <style> 앞에.
@@ -111,7 +111,7 @@ td small{font-size:11px;color:var(--ink-40)}
 <div class="wrap">
 <header><div class="eb"><span>검증 · Logic Validation Board</span>
 <button class="theme-btn" id="themeBtn" type="button">테마</button></div>
-<h1>로직 검증 보드<small>2026-10-28 자동 갱신 · 로또 948~1247회 300주 · 연금 101~338회</small></h1></header>
+<h1>로직 검증 보드<small>2026-10-30 자동 갱신 · 로또 948~1247회 300주 · 연금 101~339회</small></h1></header>
 
 <div class="vd"><b>이 보드가 답하는 질문 하나.</b> 「우리가 쓰는 규칙이 우연과 구별되는가」.
 당첨 결과로는 영원히 답할 수 없어서(1등 1/8,145,060) <b>세 층으로 나눠</b> 잽니다 —
@@ -119,10 +119,10 @@ td small{font-size:11px;color:var(--ink-40)}
 앞의 둘은 매주 표본이 쌓이고, 마지막은 쌓이지 않습니다. <b>어떤 규칙도 당첨 확률을 바꾸지 않습니다.</b></div>
 
 <div class="kpi">
-  <div><div class="k">추천 원장 누적</div><div class="v">14<span style="font-size:15px;color:var(--ink-60)">건</span></div>
-    <div class="s">추천 5+5를 매주 샀다면 · 투입 70,000원</div></div>
-  <div><div class="k">추천 원장 회수</div><div class="v">68,000<span style="font-size:15px">원</span></div>
-    <div class="s">추천 5+5를 매주 샀다면 · 97.1%</div></div>
+  <div><div class="k">추천 원장 누적</div><div class="v">15<span style="font-size:15px;color:var(--ink-60)">건</span></div>
+    <div class="s">추천 5+5를 매주 샀다면 · 투입 75,000원</div></div>
+  <div><div class="k">추천 원장 회수</div><div class="v">69,000<span style="font-size:15px">원</span></div>
+    <div class="s">추천 5+5를 매주 샀다면 · 92.0%</div></div>
   <div><div class="k">모델 설명력 R²</div><div class="v">0.374</div>
     <div class="s">순진예측 대비 오차 24% 감소</div></div>
   <div><div class="k">현행 규칙 효과</div><div class="v">+6.1%</div>
@@ -507,55 +507,55 @@ hot/cold 류(«많이/안 나온 번호가 또 나온다»)는 적중을 주장�
 </table></div></div>
 <details class="cks"><summary>이 표의 정의(동점 처리 포함) 전문</summary>
 <p class="note" style="padding-top:8px">매 회차 R 의 순위표는 R−1회까지의 자료로만 만들었습니다(walk-forward, 미래 자료 없음). 추첨이 공정하면 어떤 순위표든 당첨 조합의 백분위는 0~100%에 균등하게 흩어집니다 — 평균 50%, 각 10분위 10%, 상위 N 안 기대 개수 = 회차 수 × N/전체. 분배 모델(pop·popf)의 순서는 «당첨되면 나눠 갖는 인원이 적을 것으로 추정되는 순서»이지 맞을 가능성의 순서가 아닙니다. 빈도·미출현 모델(hot·cold)은 «그런 번호가 더 잘 나온다»는 주장을 검정하는 대상입니다. 구간 전략(과거에 가장 많이 들어간 10분위를 고르기)은 walk-forward 로만 평가했고, 모델·구간을 여러 개 동시에 보면 몇 개는 우연히 p 가 작게 나옵니다(다중검정). 어떤 순위표도 1게임 1등 확률 1/8,145,060 을 바꾸지 않습니다. 같은 점수(동점)인 조합은 같은 순위 구간을 갖고, 10분위·KS·구간 전략은 그 구간을 균등하게 나눠 셉니다(동점이 크면 p 가 보수적).</p></details><h3>연금</h3>
-<p class="note">100~338회 · walk-forward(그 회차 이전 자료만으로 매긴 순위). 기대값은 모두 «균등»입니다 —
+<p class="note">100~339회 · walk-forward(그 회차 이전 자료만으로 매긴 순위). 기대값은 모두 «균등»입니다 —
 평균 백분위 50%, KS·χ² p&gt;0.05, 상위 10%/1% 관측 ≈ 기대. 동점은 구간에 걸쳐 비율로 나누므로 관측 개수·구간전략 적중이
 정수가 아닐 수 있습니다(소수 1자리로 표시).</p>
 <div class="card"><div class="scroll"><table class="wide">
 <tr><th>모델</th><th class="num">회차</th><th class="num">평균 백분위(기대 50%)</th><th class="num">KS p</th><th class="num">χ² p</th>
 <th class="num">상위 10% 관측/기대</th><th class="num">상위 1% 관측/기대</th><th class="num">구간전략 적중(기대 10%)</th></tr>
 <tr><td>빈도 모델 (많이 나온 숫자)<br><span class="tg s">적중 주장 · 검정 대상</span></td>
-      <td class="num">239</td>
-      <td class="num">50.3% <small>[46.6%, 54.0%]</small></td>
-      <td class="num"><span class="tg n">p=0.672</span></td>
-      <td class="num"><span class="tg n">p=0.780</span></td>
-      <td class="num">24.0 / 23.90</td>
-      <td class="num">5.0 / 2.39</td>
-      <td class="num">17.2/219 (7.8%) <span class="tg n">p=0.311</span></td></tr><tr><td>역빈도 모델 (적게 나온 숫자)<br><span class="tg s">적중 주장 · 검정 대상</span></td>
-      <td class="num">239</td>
-      <td class="num">49.7% <small>[46.0%, 53.4%]</small></td>
-      <td class="num"><span class="tg n">p=0.672</span></td>
-      <td class="num"><span class="tg n">p=0.780</span></td>
-      <td class="num">30.2 / 23.90</td>
-      <td class="num">5.5 / 2.39</td>
-      <td class="num">18.2/219 (8.3%) <span class="tg n">p=0.498</span></td></tr><tr><td>최근가중 모델 (최근에 자주 나온 숫자)<br><span class="tg s">적중 주장 · 검정 대상</span></td>
-      <td class="num">239</td>
-      <td class="num">51.8% <small>[48.2%, 55.5%]</small></td>
-      <td class="num"><span class="tg n">p=0.716</span></td>
-      <td class="num"><span class="tg n">p=0.407</span></td>
-      <td class="num">20.8 / 23.90</td>
-      <td class="num">5.1 / 2.39</td>
-      <td class="num">19.6/219 (8.9%) <span class="tg n">p=0.652</span></td></tr><tr><td>갭 모델 (오래 안 나온 숫자)<br><span class="tg s">적중 주장 · 검정 대상</span></td>
-      <td class="num">239</td>
+      <td class="num">240</td>
+      <td class="num">50.1% <small>[46.5%, 53.8%]</small></td>
+      <td class="num"><span class="tg n">p=0.682</span></td>
+      <td class="num"><span class="tg n">p=0.777</span></td>
+      <td class="num">25.0 / 24.00</td>
+      <td class="num">5.0 / 2.40</td>
+      <td class="num">17.2/220 (7.8%) <span class="tg n">p=0.311</span></td></tr><tr><td>역빈도 모델 (적게 나온 숫자)<br><span class="tg s">적중 주장 · 검정 대상</span></td>
+      <td class="num">240</td>
+      <td class="num">49.9% <small>[46.2%, 53.5%]</small></td>
+      <td class="num"><span class="tg n">p=0.682</span></td>
+      <td class="num"><span class="tg n">p=0.777</span></td>
+      <td class="num">30.2 / 24.00</td>
+      <td class="num">5.5 / 2.40</td>
+      <td class="num">18.2/220 (8.3%) <span class="tg n">p=0.431</span></td></tr><tr><td>최근가중 모델 (최근에 자주 나온 숫자)<br><span class="tg s">적중 주장 · 검정 대상</span></td>
+      <td class="num">240</td>
+      <td class="num">51.6% <small>[48.0%, 55.3%]</small></td>
+      <td class="num"><span class="tg n">p=0.802</span></td>
+      <td class="num"><span class="tg n">p=0.431</span></td>
+      <td class="num">21.8 / 24.00</td>
+      <td class="num">5.1 / 2.40</td>
+      <td class="num">19.6/220 (8.9%) <span class="tg n">p=0.652</span></td></tr><tr><td>갭 모델 (오래 안 나온 숫자)<br><span class="tg s">적중 주장 · 검정 대상</span></td>
+      <td class="num">240</td>
       <td class="num">49.9% <small>[46.3%, 53.6%]</small></td>
-      <td class="num"><span class="tg n">p=0.922</span></td>
-      <td class="num"><span class="tg n">p=0.607</span></td>
-      <td class="num">29.3 / 23.90</td>
-      <td class="num">7.1 / 2.39</td>
-      <td class="num">18.1/219 (8.3%) <span class="tg n">p=0.431</span></td></tr><tr><td>무작위(대조군)<br><span class="tg n">적중 주장 아님(순서/대조군)</span></td>
-      <td class="num">239</td>
-      <td class="num">50.8% <small>[47.2%, 54.5%]</small></td>
-      <td class="num"><span class="tg n">p=0.870</span></td>
-      <td class="num"><span class="tg n">p=0.737</span></td>
-      <td class="num">28.0 / 23.90</td>
-      <td class="num">3.3 / 2.39</td>
-      <td class="num">19.7/219 (9.0%) <span class="tg n">p=0.652</span></td></tr><tr><td>사이트 설정 모델 (= 갭 · 오래 안 나온 숫자)<br><span class="tg s">적중 주장 · 검정 대상</span></td>
-      <td class="num">239</td>
+      <td class="num"><span class="tg n">p=0.945</span></td>
+      <td class="num"><span class="tg n">p=0.680</span></td>
+      <td class="num">29.3 / 24.00</td>
+      <td class="num">7.1 / 2.40</td>
+      <td class="num">18.1/220 (8.2%) <span class="tg n">p=0.431</span></td></tr><tr><td>무작위(대조군)<br><span class="tg n">적중 주장 아님(순서/대조군)</span></td>
+      <td class="num">240</td>
+      <td class="num">50.9% <small>[47.3%, 54.6%]</small></td>
+      <td class="num"><span class="tg n">p=0.881</span></td>
+      <td class="num"><span class="tg n">p=0.761</span></td>
+      <td class="num">28.0 / 24.00</td>
+      <td class="num">3.3 / 2.40</td>
+      <td class="num">19.7/220 (8.9%) <span class="tg n">p=0.652</span></td></tr><tr><td>사이트 설정 모델 (= 갭 · 오래 안 나온 숫자)<br><span class="tg s">적중 주장 · 검정 대상</span></td>
+      <td class="num">240</td>
       <td class="num">49.9% <small>[46.3%, 53.6%]</small></td>
-      <td class="num"><span class="tg n">p=0.922</span></td>
-      <td class="num"><span class="tg n">p=0.607</span></td>
-      <td class="num">29.3 / 23.90</td>
-      <td class="num">7.1 / 2.39</td>
-      <td class="num">18.1/219 (8.3%) <span class="tg n">p=0.431</span></td></tr>
+      <td class="num"><span class="tg n">p=0.945</span></td>
+      <td class="num"><span class="tg n">p=0.680</span></td>
+      <td class="num">29.3 / 24.00</td>
+      <td class="num">7.1 / 2.40</td>
+      <td class="num">18.1/220 (8.2%) <span class="tg n">p=0.431</span></td></tr>
 </table></div></div>
 
 <h3>연금 · 번호만 순위(2등 기준)</h3>
@@ -565,47 +565,47 @@ hot/cold 류(«많이/안 나온 번호가 또 나온다»)는 적중을 주장�
 <tr><th>모델</th><th class="num">회차</th><th class="num">평균 백분위(기대 50%)</th><th class="num">KS p</th><th class="num">χ² p</th>
 <th class="num">상위 10% 관측/기대</th><th class="num">상위 1% 관측/기대</th><th class="num">구간전략 적중(기대 10%)</th></tr>
 <tr><td>빈도 모델 (많이 나온 숫자)<br><span class="tg s">적중 주장 · 검정 대상</span></td>
-      <td class="num">239</td>
-      <td class="num">50.3% <small>[46.6%, 53.9%]</small></td>
-      <td class="num"><span class="tg n">p=0.694</span></td>
-      <td class="num"><span class="tg n">p=0.293</span></td>
-      <td class="num">25.9 / 23.90</td>
-      <td class="num">4.6 / 2.39</td>
+      <td class="num">240</td>
+      <td class="num">50.1% <small>[46.5%, 53.8%]</small></td>
+      <td class="num"><span class="tg n">p=0.702</span></td>
+      <td class="num"><span class="tg n">p=0.282</span></td>
+      <td class="num">26.9 / 24.00</td>
+      <td class="num">4.6 / 2.40</td>
       <td class="num"><span class="tg n">표본 부족</span></td></tr><tr><td>역빈도 모델 (적게 나온 숫자)<br><span class="tg s">적중 주장 · 검정 대상</span></td>
-      <td class="num">239</td>
-      <td class="num">49.7% <small>[46.1%, 53.4%]</small></td>
-      <td class="num"><span class="tg n">p=0.694</span></td>
-      <td class="num"><span class="tg n">p=0.293</span></td>
-      <td class="num">29.6 / 23.90</td>
-      <td class="num">6.0 / 2.39</td>
+      <td class="num">240</td>
+      <td class="num">49.9% <small>[46.2%, 53.5%]</small></td>
+      <td class="num"><span class="tg n">p=0.702</span></td>
+      <td class="num"><span class="tg n">p=0.282</span></td>
+      <td class="num">29.6 / 24.00</td>
+      <td class="num">6.0 / 2.40</td>
       <td class="num"><span class="tg n">표본 부족</span></td></tr><tr><td>최근가중 모델 (최근에 자주 나온 숫자)<br><span class="tg s">적중 주장 · 검정 대상</span></td>
-      <td class="num">239</td>
-      <td class="num">51.4% <small>[47.7%, 55.0%]</small></td>
-      <td class="num"><span class="tg n">p=0.788</span></td>
-      <td class="num"><span class="tg n">p=0.842</span></td>
-      <td class="num">22.4 / 23.90</td>
-      <td class="num">4.9 / 2.39</td>
+      <td class="num">240</td>
+      <td class="num">51.2% <small>[47.5%, 54.8%]</small></td>
+      <td class="num"><span class="tg n">p=0.855</span></td>
+      <td class="num"><span class="tg n">p=0.851</span></td>
+      <td class="num">23.4 / 24.00</td>
+      <td class="num">4.9 / 2.40</td>
       <td class="num"><span class="tg n">표본 부족</span></td></tr><tr><td>갭 모델 (오래 안 나온 숫자)<br><span class="tg s">적중 주장 · 검정 대상</span></td>
-      <td class="num">239</td>
+      <td class="num">240</td>
       <td class="num">49.4% <small>[45.8%, 53.1%]</small></td>
-      <td class="num"><span class="tg n">p=0.959</span></td>
-      <td class="num"><span class="tg n">p=0.900</span></td>
-      <td class="num">29.5 / 23.90</td>
-      <td class="num">6.9 / 2.39</td>
+      <td class="num"><span class="tg n">p=0.962</span></td>
+      <td class="num"><span class="tg n">p=0.912</span></td>
+      <td class="num">29.5 / 24.00</td>
+      <td class="num">6.9 / 2.40</td>
       <td class="num"><span class="tg n">표본 부족</span></td></tr><tr><td>무작위(대조군)<br><span class="tg n">적중 주장 아님(순서/대조군)</span></td>
-      <td class="num">239</td>
-      <td class="num">50.4% <small>[46.8%, 54.1%]</small></td>
-      <td class="num"><span class="tg n">p=0.729</span></td>
-      <td class="num"><span class="tg n">p=0.345</span></td>
-      <td class="num">30.2 / 23.90</td>
-      <td class="num">2.9 / 2.39</td>
+      <td class="num">240</td>
+      <td class="num">50.6% <small>[46.9%, 54.2%]</small></td>
+      <td class="num"><span class="tg n">p=0.739</span></td>
+      <td class="num"><span class="tg n">p=0.365</span></td>
+      <td class="num">30.2 / 24.00</td>
+      <td class="num">2.9 / 2.40</td>
       <td class="num"><span class="tg n">표본 부족</span></td></tr><tr><td>사이트 설정 모델 (= 갭 · 오래 안 나온 숫자)<br><span class="tg s">적중 주장 · 검정 대상</span></td>
-      <td class="num">239</td>
+      <td class="num">240</td>
       <td class="num">49.4% <small>[45.8%, 53.1%]</small></td>
-      <td class="num"><span class="tg n">p=0.959</span></td>
-      <td class="num"><span class="tg n">p=0.900</span></td>
-      <td class="num">29.5 / 23.90</td>
-      <td class="num">6.9 / 2.39</td>
+      <td class="num"><span class="tg n">p=0.962</span></td>
+      <td class="num"><span class="tg n">p=0.912</span></td>
+      <td class="num">29.5 / 24.00</td>
+      <td class="num">6.9 / 2.40</td>
       <td class="num"><span class="tg n">표본 부족</span></td></tr>
 </table></div></div>
 <h3>연금 · 등수별 순위 요약</h3>
@@ -614,114 +614,114 @@ hot/cold 류(«많이/안 나온 번호가 또 나온다»)는 적중을 주장�
 <div class="card"><div class="scroll"><table class="wide">
 <tr><th>모델</th><th>등수</th><th class="num">관측 평균 백분위</th><th class="num">회차수준 p</th><th class="num">몬테카를로 pMC</th></tr>
 <tr><td>freq</td><td class="num">2등 <small>(4개)</small></td>
-        <td class="num">50.3%</td>
-        <td class="num"><span class="tg n">p=0.877</span></td>
-        <td class="num">0.127</td></tr><tr><td>freq</td><td class="num">3등 <small>(45개)</small></td>
-        <td class="num">50.0%</td>
-        <td class="num"><span class="tg n">p=0.994</span></td>
-        <td class="num">0.635</td></tr><tr><td>freq</td><td class="num">4등 <small>(450개)</small></td>
-        <td class="num">51.1%</td>
-        <td class="num"><span class="tg n">p=0.486</span></td>
-        <td class="num">0.321</td></tr><tr><td>freq</td><td class="num">5등 <small>(4,500개)</small></td>
-        <td class="num">50.3%</td>
-        <td class="num"><span class="tg n">p=0.840</span></td>
-        <td class="num">0.484</td></tr><tr><td>freq</td><td class="num">6등 <small>(45,000개)</small></td>
-        <td class="num">50.2%</td>
-        <td class="num"><span class="tg n">p=0.856</span></td>
-        <td class="num">0.623</td></tr><tr><td>freq</td><td class="num">7등 <small>(450,000개)</small></td>
-        <td class="num">49.6%</td>
-        <td class="num"><span class="tg n">p=0.580</span></td>
-        <td class="num">0.705</td></tr><tr><td>cold</td><td class="num">2등 <small>(4개)</small></td>
-        <td class="num">49.7%</td>
-        <td class="num"><span class="tg n">p=0.877</span></td>
-        <td class="num">0.128</td></tr><tr><td>cold</td><td class="num">3등 <small>(45개)</small></td>
-        <td class="num">50.0%</td>
-        <td class="num"><span class="tg n">p=0.994</span></td>
-        <td class="num">0.635</td></tr><tr><td>cold</td><td class="num">4등 <small>(450개)</small></td>
-        <td class="num">48.9%</td>
-        <td class="num"><span class="tg n">p=0.486</span></td>
-        <td class="num">0.321</td></tr><tr><td>cold</td><td class="num">5등 <small>(4,500개)</small></td>
-        <td class="num">49.7%</td>
-        <td class="num"><span class="tg n">p=0.840</span></td>
-        <td class="num">0.484</td></tr><tr><td>cold</td><td class="num">6등 <small>(45,000개)</small></td>
-        <td class="num">49.8%</td>
-        <td class="num"><span class="tg n">p=0.856</span></td>
-        <td class="num">0.623</td></tr><tr><td>cold</td><td class="num">7등 <small>(450,000개)</small></td>
-        <td class="num">50.4%</td>
-        <td class="num"><span class="tg n">p=0.580</span></td>
-        <td class="num">0.705</td></tr><tr><td>recent</td><td class="num">2등 <small>(4개)</small></td>
-        <td class="num">51.2%</td>
-        <td class="num"><span class="tg n">p=0.514</span></td>
-        <td class="num">0.678</td></tr><tr><td>recent</td><td class="num">3등 <small>(45개)</small></td>
-        <td class="num">51.2%</td>
-        <td class="num"><span class="tg n">p=0.494</span></td>
-        <td class="num">0.506</td></tr><tr><td>recent</td><td class="num">4등 <small>(450개)</small></td>
-        <td class="num">52.6%</td>
-        <td class="num"><span class="tg n">p=0.087</span></td>
-        <td class="num">0.045</td></tr><tr><td>recent</td><td class="num">5등 <small>(4,500개)</small></td>
-        <td class="num">51.7%</td>
-        <td class="num"><span class="tg n">p=0.185</span></td>
-        <td class="num">0.155</td></tr><tr><td>recent</td><td class="num">6등 <small>(45,000개)</small></td>
-        <td class="num">51.3%</td>
-        <td class="num"><span class="tg n">p=0.238</span></td>
-        <td class="num">0.395</td></tr><tr><td>recent</td><td class="num">7등 <small>(450,000개)</small></td>
-        <td class="num">50.2%</td>
-        <td class="num"><span class="tg n">p=0.715</span></td>
-        <td class="num">0.263</td></tr><tr><td>gap</td><td class="num">2등 <small>(4개)</small></td>
-        <td class="num">49.3%</td>
-        <td class="num"><span class="tg n">p=0.715</span></td>
-        <td class="num">0.568</td></tr><tr><td>gap</td><td class="num">3등 <small>(45개)</small></td>
-        <td class="num">49.2%</td>
-        <td class="num"><span class="tg n">p=0.647</span></td>
-        <td class="num">0.662</td></tr><tr><td>gap</td><td class="num">4등 <small>(450개)</small></td>
-        <td class="num">48.1%</td>
-        <td class="num"><span class="tg n">p=0.228</span></td>
-        <td class="num">0.130</td></tr><tr><td>gap</td><td class="num">5등 <small>(4,500개)</small></td>
-        <td class="num">47.8%</td>
-        <td class="num"><span class="tg n">p=0.090</span></td>
-        <td class="num">0.184</td></tr><tr><td>gap</td><td class="num">6등 <small>(45,000개)</small></td>
-        <td class="num">47.3%</td>
-        <td class="num"><span class="tg s">p=0.011</span></td>
-        <td class="num">0.009</td></tr><tr><td>gap</td><td class="num">7등 <small>(450,000개)</small></td>
-        <td class="num">49.4%</td>
-        <td class="num"><span class="tg n">p=0.386</span></td>
-        <td class="num">0.217</td></tr><tr><td>rand</td><td class="num">2등 <small>(4개)</small></td>
-        <td class="num">50.4%</td>
-        <td class="num"><span class="tg n">p=0.851</span></td>
-        <td class="num">0.216</td></tr><tr><td>rand</td><td class="num">3등 <small>(45개)</small></td>
+        <td class="num">50.1%</td>
+        <td class="num"><span class="tg n">p=0.948</span></td>
+        <td class="num">0.138</td></tr><tr><td>freq</td><td class="num">3등 <small>(45개)</small></td>
+        <td class="num">49.9%</td>
+        <td class="num"><span class="tg n">p=0.941</span></td>
+        <td class="num">0.601</td></tr><tr><td>freq</td><td class="num">4등 <small>(450개)</small></td>
         <td class="num">51.0%</td>
-        <td class="num"><span class="tg n">p=0.585</span></td>
-        <td class="num">0.147</td></tr><tr><td>rand</td><td class="num">4등 <small>(450개)</small></td>
-        <td class="num">51.5%</td>
-        <td class="num"><span class="tg n">p=0.316</span></td>
-        <td class="num">0.785</td></tr><tr><td>rand</td><td class="num">5등 <small>(4,500개)</small></td>
-        <td class="num">51.7%</td>
-        <td class="num"><span class="tg n">p=0.203</span></td>
-        <td class="num">0.435</td></tr><tr><td>rand</td><td class="num">6등 <small>(45,000개)</small></td>
-        <td class="num">49.1%</td>
-        <td class="num"><span class="tg n">p=0.384</span></td>
-        <td class="num">0.289</td></tr><tr><td>rand</td><td class="num">7등 <small>(450,000개)</small></td>
-        <td class="num">49.3%</td>
-        <td class="num"><span class="tg n">p=0.370</span></td>
-        <td class="num">0.509</td></tr><tr><td>site</td><td class="num">2등 <small>(4개)</small></td>
-        <td class="num">49.3%</td>
+        <td class="num"><span class="tg n">p=0.519</span></td>
+        <td class="num">0.362</td></tr><tr><td>freq</td><td class="num">5등 <small>(4,500개)</small></td>
+        <td class="num">50.2%</td>
+        <td class="num"><span class="tg n">p=0.853</span></td>
+        <td class="num">0.517</td></tr><tr><td>freq</td><td class="num">6등 <small>(45,000개)</small></td>
+        <td class="num">50.2%</td>
+        <td class="num"><span class="tg n">p=0.839</span></td>
+        <td class="num">0.649</td></tr><tr><td>freq</td><td class="num">7등 <small>(450,000개)</small></td>
+        <td class="num">49.6%</td>
+        <td class="num"><span class="tg n">p=0.606</span></td>
+        <td class="num">0.723</td></tr><tr><td>cold</td><td class="num">2등 <small>(4개)</small></td>
+        <td class="num">49.9%</td>
+        <td class="num"><span class="tg n">p=0.948</span></td>
+        <td class="num">0.142</td></tr><tr><td>cold</td><td class="num">3등 <small>(45개)</small></td>
+        <td class="num">50.1%</td>
+        <td class="num"><span class="tg n">p=0.941</span></td>
+        <td class="num">0.602</td></tr><tr><td>cold</td><td class="num">4등 <small>(450개)</small></td>
+        <td class="num">49.0%</td>
+        <td class="num"><span class="tg n">p=0.519</span></td>
+        <td class="num">0.362</td></tr><tr><td>cold</td><td class="num">5등 <small>(4,500개)</small></td>
+        <td class="num">49.8%</td>
+        <td class="num"><span class="tg n">p=0.853</span></td>
+        <td class="num">0.517</td></tr><tr><td>cold</td><td class="num">6등 <small>(45,000개)</small></td>
+        <td class="num">49.8%</td>
+        <td class="num"><span class="tg n">p=0.839</span></td>
+        <td class="num">0.649</td></tr><tr><td>cold</td><td class="num">7등 <small>(450,000개)</small></td>
+        <td class="num">50.4%</td>
+        <td class="num"><span class="tg n">p=0.606</span></td>
+        <td class="num">0.723</td></tr><tr><td>recent</td><td class="num">2등 <small>(4개)</small></td>
+        <td class="num">51.0%</td>
+        <td class="num"><span class="tg n">p=0.581</span></td>
+        <td class="num">0.745</td></tr><tr><td>recent</td><td class="num">3등 <small>(45개)</small></td>
+        <td class="num">51.0%</td>
+        <td class="num"><span class="tg n">p=0.572</span></td>
+        <td class="num">0.461</td></tr><tr><td>recent</td><td class="num">4등 <small>(450개)</small></td>
+        <td class="num">52.4%</td>
+        <td class="num"><span class="tg n">p=0.110</span></td>
+        <td class="num">0.052</td></tr><tr><td>recent</td><td class="num">5등 <small>(4,500개)</small></td>
+        <td class="num">51.6%</td>
+        <td class="num"><span class="tg n">p=0.221</span></td>
+        <td class="num">0.188</td></tr><tr><td>recent</td><td class="num">6등 <small>(45,000개)</small></td>
+        <td class="num">51.2%</td>
+        <td class="num"><span class="tg n">p=0.271</span></td>
+        <td class="num">0.441</td></tr><tr><td>recent</td><td class="num">7등 <small>(450,000개)</small></td>
+        <td class="num">50.2%</td>
         <td class="num"><span class="tg n">p=0.715</span></td>
-        <td class="num">0.568</td></tr><tr><td>site</td><td class="num">3등 <small>(45개)</small></td>
-        <td class="num">49.2%</td>
-        <td class="num"><span class="tg n">p=0.647</span></td>
-        <td class="num">0.662</td></tr><tr><td>site</td><td class="num">4등 <small>(450개)</small></td>
+        <td class="num">0.244</td></tr><tr><td>gap</td><td class="num">2등 <small>(4개)</small></td>
+        <td class="num">49.3%</td>
+        <td class="num"><span class="tg n">p=0.712</span></td>
+        <td class="num">0.595</td></tr><tr><td>gap</td><td class="num">3등 <small>(45개)</small></td>
+        <td class="num">49.3%</td>
+        <td class="num"><span class="tg n">p=0.671</span></td>
+        <td class="num">0.674</td></tr><tr><td>gap</td><td class="num">4등 <small>(450개)</small></td>
         <td class="num">48.1%</td>
-        <td class="num"><span class="tg n">p=0.228</span></td>
-        <td class="num">0.130</td></tr><tr><td>site</td><td class="num">5등 <small>(4,500개)</small></td>
+        <td class="num"><span class="tg n">p=0.238</span></td>
+        <td class="num">0.146</td></tr><tr><td>gap</td><td class="num">5등 <small>(4,500개)</small></td>
         <td class="num">47.8%</td>
-        <td class="num"><span class="tg n">p=0.090</span></td>
-        <td class="num">0.184</td></tr><tr><td>site</td><td class="num">6등 <small>(45,000개)</small></td>
-        <td class="num">47.3%</td>
-        <td class="num"><span class="tg s">p=0.011</span></td>
-        <td class="num">0.009</td></tr><tr><td>site</td><td class="num">7등 <small>(450,000개)</small></td>
+        <td class="num"><span class="tg n">p=0.094</span></td>
+        <td class="num">0.198</td></tr><tr><td>gap</td><td class="num">6등 <small>(45,000개)</small></td>
+        <td class="num">47.4%</td>
+        <td class="num"><span class="tg s">p=0.012</span></td>
+        <td class="num">0.010</td></tr><tr><td>gap</td><td class="num">7등 <small>(450,000개)</small></td>
         <td class="num">49.4%</td>
-        <td class="num"><span class="tg n">p=0.386</span></td>
-        <td class="num">0.217</td></tr>
+        <td class="num"><span class="tg n">p=0.361</span></td>
+        <td class="num">0.199</td></tr><tr><td>rand</td><td class="num">2등 <small>(4개)</small></td>
+        <td class="num">50.5%</td>
+        <td class="num"><span class="tg n">p=0.795</span></td>
+        <td class="num">0.239</td></tr><tr><td>rand</td><td class="num">3등 <small>(45개)</small></td>
+        <td class="num">51.0%</td>
+        <td class="num"><span class="tg n">p=0.561</span></td>
+        <td class="num">0.169</td></tr><tr><td>rand</td><td class="num">4등 <small>(450개)</small></td>
+        <td class="num">51.5%</td>
+        <td class="num"><span class="tg n">p=0.304</span></td>
+        <td class="num">0.780</td></tr><tr><td>rand</td><td class="num">5등 <small>(4,500개)</small></td>
+        <td class="num">51.6%</td>
+        <td class="num"><span class="tg n">p=0.213</span></td>
+        <td class="num">0.465</td></tr><tr><td>rand</td><td class="num">6등 <small>(45,000개)</small></td>
+        <td class="num">49.1%</td>
+        <td class="num"><span class="tg n">p=0.417</span></td>
+        <td class="num">0.326</td></tr><tr><td>rand</td><td class="num">7등 <small>(450,000개)</small></td>
+        <td class="num">49.4%</td>
+        <td class="num"><span class="tg n">p=0.387</span></td>
+        <td class="num">0.526</td></tr><tr><td>site</td><td class="num">2등 <small>(4개)</small></td>
+        <td class="num">49.3%</td>
+        <td class="num"><span class="tg n">p=0.712</span></td>
+        <td class="num">0.595</td></tr><tr><td>site</td><td class="num">3등 <small>(45개)</small></td>
+        <td class="num">49.3%</td>
+        <td class="num"><span class="tg n">p=0.671</span></td>
+        <td class="num">0.674</td></tr><tr><td>site</td><td class="num">4등 <small>(450개)</small></td>
+        <td class="num">48.1%</td>
+        <td class="num"><span class="tg n">p=0.238</span></td>
+        <td class="num">0.146</td></tr><tr><td>site</td><td class="num">5등 <small>(4,500개)</small></td>
+        <td class="num">47.8%</td>
+        <td class="num"><span class="tg n">p=0.094</span></td>
+        <td class="num">0.198</td></tr><tr><td>site</td><td class="num">6등 <small>(45,000개)</small></td>
+        <td class="num">47.4%</td>
+        <td class="num"><span class="tg s">p=0.012</span></td>
+        <td class="num">0.010</td></tr><tr><td>site</td><td class="num">7등 <small>(450,000개)</small></td>
+        <td class="num">49.4%</td>
+        <td class="num"><span class="tg n">p=0.361</span></td>
+        <td class="num">0.199</td></tr>
 </table></div></div>
 <details class="cks"><summary>이 표의 정의(동점 처리 포함) 전문</summary>
 <p class="note" style="padding-top:8px">매 회차의 순위표는 그 직전 회차까지의 자료로만 만들었습니다(walk-forward, 미래 자료 없음). 순위는 1등 티켓(조+6자리, 5,000,000장 중)과 번호만(6자리, 1,000,000개 중 — 2등 기준) 두 가지입니다. 추첨이 공정하면 어떤 순위표든 당첨 백분위는 0~100%에 균등하게 흩어집니다 — 평균 50%, 각 10분위 10%. 빈도·역빈도·최근가중·갭 모델은 «잘 맞는다»는 주장을 검정하는 대상이고, 무작위 모델은 대조군입니다. 구간 전략은 walk-forward 로만 평가했고, 모델·구간을 여러 개 동시에 보면 몇 개는 우연히 p 가 작게 나옵니다(다중검정). 어떤 순위표도 1장당 1등 확률 1/5,000,000 을 바꾸지 않습니다. 같은 점수(동점)인 조합은 같은 순위 구간을 갖고, 10분위·KS·구간 전략은 그 구간을 균등하게 나눠 셉니다(동점이 크면 p 가 보수적).</p></details>
@@ -731,22 +731,22 @@ hot/cold 류(«많이/안 나온 번호가 또 나온다»)는 적중을 주장�
 <div class="card"><div class="scroll"><table class="wide">
 <tr><th>모델</th><th class="num">K</th><th class="num">적중률</th><th class="num">우연 기준선</th><th class="num">p</th><th class="num">보정 p</th></tr>
 <tr class="ctl"><td>무작위(대조군)</td>
-   <td class="num">상위 2</td><td class="num">22.13%</td><td class="num">20%</td>
-   <td class="num"><span class="tg s">p=0.047</span></td><td class="num">1.000</td></tr><tr class="ctl"><td>무작위(대조군)</td>
-   <td class="num">상위 5</td><td class="num">52.66%</td><td class="num">50%</td>
-   <td class="num"><span class="tg s">p=0.047</span></td><td class="num">1.000</td></tr><tr class="ctl"><td>무작위(대조군)</td>
-   <td class="num">상위 3</td><td class="num">32.07%</td><td class="num">30%</td>
-   <td class="num"><span class="tg n">p=0.088</span></td><td class="num">1.000</td></tr><tr class="ctl"><td>무작위(대조군)</td>
-   <td class="num">상위 4</td><td class="num">42.09%</td><td class="num">40%</td>
-   <td class="num"><span class="tg n">p=0.111</span></td><td class="num">1.000</td></tr><tr class="ctl"><td>무작위(대조군)</td>
-   <td class="num">상위 1</td><td class="num">11.20%</td><td class="num">10%</td>
-   <td class="num"><span class="tg n">p=0.134</span></td><td class="num">1.000</td></tr><tr class=""><td>빈도</td>
-   <td class="num">상위 4</td><td class="num">38.45%</td><td class="num">40%</td>
-   <td class="num"><span class="tg n">p=0.235</span></td><td class="num">1.000</td></tr><tr class=""><td>갭</td>
-   <td class="num">상위 3</td><td class="num">31.44%</td><td class="num">30%</td>
-   <td class="num"><span class="tg n">p=0.237</span></td><td class="num">1.000</td></tr><tr class=""><td>빈도</td>
-   <td class="num">상위 2</td><td class="num">18.77%</td><td class="num">20%</td>
-   <td class="num"><span class="tg n">p=0.261</span></td><td class="num">1.000</td></tr>
+   <td class="num">상위 5</td><td class="num">52.86%</td><td class="num">50%</td>
+   <td class="num"><span class="tg s">p=0.032</span></td><td class="num">0.810</td></tr><tr class="ctl"><td>무작위(대조군)</td>
+   <td class="num">상위 2</td><td class="num">22.18%</td><td class="num">20%</td>
+   <td class="num"><span class="tg s">p=0.041</span></td><td class="num">1.000</td></tr><tr class="ctl"><td>무작위(대조군)</td>
+   <td class="num">상위 3</td><td class="num">32.22%</td><td class="num">30%</td>
+   <td class="num"><span class="tg n">p=0.069</span></td><td class="num">1.000</td></tr><tr class="ctl"><td>무작위(대조군)</td>
+   <td class="num">상위 4</td><td class="num">42.26%</td><td class="num">40%</td>
+   <td class="num"><span class="tg n">p=0.085</span></td><td class="num">1.000</td></tr><tr class="ctl"><td>무작위(대조군)</td>
+   <td class="num">상위 1</td><td class="num">11.16%</td><td class="num">10%</td>
+   <td class="num"><span class="tg n">p=0.146</span></td><td class="num">1.000</td></tr><tr class=""><td>갭</td>
+   <td class="num">상위 3</td><td class="num">31.38%</td><td class="num">30%</td>
+   <td class="num"><span class="tg n">p=0.261</span></td><td class="num">1.000</td></tr><tr class=""><td>빈도</td>
+   <td class="num">상위 4</td><td class="num">38.56%</td><td class="num">40%</td>
+   <td class="num"><span class="tg n">p=0.269</span></td><td class="num">1.000</td></tr><tr class=""><td>빈도</td>
+   <td class="num">상위 2</td><td class="num">18.83%</td><td class="num">20%</td>
+   <td class="num"><span class="tg n">p=0.276</span></td><td class="num">1.000</td></tr>
 </table></div>
 <div class="vd ok">
 p&lt;0.05 인 조합 <b>2개</b>(우연 기대 1.3개) · 보정 후 살아남은 것 <b>0개</b>.
@@ -755,31 +755,31 @@ p&lt;0.05 인 조합 <b>2개</b>(우연 기대 1.3개) · 보정 후 살아남�
 
 <h2>연금복권 · 5장을 어떻게 나눠 사는가</h2>
 <p class="note">번호 선택은 확률도 당첨금도 바꾸지 못합니다. 5장의 <b>결과가 어떻게 흩어지는지</b>만 고릅니다 — 기대값은 어떤 구조든
-<b>3,750원</b>(5,000원당, 세전)입니다. 101~338회 각 회차를 <b>그때까지의 데이터로</b> 다시 만들어 페이지의 등수 판정으로 채점했습니다.
+<b>3,750원</b>(5,000원당, 세전)입니다. 101~339회 각 회차를 <b>그때까지의 데이터로</b> 다시 만들어 페이지의 등수 판정으로 채점했습니다.
 <b>구현 점검용</b>이며 실력 주장이 아닙니다.</p>
 <div class="card"><div class="scroll"><table class="wide">
 <tr><th>구조</th><th class="num">P(1장↑) 이론</th><th class="num">실측 [95%]</th><th class="num">점검</th><th class="num">평균 수령</th><th class="num">이론 95% 범위</th><th class="num">회차</th></tr>
 <tr class="me"><td>분산 5장 (끝자리 모두 다름)</td>
     <td class="num">50.00%</td>
-    <td class="num">52.9% <small>[46.6%, 59.2%]</small></td>
+    <td class="num">53.1% <small>[46.8%, 59.4%]</small></td>
     <td class="num"><span class="tg o">이론과 일치</span></td>
-    <td class="num">1,744원</td>
-    <td class="num">[-216,544, 220,032]</td>
-    <td class="num">238</td></tr><tr class=""><td>세트 1세트 (같은 번호 × 1~5조)</td>
+    <td class="num">1,741원</td>
+    <td class="num">[-216,090, 219,571]</td>
+    <td class="num">239</td></tr><tr class=""><td>세트 1세트 (같은 번호 × 1~5조)</td>
     <td class="num">10.00%</td>
     <td class="num">8.4% <small>[5.5%, 12.6%]</small></td>
     <td class="num"><span class="tg o">이론과 일치</span></td>
-    <td class="num">588원</td>
-    <td class="num">[-284,234, 285,411]</td>
-    <td class="num">238</td></tr><tr class=""><td>구 방식 (모델 상위 5장)</td>
+    <td class="num">586원</td>
+    <td class="num">[-283,640, 284,812]</td>
+    <td class="num">239</td></tr><tr class=""><td>구 방식 (모델 상위 5장)</td>
     <td class="num">21.93%</td>
-    <td class="num">21.0% <small>[16.3%, 26.6%]</small></td>
+    <td class="num">20.9% <small>[16.2%, 26.5%]</small></td>
     <td class="num"><span class="tg o">이론과 일치</span></td>
-    <td class="num">866원</td>
-    <td class="num">[-217,586, 219,317]</td>
-    <td class="num">238</td></tr>
+    <td class="num">862원</td>
+    <td class="num">[-217,132, 218,856]</td>
+    <td class="num">239</td></tr>
 </table></div>
-<div class="vd">분산 5장의 실측 «1장 이상 당첨» 52.9% — 이론 50.0%의 99% 범위 안(구현이 맞음).
+<div class="vd">분산 5장의 실측 «1장 이상 당첨» 53.1% — 이론 50.0%의 99% 범위 안(구현이 맞음).
 모든 회차에서 5장의 끝자리가 서로 달랐습니다. 
 평균 수령의 이론 범위가 넓은 것은 1·2등(수억~수십억) 꼬리 때문입니다 — 수백 주로는 평균 수령을 판별할 수 없습니다.</div></div>
 
@@ -791,17 +791,17 @@ p&lt;0.05 인 조합 <b>2개</b>(우연 기대 1.3개) · 보정 후 살아남�
 <tr><th>구분</th><th class="num">투입</th><th class="num">회수</th><th class="num">회수율</th><th class="num">중앙값</th><th class="num">주수</th></tr>
 <tr class="me"><td>로또 6/45</td><td class="num">35,000</td><td class="num">15,000</td>
   <td class="num">42.9%</td><td class="num">0</td><td class="num">7</td></tr>
-<tr class="me"><td>연금복권720+</td><td class="num">35,000</td><td class="num">53,000</td>
-  <td class="num">151.4%</td><td class="num">1,000</td><td class="num">7</td></tr>
+<tr class="me"><td>연금복권720+</td><td class="num">40,000</td><td class="num">54,000</td>
+  <td class="num">135.0%</td><td class="num">1,000</td><td class="num">8</td></tr>
 </table></div>
 <h3>누적 투입과 회수</h3>
 <figure class="cum">
-<div class="legend"><span><i class="rt"></i>누적 회수 <b>68,000원</b></span><span><i class="sp"></i>누적 투입 <b>70,000원</b></span></div>
-<div class="plot"><span class="yl" style="top:100%">0</span><span class="yl" style="top:50%">40,000</span><span class="yl" style="top:0%">80,000</span>
-<svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="추천 원장 누적 투입 70,000원, 누적 회수 68,000원 (14건)">
-<line class="gl" x1="0" x2="100" y1="100" y2="100" vector-effect="non-scaling-stroke"/><line class="gl" x1="0" x2="100" y1="50" y2="50" vector-effect="non-scaling-stroke"/><line class="gl" x1="0" x2="100" y1="0" y2="0" vector-effect="non-scaling-stroke"/><path class="sp" d="M0,100 H0 V93.75 H7.143 V87.5 H14.286 V81.25 H21.429 V75 H28.571 V68.75 H35.714 V62.5 H42.857 V56.25 H50 V50 H57.143 V43.75 H64.286 V37.5 H71.429 V31.25 H78.571 V25 H85.714 V18.75 H92.857 V12.5 H100" vector-effect="non-scaling-stroke"/><path class="rt" d="M0,100 H0 V100 H7.143 V93.75 H14.286 V93.75 H21.429 V93.75 H28.571 V31.25 H35.714 V31.25 H42.857 V30 H50 V23.75 H57.143 V22.5 H64.286 V22.5 H71.429 V21.25 H78.571 V21.25 H85.714 V21.25 H92.857 V15 H100" vector-effect="non-scaling-stroke"/><rect class="hit" x="0" y="0" width="7.143" height="100"><title>2026.09.10 연금 332회 · 이번 0원 · 누적 투입 5,000원 · 누적 회수 0원</title></rect><rect class="hit" x="7.143" y="0" width="7.143" height="100"><title>2026.09.12 로또 1241회 · 이번 5,000원 · 누적 투입 10,000원 · 누적 회수 5,000원</title></rect><rect class="hit" x="14.286" y="0" width="7.143" height="100"><title>2026.09.17 연금 333회 · 이번 0원 · 누적 투입 15,000원 · 누적 회수 5,000원</title></rect><rect class="hit" x="21.429" y="0" width="7.143" height="100"><title>2026.09.19 로또 1242회 · 이번 0원 · 누적 투입 20,000원 · 누적 회수 5,000원</title></rect><rect class="hit" x="28.571" y="0" width="7.143" height="100"><title>2026.09.24 연금 334회 · 이번 50,000원 · 누적 투입 25,000원 · 누적 회수 55,000원</title></rect><rect class="hit" x="35.714" y="0" width="7.143" height="100"><title>2026.09.26 로또 1243회 · 이번 0원 · 누적 투입 30,000원 · 누적 회수 55,000원</title></rect><rect class="hit" x="42.857" y="0" width="7.143" height="100"><title>2026.10.01 연금 335회 · 이번 1,000원 · 누적 투입 35,000원 · 누적 회수 56,000원</title></rect><rect class="hit" x="50" y="0" width="7.143" height="100"><title>2026.10.03 로또 1244회 · 이번 5,000원 · 누적 투입 40,000원 · 누적 회수 61,000원</title></rect><rect class="hit" x="57.143" y="0" width="7.143" height="100"><title>2026.10.08 연금 336회 · 이번 1,000원 · 누적 투입 45,000원 · 누적 회수 62,000원</title></rect><rect class="hit" x="64.286" y="0" width="7.143" height="100"><title>2026.10.10 로또 1245회 · 이번 0원 · 누적 투입 50,000원 · 누적 회수 62,000원</title></rect><rect class="hit" x="71.429" y="0" width="7.143" height="100"><title>2026.10.15 연금 337회 · 이번 1,000원 · 누적 투입 55,000원 · 누적 회수 63,000원</title></rect><rect class="hit" x="78.571" y="0" width="7.143" height="100"><title>2026.10.17 로또 1246회 · 이번 0원 · 누적 투입 60,000원 · 누적 회수 63,000원</title></rect><rect class="hit" x="85.714" y="0" width="7.143" height="100"><title>2026.10.22 연금 338회 · 이번 0원 · 누적 투입 65,000원 · 누적 회수 63,000원</title></rect><rect class="hit" x="92.857" y="0" width="7.143" height="100"><title>2026.10.24 로또 1247회 · 이번 5,000원 · 누적 투입 70,000원 · 누적 회수 68,000원</title></rect></svg></div>
-<div class="xl"><span>2026.09.10</span><span>2026.10.24</span></div>
-<figcaption>채점된 14건(로또·연금 추첨일 순, 5,000원씩). 그래프를 짚거나 마우스를 올리면 그 회차 값이 나옵니다. 아래 «최근 기록» 표가 같은 자료입니다.</figcaption>
+<div class="legend"><span><i class="rt"></i>누적 회수 <b>69,000원</b></span><span><i class="sp"></i>누적 투입 <b>75,000원</b></span></div>
+<div class="plot"><span class="yl" style="top:100%">0</span><span class="yl" style="top:50%">45,000</span><span class="yl" style="top:0%">90,000</span>
+<svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="추천 원장 누적 투입 75,000원, 누적 회수 69,000원 (15건)">
+<line class="gl" x1="0" x2="100" y1="100" y2="100" vector-effect="non-scaling-stroke"/><line class="gl" x1="0" x2="100" y1="50" y2="50" vector-effect="non-scaling-stroke"/><line class="gl" x1="0" x2="100" y1="0" y2="0" vector-effect="non-scaling-stroke"/><path class="sp" d="M0,100 H0 V94.444 H6.667 V88.889 H13.333 V83.333 H20 V77.778 H26.667 V72.222 H33.333 V66.667 H40 V61.111 H46.667 V55.556 H53.333 V50 H60 V44.444 H66.667 V38.889 H73.333 V33.333 H80 V27.778 H86.667 V22.222 H93.333 V16.667 H100" vector-effect="non-scaling-stroke"/><path class="rt" d="M0,100 H0 V100 H6.667 V94.444 H13.333 V94.444 H20 V94.444 H26.667 V38.889 H33.333 V38.889 H40 V37.778 H46.667 V32.222 H53.333 V31.111 H60 V31.111 H66.667 V30 H73.333 V30 H80 V30 H86.667 V24.444 H93.333 V23.333 H100" vector-effect="non-scaling-stroke"/><rect class="hit" x="0" y="0" width="6.667" height="100"><title>2026.09.10 연금 332회 · 이번 0원 · 누적 투입 5,000원 · 누적 회수 0원</title></rect><rect class="hit" x="6.667" y="0" width="6.667" height="100"><title>2026.09.12 로또 1241회 · 이번 5,000원 · 누적 투입 10,000원 · 누적 회수 5,000원</title></rect><rect class="hit" x="13.333" y="0" width="6.667" height="100"><title>2026.09.17 연금 333회 · 이번 0원 · 누적 투입 15,000원 · 누적 회수 5,000원</title></rect><rect class="hit" x="20" y="0" width="6.667" height="100"><title>2026.09.19 로또 1242회 · 이번 0원 · 누적 투입 20,000원 · 누적 회수 5,000원</title></rect><rect class="hit" x="26.667" y="0" width="6.667" height="100"><title>2026.09.24 연금 334회 · 이번 50,000원 · 누적 투입 25,000원 · 누적 회수 55,000원</title></rect><rect class="hit" x="33.333" y="0" width="6.667" height="100"><title>2026.09.26 로또 1243회 · 이번 0원 · 누적 투입 30,000원 · 누적 회수 55,000원</title></rect><rect class="hit" x="40" y="0" width="6.667" height="100"><title>2026.10.01 연금 335회 · 이번 1,000원 · 누적 투입 35,000원 · 누적 회수 56,000원</title></rect><rect class="hit" x="46.667" y="0" width="6.667" height="100"><title>2026.10.03 로또 1244회 · 이번 5,000원 · 누적 투입 40,000원 · 누적 회수 61,000원</title></rect><rect class="hit" x="53.333" y="0" width="6.667" height="100"><title>2026.10.08 연금 336회 · 이번 1,000원 · 누적 투입 45,000원 · 누적 회수 62,000원</title></rect><rect class="hit" x="60" y="0" width="6.667" height="100"><title>2026.10.10 로또 1245회 · 이번 0원 · 누적 투입 50,000원 · 누적 회수 62,000원</title></rect><rect class="hit" x="66.667" y="0" width="6.667" height="100"><title>2026.10.15 연금 337회 · 이번 1,000원 · 누적 투입 55,000원 · 누적 회수 63,000원</title></rect><rect class="hit" x="73.333" y="0" width="6.667" height="100"><title>2026.10.17 로또 1246회 · 이번 0원 · 누적 투입 60,000원 · 누적 회수 63,000원</title></rect><rect class="hit" x="80" y="0" width="6.667" height="100"><title>2026.10.22 연금 338회 · 이번 0원 · 누적 투입 65,000원 · 누적 회수 63,000원</title></rect><rect class="hit" x="86.667" y="0" width="6.667" height="100"><title>2026.10.24 로또 1247회 · 이번 5,000원 · 누적 투입 70,000원 · 누적 회수 68,000원</title></rect><rect class="hit" x="93.333" y="0" width="6.667" height="100"><title>2026.10.29 연금 339회 · 이번 1,000원 · 누적 투입 75,000원 · 누적 회수 69,000원</title></rect></svg></div>
+<div class="xl"><span>2026.09.10</span><span>2026.10.29</span></div>
+<figcaption>채점된 15건(로또·연금 추첨일 순, 5,000원씩). 그래프를 짚거나 마우스를 올리면 그 회차 값이 나옵니다. 아래 «최근 기록» 표가 같은 자료입니다.</figcaption>
 </figure>
 <h3>최근 기록</h3>
 <div class="scroll"><table class="wide led">
@@ -809,10 +809,13 @@ p&lt;0.05 인 조합 <b>2개</b>(우연 기대 1.3개) · 보정 후 살아남�
 <tr><td>로또</td><td class="num">1248회</td>
     <td>포트폴리오</td><td class="num">—</td><td class="num">5,000</td>
     <td class="num"><span class="tg n">추첨 대기</span></td>
+    <td class="num">—</td></tr><tr><td>연금</td><td class="num">340회</td>
+    <td>분산</td><td class="num">2026.11.05</td><td class="num">5,000</td>
+    <td class="num"><span class="tg n">추첨 대기</span></td>
     <td class="num">—</td></tr><tr><td>연금</td><td class="num">339회</td>
     <td>분산</td><td class="num">2026.10.29</td><td class="num">5,000</td>
-    <td class="num"><span class="tg n">추첨 대기</span></td>
-    <td class="num">—</td></tr><tr><td>로또</td><td class="num">1247회</td>
+    <td class="num">1,000</td>
+    <td class="num">1장 당첨</td></tr><tr><td>로또</td><td class="num">1247회</td>
     <td>포트폴리오</td><td class="num">2026.10.24</td><td class="num">5,000</td>
     <td class="num">5,000</td>
     <td class="num">1게임 당첨</td></tr><tr><td>연금</td><td class="num">338회</td>
@@ -858,7 +861,7 @@ p&lt;0.05 인 조합 <b>2개</b>(우연 기대 1.3개) · 보정 후 살아남�
 </table></div>
 <div class="vd">아직 <b>7주</b>입니다. 원장 기록만으로 규칙을 판단하려면 위 3층 표의 «실제 회수금으로 판별» 칸만큼 걸립니다. <b>이 원장은 성능 측정용이 아니라 가계부입니다.</b></div></div>
 
-<div class="foot">동행복권 공식 API 자료로 자동 생성 · 2026-10-28 13:52 (KST) · 로또 300주 walk-forward, 연금 25개 조합 전수<br>
+<div class="foot">동행복권 공식 API 자료로 자동 생성 · 2026-10-30 03:36 (KST) · 로또 300주 walk-forward, 연금 25개 조합 전수<br>
 확률은 어떤 규칙으로도 바뀌지 않습니다. 이 보드가 재는 것은 «당첨됐을 때 나눠 갖는 인원»(로또)과 «당첨이 흩어지는 모양»(연금)뿐입니다.<br>
 복권 구매는 감당할 수 있는 범위 안에서. 만 19세 미만은 구매할 수 없습니다.</div>
 </div>
