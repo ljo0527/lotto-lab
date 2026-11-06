@@ -2,7 +2,7 @@
   "v": 1,
   "kind": "learn-pension",
   "ver": "learn-pension-1",
-  "generated": "2026-11-05T20:12:48.202Z",
+  "generated": "2026-11-06T04:48:13.947Z",
   "source": {
     "file": "pension-history.json",
     "latest": 340,
@@ -62,9 +62,9 @@
     ]
   },
   "checks": {
-    "kept": 1,
-    "added": 1,
-    "graded": 1,
+    "kept": 3,
+    "added": 0,
+    "graded": 0,
     "pendingMismatch": [],
     "regradeMismatch": []
   }
