@@ -1,53 +1,53 @@
 {
- "generated": "2026-11-06T04:46:47.255Z",
+ "generated": "2026-11-07T18:14:43.274Z",
  "window": 300,
  "lotto": {
   "n": 300,
-  "from": 949,
-  "to": 1248,
+  "from": 950,
+  "to": 1249,
   "current": "portfolio",
   "pool": 3000,
   "calib": {
    "ready": true,
    "n": 300,
    "nOOS": 240,
-   "a": 0.9987059956105123,
-   "b": 0.03327114098656343,
-   "r2": 0.37413786167698404,
-   "mae": 0.029168728769049232,
-   "maeNaive": 0.03821853541666668,
-   "corr": 0.6273436078067477,
+   "a": 0.9986270488531734,
+   "b": 0.03323468974592785,
+   "r2": 0.3712273025559554,
+   "mae": 0.02921828604822054,
+   "maeNaive": 0.03804543888888887,
+   "corr": 0.6260272412118252,
    "tiers": {
     "b1": {
-     "a": 0.9852647293017764,
-     "b": 0.08309096665934933,
-     "se": 0.02571425917437243,
-     "t": 3.2313187051548495,
-     "r2oos": -0.004934304382202326,
+     "a": 0.9852640746637722,
+     "b": 0.08258802930922693,
+     "se": 0.025763493823819584,
+     "t": 3.2056222604742506,
+     "r2oos": -0.002392993593931303,
      "n": 300
     },
     "b2": {
-     "a": 1.0232397698232893,
-     "b": 0.06368201525912379,
-     "se": 0.02766879480558049,
-     "t": 2.301582548376116,
-     "r2oos": -0.0038109205531222656,
+     "a": 1.0234791782535868,
+     "b": 0.06338971487456457,
+     "se": 0.02772075185360509,
+     "t": 2.286724227731245,
+     "r2oos": -0.004245209331432687,
      "n": 300
     },
     "b3": {
-     "a": 1.0031759360762373,
-     "b": 0.051149235082459665,
-     "se": 0.007638597015329629,
-     "t": 6.696155718099814,
-     "r2oos": 0.10209438788785452,
+     "a": 1.0033621451494334,
+     "b": 0.051151877998803406,
+     "se": 0.00765400966351304,
+     "t": 6.683017169764808,
+     "r2oos": 0.10105454286250681,
      "n": 300
     },
     "b45": {
-     "a": 0.9987059956105123,
-     "b": 0.03327114098656353,
-     "se": 0.0023924782821400023,
-     "t": 13.906559250687726,
-     "r2oos": 0.37413786167698404,
+     "a": 0.9986270488531734,
+     "b": 0.0332346897459279,
+     "se": 0.0023981379281823403,
+     "t": 13.858539725910598,
+     "r2oos": 0.3712273025559554,
      "n": 300
     }
    }
@@ -56,22 +56,22 @@
    "ready": true,
    "n": 300,
    "nOOS": 240,
-   "a": 1.0082295982768408,
-   "b": 0.03325429845918366,
-   "gamma": -0.011954412665363678,
-   "se": 0.0028787178251710854,
-   "t": -4.152686505372653,
-   "p": 0.000032878707515760306,
-   "pBonf": 0.00009863612254728093,
-   "r2Base": 0.37413786167698404,
-   "r2": 0.3893023980234932,
-   "dR2": 0.015164536346509161,
-   "kappa": -0.3594847348843197,
-   "carryMean": 0.7966666666666666,
+   "a": 1.00823112803645,
+   "b": 0.03318103989426877,
+   "gamma": -0.012004997782063098,
+   "se": 0.0028844689843989493,
+   "t": -4.161943791732133,
+   "p": 0.000031573715825078985,
+   "pBonf": 0.00009472114747523695,
+   "r2Base": 0.3712273025559556,
+   "r2": 0.38641549166199674,
+   "dR2": 0.015188189106041139,
+   "kappa": -0.3618029398812384,
+   "carryMean": 0.8,
    "adoptCarry": true
   },
-  "sdWeek": 1980900.6589975562,
-  "chanceMean": 2725.59,
+  "sdWeek": 1979892.0711875008,
+  "chanceMean": 2724.4366666666665,
   "portfolio": {
    "n": 5,
    "maxOv": 1,
@@ -93,7 +93,7 @@
    }
   ],
   "weeklyRule": {
-   "round": 1249,
+   "round": 1250,
    "rule": "portfolio",
    "table": "portfolio",
    "ok": true,
@@ -107,109 +107,109 @@
   },
   "per": {
    "portfolio": {
-    "zGain": 1.8466,
-    "vsRandomMean": 1.8602,
+    "zGain": 1.8473,
+    "vsRandomMean": 1.8628,
     "p": 0,
     "payoutGain": 0.0614,
-    "hitsPerGame": 0.816,
+    "hitsPerGame": 0.8133,
     "weeksForZ": 1,
-    "weeksForMoney": 1098365771,
-    "pAnyTheory": 0.117602,
+    "weeksForMoney": 1099721313,
+    "pAnyTheory": 0.117598,
     "anyHitRate": 0.1267,
     "anyHitCI": [
      0.0937,
      0.1691
     ],
     "anyVsRandom": {
-     "mean": 0.03,
-     "p": 0.2329,
+     "mean": 0.0267,
+     "p": 0.2934,
      "ci": [
-      -0.0193,
-      0.0793
+      -0.0231,
+      0.0764
      ]
     },
-    "weeksForAny": 91585,
-    "ev5Model": 2663.2,
+    "weeksForAny": 91512,
+    "ev5Model": 2663.3,
     "evVsRandomPct": 0.0614,
-    "ev5CarryModel": 2662.6,
+    "ev5CarryModel": 2662.3,
     "fixedMean": 1083.3,
-    "u": -1.8022,
+    "u": -1.8024,
     "carry": 0.7993,
     "ovMax": 1,
     "degraded": 0
    },
    "portfolio_carry": {
-    "zGain": 1.7763,
-    "vsRandomMean": 1.7899,
+    "zGain": 1.777,
+    "vsRandomMean": 1.7925,
     "p": 0,
     "payoutGain": 0.0591,
     "hitsPerGame": 0.772,
     "weeksForZ": 1,
-    "weeksForMoney": 1187021762,
-    "pAnyTheory": 0.116039,
+    "weeksForMoney": 1188417615,
+    "pAnyTheory": 0.116035,
     "anyHitRate": 0.0867,
     "anyHitCI": [
      0.0598,
      0.124
     ],
     "anyVsRandom": {
-     "mean": -0.01,
-     "p": 0.6748,
+     "mean": -0.0133,
+     "p": 0.5795,
      "ci": [
-      -0.0567,
-      0.0367
+      -0.0605,
+      0.0338
      ]
     },
-    "weeksForAny": 231896,
-    "ev5Model": 2660.4,
-    "evVsRandomPct": 0.0602,
-    "ev5CarryModel": 2690.1,
+    "weeksForAny": 231605,
+    "ev5Model": 2660.5,
+    "evVsRandomPct": 0.0603,
+    "ev5CarryModel": 2690,
     "fixedMean": 600,
-    "u": -1.7723,
-    "carry": 1.73,
+    "u": -1.7729,
+    "carry": 1.7287,
     "ovMax": 1,
     "degraded": 0
    },
    "disjoint": {
-    "zGain": 1.5351,
-    "vsRandomMean": 1.5487,
+    "zGain": 1.5345,
+    "vsRandomMean": 1.55,
     "p": 0,
-    "payoutGain": 0.0511,
-    "hitsPerGame": 0.8093,
+    "payoutGain": 0.051,
+    "hitsPerGame": 0.8087,
     "weeksForZ": 1,
-    "weeksForMoney": 1589394907,
+    "weeksForMoney": 1593755862,
     "pAnyTheory": 0.118679,
-    "anyHitRate": 0.1367,
+    "anyHitRate": 0.1333,
     "anyHitCI": [
-     0.1024,
-     0.1802
+     0.0995,
+     0.1765
     ],
     "anyVsRandom": {
-     "mean": 0.04,
-     "p": 0.1328,
+     "mean": 0.0333,
+     "p": 0.2109,
      "ci": [
-      -0.0122,
-      0.0922
+      -0.0189,
+      0.0856
      ]
     },
-    "weeksForAny": 58147,
+    "weeksForAny": 58021,
     "ev5Model": 2634.1,
     "evVsRandomPct": 0.0497,
-    "ev5CarryModel": 2633.5,
-    "fixedMean": 1283.3,
-    "u": -1.482,
-    "carry": 0.8093,
+    "ev5CarryModel": 2633.3,
+    "fixedMean": 1266.7,
+    "u": -1.4813,
+    "carry": 0.8087,
     "ovMax": 0,
     "degraded": 42
    },
    "weekly_v1": {
     "zGain": 2.0722,
-    "vsRandomMean": 2.0858,
+    "vsRandomMean": 2.0877,
     "p": 0,
     "payoutGain": 0.0689,
     "hitsPerGame": 0.7873,
     "weeksForZ": 1,
-    "weeksForMoney": 872242312,
+    "weeksForMoney": 873959021,
     "pAnyTheory": 0.113554,
     "anyHitRate": 0.1267,
     "anyHitCI": [
@@ -217,169 +217,169 @@
      0.1691
     ],
     "anyVsRandom": {
-     "mean": 0.03,
-     "p": 0.2329,
+     "mean": 0.0267,
+     "p": 0.2934,
      "ci": [
-      -0.0193,
-      0.0793
+      -0.0231,
+      0.0764
      ]
     },
-    "weeksForAny": 83986183,
-    "ev5Model": 2672.9,
+    "weeksForAny": 77471699,
+    "ev5Model": 2673,
     "evVsRandomPct": 0.0652,
-    "ev5CarryModel": 2672.2,
+    "ev5CarryModel": 2671.9,
     "fixedMean": 800,
-    "u": -1.9055,
-    "carry": 0.7987,
+    "u": -1.9056,
+    "carry": 0.798,
     "ovMax": 2,
     "degraded": 0
    },
    "minshare": {
-    "zGain": 2.1481,
-    "vsRandomMean": 2.1618,
+    "zGain": 2.1487,
+    "vsRandomMean": 2.1642,
     "p": 0,
-    "payoutGain": 0.0715,
-    "hitsPerGame": 0.7947,
+    "payoutGain": 0.0714,
+    "hitsPerGame": 0.792,
     "weeksForZ": 1,
-    "weeksForMoney": 811642797,
-    "pAnyTheory": 0.105423,
+    "weeksForMoney": 812808119,
+    "pAnyTheory": 0.105403,
     "anyHitRate": 0.1067,
     "anyHitCI": [
      0.0766,
      0.1467
     ],
     "anyVsRandom": {
-     "mean": 0.01,
-     "p": 0.6807,
+     "mean": 0.0067,
+     "p": 0.7858,
      "ci": [
-      -0.0376,
-      0.0576
+      -0.0414,
+      0.0548
      ]
     },
     "weeksForAny": null,
-    "ev5Model": 2674.2,
+    "ev5Model": 2674.3,
     "evVsRandomPct": 0.0657,
-    "ev5CarryModel": 2674,
+    "ev5CarryModel": 2673.7,
     "fixedMean": 766.7,
-    "u": -1.9193,
+    "u": -1.9197,
     "carry": 0.8147,
     "ovMax": 5,
     "degraded": 0
    },
    "maxshare": {
-    "zGain": -2.1983,
-    "vsRandomMean": -2.1846,
+    "zGain": -2.1984,
+    "vsRandomMean": -2.1829,
     "p": 0,
     "payoutGain": -0.0731,
-    "hitsPerGame": 0.792,
+    "hitsPerGame": 0.794,
     "weeksForZ": 1,
     "weeksForMoney": null,
-    "pAnyTheory": 0.104187,
+    "pAnyTheory": 0.104213,
     "anyHitRate": 0.09,
     "anyHitCI": [
      0.0626,
      0.1278
     ],
     "anyVsRandom": {
-     "mean": -0.0067,
-     "p": 0.7858,
+     "mean": -0.01,
+     "p": 0.6862,
      "ci": [
-      -0.0548,
-      0.0414
+      -0.0585,
+      0.0385
      ]
     },
     "weeksForAny": null,
-    "ev5Model": 2337.3,
-    "evVsRandomPct": -0.0685,
-    "ev5CarryModel": 2336.8,
+    "ev5Model": 2337.6,
+    "evVsRandomPct": -0.0684,
+    "ev5CarryModel": 2337.2,
     "fixedMean": 816.7,
-    "u": 2.1317,
-    "carry": 0.7907,
+    "u": 2.1318,
+    "carry": 0.79,
     "ovMax": 5,
     "degraded": 0
    },
    "random": {
-    "zGain": -0.0137,
+    "zGain": -0.0155,
     "vsRandomMean": 0,
     "p": 1,
     "payoutGain": -0.0005,
-    "hitsPerGame": 0.8167,
+    "hitsPerGame": 0.8173,
     "weeksForZ": null,
     "weeksForMoney": null,
-    "pAnyTheory": 0.113417,
-    "anyHitRate": 0.0967,
+    "pAnyTheory": 0.113411,
+    "anyHitRate": 0.1,
     "anyHitCI": [
-     0.0681,
-     0.1354
+     0.0709,
+     0.1392
     ],
     "anyVsRandom": null,
     "weeksForAny": null,
     "ev5Model": 2509.3,
     "evVsRandomPct": 0,
     "ev5CarryModel": 2510.1,
-    "fixedMean": 500,
-    "u": -0.0528,
-    "carry": 0.8413,
+    "fixedMean": 516.7,
+    "u": -0.051,
+    "carry": 0.8433,
     "ovMax": 4,
     "degraded": 0
    },
    "hot": {
-    "zGain": -0.0062,
-    "vsRandomMean": 0.0075,
-    "p": 0.81681,
+    "zGain": -0.0057,
+    "vsRandomMean": 0.0098,
+    "p": 0.76201,
     "payoutGain": -0.0002,
-    "hitsPerGame": 0.7613,
-    "weeksForZ": 43879,
+    "hitsPerGame": 0.76,
+    "weeksForZ": 25675,
     "weeksForMoney": null,
-    "pAnyTheory": 0.092371,
+    "pAnyTheory": 0.092368,
     "anyHitRate": 0.0967,
     "anyHitCI": [
      0.0681,
      0.1354
     ],
     "anyVsRandom": {
-     "mean": 0,
-     "p": 1,
+     "mean": -0.0033,
+     "p": 0.8929,
      "ci": [
-      -0.0481,
-      0.0481
+      -0.0519,
+      0.0452
      ]
     },
     "weeksForAny": null,
-    "ev5Model": 2509.8,
-    "evVsRandomPct": 0.0002,
-    "ev5CarryModel": 2518.3,
+    "ev5Model": 2510,
+    "evVsRandomPct": 0.0003,
+    "ev5CarryModel": 2518.5,
     "fixedMean": 1050,
-    "u": -0.0594,
-    "carry": 1.1407,
+    "u": -0.0598,
+    "carry": 1.142,
     "ovMax": 5,
     "degraded": 0
    },
    "cold": {
-    "zGain": -0.0716,
-    "vsRandomMean": -0.058,
-    "p": 0.09005,
+    "zGain": -0.0717,
+    "vsRandomMean": -0.0562,
+    "p": 0.10075,
     "payoutGain": -0.0024,
-    "hitsPerGame": 0.7907,
-    "weeksForZ": 820,
+    "hitsPerGame": 0.79,
+    "weeksForZ": 875,
     "weeksForMoney": null,
-    "pAnyTheory": 0.088179,
+    "pAnyTheory": 0.088167,
     "anyHitRate": 0.1233,
     "anyHitCI": [
      0.0908,
      0.1654
     ],
     "anyVsRandom": {
-     "mean": 0.0267,
-     "p": 0.3173,
+     "mean": 0.0233,
+     "p": 0.3855,
      "ci": [
-      -0.0256,
-      0.0789
+      -0.0294,
+      0.076
      ]
     },
     "weeksForAny": null,
-    "ev5Model": 2504.4,
-    "evVsRandomPct": -0.002,
+    "ev5Model": 2504.6,
+    "evVsRandomPct": -0.0019,
     "ev5CarryModel": 2484.5,
     "fixedMean": 766.7,
     "u": 0.006,
@@ -406,7 +406,7 @@
    },
    "zGain": {
     "ok": false,
-    "value": -0.3015,
+    "value": -0.3014,
     "want": "≥ −0.30 (vs minshare)",
     "soft": true
    },
@@ -418,15 +418,15 @@
    "hitsPerGame": {
     "ok": true,
     "value": {
-     "portfolio": "0.816 (t 0.9)",
+     "portfolio": "0.813 (t 0.8)",
      "portfolio_carry": "0.772 (t -1.5)",
      "disjoint": "0.809 (t 0.7)",
      "weekly_v1": "0.787 (t -0.6)",
-     "minshare": "0.795 (t -0.2)",
-     "maxshare": "0.792 (t -0.3)",
+     "minshare": "0.792 (t -0.3)",
+     "maxshare": "0.794 (t -0.2)",
      "random": "0.817 (t 0.9)",
-     "hot": "0.761 (t -1.3)",
-     "cold": "0.791 (t -0.3)"
+     "hot": "0.760 (t -1.3)",
+     "cold": "0.790 (t -0.3)"
     },
     "want": "모든 규칙 0.8 과 구별 안 됨 (|t|<3.26, 규칙 수 Bonferroni)"
    },
@@ -452,17 +452,17 @@
    },
    "repro": {
     "ok": true,
-    "value": "1241회 구 규칙 일치 · 1242회 구 규칙 일치 · 1243회 포트폴리오 일치 · 1244회 포트폴리오 일치 · 1245회 포트폴리오 일치 · 1246회 포트폴리오 일치 · 1247회 포트폴리오 일치 · 1248회 포트폴리오 일치",
+    "value": "1241회 구 규칙 일치 · 1242회 구 규칙 일치 · 1243회 포트폴리오 일치 · 1244회 포트폴리오 일치 · 1245회 포트폴리오 일치 · 1246회 포트폴리오 일치 · 1247회 포트폴리오 일치 · 1248회 포트폴리오 일치 · 1249회 포트폴리오 일치",
     "want": "원장 A~E 재현 (그 회차 규칙 · weeklyPicks)"
    },
    "reproPool": {
     "ok": true,
-    "value": "8/8",
+    "value": "9/9",
     "want": "보드 풀에 같은 규칙 → 원장 A~E"
    },
    "weeklyRule": {
     "ok": true,
-    "value": "1249회 portfolio (규칙표 portfolio)",
+    "value": "1250회 portfolio (규칙표 portfolio)",
     "want": "이번 주 추천 규칙 = 규칙표"
    },
    "recordGrader": {
@@ -551,13 +551,23 @@
     "order": true,
     "set": true,
     "pool": true
+   },
+   {
+    "R": 1249,
+    "rule": "portfolio",
+    "table": "portfolio",
+    "recorded": "portfolio",
+    "via": "weeklyPicks",
+    "order": true,
+    "set": true,
+    "pool": true
    }
   ],
   "selfCheck": {
    "cover5disjoint": 966650,
    "cover1": 194130,
-   "buyPAnyExact": 0.11705868342283543,
-   "buyPAnyApproxErr": 0,
+   "buyPAnyExact": 0.11786899052922876,
+   "buyPAnyApproxErr": 1.3877787807814457e-17,
    "coverMs": 16,
    "lineEV1": 499.9999161828245
   }
@@ -740,10 +750,10 @@
  },
  "ledger": {
   "lotto": {
-   "weeks": 8,
-   "spend": 40000,
+   "weeks": 9,
+   "spend": 45000,
    "ret": 15000,
-   "rate": 0.375,
+   "rate": 0.3333333333333333,
    "median": 0,
    "grades": {
     "5": 3
@@ -768,12 +778,12 @@
     "n": 100000,
     "mismatch": 0,
     "gradeHist": {
-     "0": 96416,
+     "0": 96442,
      "1": 285,
-     "2": 143,
-     "3": 145,
-     "4": 425,
-     "5": 2586
+     "2": 147,
+     "3": 142,
+     "4": 428,
+     "5": 2556
     }
    },
    "pension": {
@@ -781,14 +791,14 @@
     "n": 100000,
     "mismatch": 0,
     "gradeHist": {
-     "0": 89437,
+     "0": 89420,
      "1": 223,
      "2": 223,
      "3": 222,
-     "4": 223,
-     "5": 251,
-     "6": 1100,
-     "7": 8099,
+     "4": 226,
+     "5": 264,
+     "6": 1096,
+     "7": 8104,
      "8": 222
     }
    },
@@ -799,105 +809,105 @@
  },
  "rank": {
   "lotto": {
-   "n": 249,
+   "n": 250,
    "from": 1000,
-   "latest": 1248,
+   "latest": 1249,
    "models": {
     "pop": {
-     "n": 249,
-     "meanPct": 0.5041,
+     "n": 250,
+     "meanPct": 0.5051,
      "meanCI": [
-      0.4682,
-      0.5399
+      0.4693,
+      0.5409
      ],
-     "medianPct": 0.5013,
-     "ksP": 0.826014,
-     "chi2P": 0.42696,
+     "medianPct": 0.5032,
+     "ksP": 0.78528,
+     "chi2P": 0.486588,
      "top10pct": 28,
-     "top10pctExp": 24.9,
+     "top10pctExp": 25,
      "top1pct": 4,
-     "top1pctExp": 2.49,
+     "top1pctExp": 2.5,
      "band": {
-      "n": 229,
+      "n": 230,
       "hits": 22,
-      "rate": 0.0961,
+      "rate": 0.0957,
       "exp": 0.1,
-      "p": 1
+      "p": 0.912636
      }
     },
     "popf": {
-     "n": 154,
-     "meanPct": 0.5316,
+     "n": 155,
+     "meanPct": 0.5335,
      "meanCI": [
-      0.486,
-      0.5772
+      0.4881,
+      0.579
      ],
-     "medianPct": 0.5291,
-     "ksP": 0.154952,
-     "chi2P": 0.826313,
+     "medianPct": 0.5327,
+     "ksP": 0.134589,
+     "chi2P": 0.839896,
      "top10pct": 10,
-     "top10pctExp": 15.4,
+     "top10pctExp": 15.5,
      "top1pct": 1,
-     "top1pctExp": 1.54,
+     "top1pctExp": 1.55,
      "band": {
-      "n": 134,
+      "n": 135,
       "hits": 13,
-      "rate": 0.097,
+      "rate": 0.0963,
       "exp": 0.1,
       "p": 1
      }
     },
     "hot": {
-     "n": 249,
+     "n": 250,
      "meanPct": 0.4945,
      "meanCI": [
-      0.4586,
-      0.5304
+      0.4587,
+      0.5302
      ],
-     "medianPct": 0.4913,
-     "ksP": 0.922694,
-     "chi2P": 0.569555,
+     "medianPct": 0.489,
+     "ksP": 0.902365,
+     "chi2P": 0.539729,
      "top10pct": 31,
-     "top10pctExp": 24.9,
+     "top10pctExp": 25,
      "top1pct": 3.046786,
-     "top1pctExp": 2.49,
+     "top1pctExp": 2.5,
      "band": {
-      "n": 229,
+      "n": 230,
       "hits": 25,
-      "rate": 0.1092,
+      "rate": 0.1087,
       "exp": 0.1,
-      "p": 0.658788
+      "p": 0.659599
      }
     },
     "cold": {
-     "n": 249,
+     "n": 250,
      "meanPct": 0.4944,
      "meanCI": [
       0.4586,
-      0.5303
+      0.5301
      ],
-     "medianPct": 0.5003,
-     "ksP": 0.917585,
-     "chi2P": 0.895489,
+     "medianPct": 0.4998,
+     "ksP": 0.931626,
+     "chi2P": 0.895396,
      "top10pct": 25,
-     "top10pctExp": 24.9,
+     "top10pctExp": 25,
      "top1pct": 4,
-     "top1pctExp": 2.49,
+     "top1pctExp": 2.5,
      "band": {
-      "n": 229,
+      "n": 230,
       "hits": 22.731956,
-      "rate": 0.0993,
+      "rate": 0.0988,
       "exp": 0.1,
       "p": 1
      }
     }
    },
    "popf": {
-    "passed": 154,
-    "n": 249,
-    "rate": 0.6185,
+    "passed": 155,
+    "n": 250,
+    "rate": 0.62,
     "exp": 0.6057,
-    "p": 0.697757
+    "p": 0.697895
    }
   },
   "pension": {
@@ -1137,72 +1147,72 @@
   },
   "tiersLotto": {
    "from": 1000,
-   "latest": 1248,
+   "latest": 1249,
    "models": {
     "pop": {
      "2": {
-      "meanPct": 0.4993,
-      "roundP": 0.968354,
-      "pMC": 0.766412
+      "meanPct": 0.5004,
+      "roundP": 0.978684,
+      "pMC": 0.754462
      },
      "3": {
-      "meanPct": 0.4978,
-      "roundP": 0.87447,
-      "pMC": 0.898455
+      "meanPct": 0.4985,
+      "roundP": 0.916572,
+      "pMC": 0.871456
      },
      "4": {
-      "meanPct": 0.4958,
-      "roundP": 0.685066,
-      "pMC": 0.966502
+      "meanPct": 0.4963,
+      "roundP": 0.724374,
+      "pMC": 0.982451
      },
      "5": {
-      "meanPct": 0.4962,
-      "roundP": 0.586982,
-      "pMC": 0.706765
+      "meanPct": 0.4966,
+      "roundP": 0.624725,
+      "pMC": 0.748063
      }
     },
     "hot": {
      "2": {
-      "meanPct": 0.4987,
-      "roundP": 0.937423,
-      "pMC": 0.637218
+      "meanPct": 0.4997,
+      "roundP": 0.985958,
+      "pMC": 0.686716
      },
      "3": {
-      "meanPct": 0.4962,
-      "roundP": 0.801144,
-      "pMC": 0.942903
+      "meanPct": 0.4961,
+      "roundP": 0.797285,
+      "pMC": 0.932303
      },
      "4": {
       "meanPct": 0.4975,
-      "roundP": 0.832561,
-      "pMC": 0.865657
+      "roundP": 0.830467,
+      "pMC": 0.865357
      },
      "5": {
       "meanPct": 0.4986,
-      "roundP": 0.862125,
-      "pMC": 0.843158
+      "roundP": 0.860372,
+      "pMC": 0.838508
      }
     },
     "cold": {
      "2": {
-      "meanPct": 0.4783,
-      "roundP": 0.19052,
-      "pMC": 0.221189
+      "meanPct": 0.4789,
+      "roundP": 0.202844,
+      "pMC": 0.234838
      },
      "3": {
       "meanPct": 0.4951,
-      "roundP": 0.739685,
-      "pMC": 0.99215
+      "roundP": 0.736109,
+      "pMC": 0.9917
      },
      "4": {
-      "meanPct": 0.4957,
-      "roundP": 0.695342,
-      "pMC": 0.872356
+      "meanPct": 0.4956,
+      "roundP": 0.69274,
+      "pMC": 0.858457
      },
      "5": {
       "meanPct": 0.4969,
-      "roundP": 0.687018,
-      "pMC": 0.827359
+      "roundP": 0.684168,
+      "pMC": 0.820409
      }
     }
    }
