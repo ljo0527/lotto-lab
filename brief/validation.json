@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-14T18:50:24.999Z",
+ "generated": "2026-11-15T05:49:35.344Z",
  "window": 300,
  "lotto": {
   "n": 300,
@@ -578,7 +578,7 @@
    "cover1": 194130,
    "buyPAnyExact": 0.1174638369760321,
    "buyPAnyApproxErr": 1.3877787807814457e-17,
-   "coverMs": 16,
+   "coverMs": 20,
    "lineEV1": 499.9999161828245
   }
  },
