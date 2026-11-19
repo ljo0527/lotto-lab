@@ -1,6 +1,6 @@
 {
  "v": 1,
- "updated": "2026-11-15T05:49:35.292Z",
+ "updated": "2026-11-19T20:53:56.014Z",
  "config": {
   "lottoGames": 5,
   "pensionTickets": 5
@@ -795,6 +795,40 @@
     "2조 573606",
     "5조 883660",
     "2조 883403"
+   ],
+   "spend": 5000,
+   "status": "done",
+   "rule": "portfolio",
+   "mode": "spread",
+   "result": [
+    {
+     "grade": 0
+    },
+    {
+     "grade": 0
+    },
+    {
+     "grade": 0
+    },
+    {
+     "grade": 0
+    },
+    {
+     "grade": 0
+    }
+   ],
+   "return": 0
+  },
+  {
+   "kind": "pension",
+   "round": 343,
+   "date": "20261126",
+   "picks": [
+    "2조 870668",
+    "2조 883667",
+    "2조 573466",
+    "2조 573660",
+    "2조 873463"
    ],
    "spend": 5000,
    "status": "pending",
