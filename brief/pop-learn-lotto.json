@@ -2,7 +2,7 @@
   "v": 1,
   "kind": "pop-learn-lotto",
   "ver": "pop-1",
-  "generated": "2026-11-21T20:16:06.682Z",
+  "generated": "2026-11-22T06:02:58.896Z",
   "source": {
     "file": "lotto-history.json",
     "latest": 1251,
@@ -124,9 +124,9 @@
     ]
   },
   "checks": {
-    "kept": 3,
-    "added": 1,
-    "graded": 1,
+    "kept": 5,
+    "added": 0,
+    "graded": 0,
     "pendingMismatch": [],
     "regradeMismatch": []
   }
